@@ -83,6 +83,31 @@ For agentic coding instructions and automation guidelines, see [AGENTS.md](./AGE
 
 ## Testing
 
+### Running Tests
+```bash
+swift test --parallel
+```
+
+### Visual Component Testing
+The package includes automated visual testing for SwiftUI components:
+```bash
+swift test --filter DisplayCardSnapshotTests
+```
+
+This test generates sample images of playing cards using the `DisplayCard` component, including:
+- Individual cards (Ace of Spades, King of Hearts, etc.)
+- Complete poker hands with evaluation labels
+- Various card combinations for visual verification
+
+Generated images are automatically uploaded as CI artifacts and posted as PR comments during the build process.
+
+### Test Coverage
+- **37 total tests** covering all poker functionality
+- Complete hand evaluation testing for all 10 poker hand types
+- Deck operations and shuffle verification  
+- Edge cases like wheel straights (A-2-3-4-5)
+- Visual component rendering tests
+
 Run the test suite:
 ```bash
 swift test --enable-test-discovery
