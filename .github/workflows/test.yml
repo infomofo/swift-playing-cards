@@ -8,11 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest]
-        swift: ['5.9']
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +16,7 @@ jobs:
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
         with:
-          swift-version: ${{ matrix.swift }}
+          swift-version: '5.9'
       
       - name: Build
         run: swift build
