@@ -5,6 +5,7 @@
 //  Created by Will Chiong on 4/2/23.
 //
 
+#if canImport(SwiftUI)
 import SwiftUI
 
 @available(macOS 10.15, *)
@@ -46,3 +47,4 @@ struct DisplayCard_Preview: PreviewProvider {
         DisplayCard(card: PlayingCard(rank: Rank.four, suit: Suit.hearts))
     }
 }
+#endif
