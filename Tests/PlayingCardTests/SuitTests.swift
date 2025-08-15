@@ -26,9 +26,4 @@ class SuitTests: XCTestCase {
         XCTAssertGreaterThan(Suit.hearts, Suit.clubs)
         XCTAssertGreaterThan(Suit.diamonds, Suit.clubs)
     }
-    
-    static var allTests = [
-        ("testSuitStringEquality", testSuitStringEquality),
-        ("testSuitComparable", testSuitComparable),
-    ]
 }

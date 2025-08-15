@@ -31,9 +31,4 @@ class RankTests: XCTestCase {
         XCTAssertGreaterThan(Rank.queen, Rank.jack)
         XCTAssertGreaterThan(Rank.jack, Rank.ten)
     }
-    
-    static var allTests = [
-        ("testRankStringEquality", testRankStringEquality),
-        ("testRankComparable", testRankComparable),
-    ]
 }
