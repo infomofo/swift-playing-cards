@@ -24,7 +24,11 @@ let package = Package(
     targets: [
         .target(
             name: "PlayingCard",
-            dependencies: []),
+            dependencies: [],
+            swiftSettings: [
+                // Disable SwiftUI compilation in CI environments
+                .define("CI_BUILD", .when(configuration: .release))
+            ]),
         .testTarget(
             name: "PlayingCardTests",
             dependencies: ["PlayingCard"]),

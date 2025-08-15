@@ -17,8 +17,8 @@ jobs:
         with:
           swift-version: '5.9'
       - name: Build
-        run: make build
+        run: make build-ci
         timeout-minutes: 10
       - name: Test
-        run: make test
+        run: make test-ci
         timeout-minutes: 5

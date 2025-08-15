@@ -5,7 +5,7 @@
 //  Created by Will Chiong on 4/2/23.
 //
 
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) && !CI_BUILD
 import SwiftUI
 
 @available(macOS 10.15, *)
