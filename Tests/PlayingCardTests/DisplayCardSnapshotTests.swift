@@ -1,9 +1,12 @@
+#if canImport(SwiftUI)
 import XCTest
 import SwiftUI
 @testable import PlayingCard
 
 final class DisplayCardSnapshotTests: XCTestCase {
     func testGenerateDisplayCardImage() throws {
+        // Skip this test in CI environments where graphics rendering is not available
+        #if targetEnvironment(macCatalyst) || os(macOS)
         let card = PlayingCard(rank: .four, suit: .hearts)
         let view = DisplayCard(card: card)
         let renderer = ImageRenderer(content: view.frame(width: 100, height: 140))
@@ -17,6 +20,9 @@ final class DisplayCardSnapshotTests: XCTestCase {
         let url = URL(fileURLWithPath: "Tests/PlayingCardTests/DisplayCardSnapshot.png")
         try imageData.write(to: url)
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        #else
+        throw XCTSkip("Graphics rendering tests not supported on this platform")
+        #endif
     }
 }
 
@@ -36,3 +42,4 @@ struct ImageRenderer<V: View> {
         return image
     }
 }
+#endif
