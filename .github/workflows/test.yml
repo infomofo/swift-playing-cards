@@ -9,30 +9,13 @@ on:
 jobs:
   test:
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Swift
-        uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: '5.9'
-          
-      - name: Cache Swift packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            .build
-            ~/.cache/org.swift.swiftpm
-          key: ${{ runner.os }}-swift-${{ hashFiles('Package.swift', 'Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-swift-
-      
       - name: Build
         run: swift build
-        timeout-minutes: 10
       
       - name: Run tests
-        run: swift test --parallel
-        timeout-minutes: 5
+        run: swift test

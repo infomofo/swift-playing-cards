@@ -22,43 +22,72 @@ This repository is prepared for agentic coding and automation using GitHub Actio
 
 ## GitHub Actions Best Practices
 
-### Timeout Management
-- **Always set timeouts** to prevent runaway jobs that consume resources and cost money
-- Use `timeout-minutes` at both job and step levels where appropriate:
-  - **Job-level**: 15-30 minutes for most Swift projects
-  - **Build step**: 10-15 minutes for typical Swift builds
-  - **Test step**: 5-10 minutes for test suites
-- For complex projects or benchmarks, may need 60+ minutes
+### CRITICAL: Don't Overengineer CI for Simple Projects
 
-### Caching Strategy
-- **Cache Swift packages** to improve build times:
-  ```yaml
-  - name: Cache Swift packages
-    uses: actions/cache@v4
-    with:
-      path: |
-        .build
-        ~/.cache/org.swift.swiftpm
-      key: ${{ runner.os }}-swift-${{ hashFiles('Package.swift', 'Package.resolved') }}
-      restore-keys: |
-        ${{ runner.os }}-swift-
-  ```
+**The biggest mistake agents make with Swift CI is overengineering.** Before adding complexity, research what successful projects actually do:
 
-### Swift Build Optimization
-- Use `swift build` and `swift test --parallel` for standard builds
-- Consider `swift build -c release` for release builds
-- Monitor for known issues with `swift-actions/setup-swift` action
-- For simple projects, builds should complete within 5-15 minutes on macOS runners
+- **Alamofire** (42k stars): Uses direct `xcodebuild` with 10-minute timeouts, NO setup actions
+- **Simple projects**: Use built-in Swift on macOS runners, NO setup actions
+- **Key insight**: macOS runners already have Swift installed - don't try to "fix" what isn't broken
 
-### Common Issues and Solutions
-- **Long build times**: Likely due to package resolution or dependency issues
-- **Setup failures**: GPG import issues with swift-actions, consider alternative setup methods
-- **Resource exhaustion**: Set appropriate timeouts to prevent billing issues
-- **Inconsistent builds**: Use caching and pin Swift versions for reproducibility
+### For Simple Swift Package Projects (like this one):
+
+```yaml
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: swift build
+      - name: Run tests
+        run: swift test
+```
+
+**That's it.** Don't add:
+- ❌ swift-actions/setup-swift (has known reliability issues)
+- ❌ Complex caching for simple projects (adds overhead)
+- ❌ Overly tight timeouts (causes false failures)
+- ❌ Multiple step timeouts (job timeout is sufficient)
+
+### When to Add Complexity
+
+Only add complexity when you have evidence it's needed:
+- **Multiple platforms**: Only if you actually need Linux/Windows builds
+- **Caching**: Only for projects with heavy dependencies or long build times
+- **Setup actions**: Only if you need a specific Swift version not available on runners
+
+### Common Anti-Patterns to Avoid
+
+1. **Using swift-actions/setup-swift unnecessarily**: macOS runners have Swift built-in
+2. **Adding caching prematurely**: Simple projects build in seconds without it
+3. **Setting multiple timeout layers**: Just use job-level timeout
+4. **Cargo-cult configuration**: Copying complex CI from large projects to simple ones
+
+### Debugging Swift CI Issues
+
+When Swift builds are slow/failing:
+1. **First check**: Are you using unnecessary setup actions?
+2. **Second check**: Are you overcomplicating a simple build?
+3. **Research**: Look at how similar-sized successful Swift projects handle CI
+4. **Simplify**: Remove complexity until you find the minimum viable solution
+
+### Timeout Guidelines
+- **Simple Swift packages**: 10 minutes (enough for setup + build + test)
+- **Complex projects with dependencies**: 15-30 minutes
+- **Never go above 60 minutes** without strong justification
+
+### Success Patterns from Real Projects
+- **Alamofire**: 10min timeout, xcodebuild, no setup actions
+- **langchain-swift**: swift-actions/setup-swift@v1, simple commands
+- **Key lesson**: Successful projects keep CI simple and reliable
 
 ## Agentic Coding
 
 - Agents should use this file as the source of truth for coding standards and automation.
+- **When in doubt, SIMPLIFY** - especially for CI configuration.
+- Research successful projects before adding complexity.
 - For Jules integration, ensure workflows and scripts are idempotent and well-documented.
 
 ## Useful Commands
