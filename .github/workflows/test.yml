@@ -1,4 +1,4 @@
-name: Swift Test & Visual Snapshot
+name: Swift Test
 
 on:
   push:
@@ -19,11 +19,3 @@ jobs:
         run: make build
       - name: Test
         run: make test
-      - name: Generate DisplayCard Image
-        run: |
-          swift run PlayingCardTests --generate-card-image
-      - name: Upload DisplayCard Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: DisplayCardSnapshot
-          path: Tests/PlayingCardTests/DisplayCardSnapshot.png
