@@ -20,6 +20,7 @@ let package = Package(
     ],
     products: [
         .library(name: "PlayingCard", targets: ["PlayingCard"]),
+        .library(name: "PlayingCardUI", targets: ["PlayingCard", "PlayingCardUI"]),
     ],
     targets: [
         .target(
@@ -29,6 +30,9 @@ let package = Package(
                 // Disable SwiftUI compilation in CI environments
                 .define("CI_BUILD", .when(configuration: .release))
             ]),
+        .target(
+            name: "PlayingCardUI",
+            dependencies: ["PlayingCard"]),
         .testTarget(
             name: "PlayingCardTests",
             dependencies: ["PlayingCard"]),

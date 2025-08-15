@@ -9,6 +9,7 @@
 
 #if canImport(SwiftUI) && !CI_BUILD
 import SwiftUI
+import PlayingCard
 
 @available(macOS 10.15, *)
 struct InteractiveCard: View, Hashable {

@@ -17,7 +17,7 @@ clean:
 
 # Development targets with optimizations for CI/CD
 build-ci:
-	swift build --configuration release --verbose
+	swift build --product PlayingCard --configuration release --verbose
 
 test-ci:
 	swift test --parallel --verbose
