@@ -17,14 +17,14 @@ struct InteractiveCard: View, Hashable {
         self.card = card
     }
     
-    public static func == (lhs: InteractiveCard, rhs: InteractiveCard) -> Bool {
+    nonisolated public static func == (lhs: InteractiveCard, rhs: InteractiveCard) -> Bool {
         return lhs.card == rhs.card
     }
     
     var suitColor:[Suit:Color] = [Suit.clubs:Color.black, Suit.spades: Color.black, Suit.diamonds: Color.red, Suit.hearts: Color.red]
     
     
-    public func hash(into hasher: inout Hasher) {
+    nonisolated public func hash(into hasher: inout Hasher) {
         hasher.combine(self.card)
     }
     
