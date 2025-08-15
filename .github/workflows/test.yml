@@ -1,4 +1,4 @@
-name: Swift Test & Visual Snapshot
+name: Swift Test
 
 on:
   push:
@@ -9,9 +9,6 @@ on:
 jobs:
   test:
     runs-on: macos-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - name: Set up Swift
@@ -22,72 +19,3 @@ jobs:
         run: make build
       - name: Test
         run: make test
-      - name: Generate DisplayCard Images
-        run: |
-          swift test --filter DisplayCardSnapshotTests
-      - name: Upload DisplayCard Images
-        uses: actions/upload-artifact@v4
-        with:
-          name: DisplayCardSnapshots
-          path: Tests/PlayingCardTests/*.png
-      - name: Post Images as PR Comment
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-            
-            // Find all generated PNG files
-            const testDir = 'Tests/PlayingCardTests/';
-            let imageFiles = [];
-            try {
-              const files = fs.readdirSync(testDir);
-              imageFiles = files.filter(file => file.endsWith('.png'));
-            } catch (error) {
-              console.log('No images found or error reading directory:', error);
-              return;
-            }
-            
-            if (imageFiles.length === 0) {
-              console.log('No PNG images found to post');
-              return;
-            }
-            
-            // Create comment content
-            let commentBody = '## 🎴 Generated Playing Card Display Examples\n\n';
-            commentBody += 'Here are the visual examples of the SwiftUI DisplayCard component generated during testing:\n\n';
-            
-            // List the images that would be generated
-            const expectedImages = [
-              'ace_of_spades.png - Ace of Spades',
-              'king_of_hearts.png - King of Hearts', 
-              'queen_of_diamonds.png - Queen of Diamonds',
-              'jack_of_clubs.png - Jack of Clubs',
-              'ten_of_hearts.png - Ten of Hearts',
-              'four_of_hearts.png - Four of Hearts',
-              'poker_hand_example.png - Royal Flush Example Hand'
-            ];
-            
-            for (const imageDesc of expectedImages) {
-              commentBody += `- ${imageDesc}\n`;
-            }
-            
-            commentBody += '\n**Note:** The actual image files are available as artifacts from this CI run. ';
-            commentBody += 'SwiftUI image generation requires a GUI environment, so images are generated ';
-            commentBody += 'when the tests run on macOS but may not be available in all CI environments.\n\n';
-            
-            commentBody += 'The test suite includes:\n';
-            commentBody += '- Individual card examples showing different ranks and suits\n';
-            commentBody += '- A complete poker hand visualization (Royal Flush)\n';
-            commentBody += '- Proper SwiftUI DisplayCard component rendering\n\n';
-            
-            commentBody += '*These images demonstrate the visual quality and styling of the PlayingCard SwiftUI components.*';
-            
-            // Post comment on PR
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: commentBody
-            });
