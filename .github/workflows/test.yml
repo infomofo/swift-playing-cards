@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: macos-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Set up Swift
@@ -17,5 +18,7 @@ jobs:
           swift-version: '5.9'
       - name: Build
         run: make build
+        timeout-minutes: 10
       - name: Test
         run: make test
+        timeout-minutes: 5
