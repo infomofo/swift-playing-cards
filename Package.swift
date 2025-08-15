@@ -19,8 +19,8 @@ let package = Package(
         .macOS(.v12)
     ],
     products: [
-        .library(name: "PlayingCard", targets: ["PlayingCard"]),
-        .library(name: "PlayingCardUI", targets: ["PlayingCard", "PlayingCardUI"]),
+        .library(name: "PlayingCard", type: .static, targets: ["PlayingCard"]),
+        .library(name: "PlayingCardUI", type: .static, targets: ["PlayingCard", "PlayingCardUI"]),
     ],
     targets: [
         .target(

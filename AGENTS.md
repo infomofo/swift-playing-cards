@@ -49,6 +49,38 @@ jobs:
 - Agents should use this file as the source of truth for coding standards and automation.
 - For Jules integration, ensure workflows and scripts are idempotent and well-documented.
 
+### Fix Verification Requirements
+
+**CRITICAL**: Never claim a fix is working without proper verification:
+
+1. **Local Testing Required**: Before claiming any CI fix works, test the EXACT commands locally:
+   - Run the same Makefile targets used in CI workflows
+   - Verify build times are reasonable (should complete in seconds, not minutes)
+   - Check that only intended targets are built (look for "Building..." output)
+
+2. **Command Verification**: For Swift projects, verify:
+   - `swift build --product <target>` builds only the specified target
+   - No "warning: '--product' cannot be used with automatic product" messages
+   - Build output shows only expected modules compiling
+   - Release builds use `-O` optimization flag
+
+3. **CI Environment Differences**: Always consider environment-specific issues:
+   - Local vs CI Swift versions and SDK compatibility
+   - Graphics/SwiftUI code that works locally but hangs in headless CI
+   - Conditional compilation flags that may behave differently
+
+4. **Timeout Testing**: When implementing timeout fixes:
+   - Test with shorter timeouts locally to verify they work
+   - Monitor GitHub Actions usage to prevent cost overruns
+   - Add multiple timeout layers (job, step, command-level)
+
+5. **Incremental Verification**: After each change:
+   - Test build commands immediately  
+   - Verify no regressions in existing functionality
+   - Check that only minimal changes were made to achieve the goal
+
+**Never use phrases like "Fixed in commit X" without having verified the commands work locally first.**
+
 ## Useful Commands
 
 - `make build` - Build the project.
