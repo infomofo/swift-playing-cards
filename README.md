@@ -83,7 +83,7 @@ For agentic coding instructions and automation guidelines, see [AGENTS.md](./AGE
 
 ## Linting
 
-This project uses SwiftLint to enforce code style and prevent whitespace issues. The linting setup includes both SwiftLint (when available) and a fallback whitespace checker.
+This project uses SwiftLint to enforce code style and prevent whitespace issues.
 
 ### Running the linter
 
@@ -91,7 +91,7 @@ This project uses SwiftLint to enforce code style and prevent whitespace issues.
 # Run linting checks
 make lint
 
-# Auto-fix issues (requires SwiftLint)
+# Auto-fix issues
 make lint-fix
 ```
 
