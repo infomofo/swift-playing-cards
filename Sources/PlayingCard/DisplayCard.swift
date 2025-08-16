@@ -1,6 +1,6 @@
 //
 //  DisplayCard.swift
-//  
+//
 //
 //  Created by Will Chiong on 4/2/23.
 //
@@ -13,13 +13,13 @@ public struct DisplayCard: View {
     public init(card: PlayingCard){
         self.card = card
     }
-    
+
     let card: PlayingCard
-    
+
     let bgColor: Color = Color.white
-    
+
     var suitColor:[Suit:Color] = [Suit.clubs:Color.black, Suit.spades: Color.black, Suit.diamonds: Color.red, Suit.hearts: Color.red]
-    
+
     public var body: some View {
         VStack(alignment: .center) {
             Text(card.rank.description)
