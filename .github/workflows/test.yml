@@ -47,6 +47,32 @@ jobs:
             ls -la
           fi
           
+      - name: Commit card images to repository
+        if: always()
+        run: |
+          # Configure git for the action
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Create a temporary branch for images if it doesn't exist
+          if [ -d "card-images" ]; then
+            echo "📸 Committing generated card images..."
+            
+            # Add the images to git
+            git add card-images/
+            
+            # Only commit if there are changes
+            if ! git diff --cached --quiet; then
+              git commit -m "Add generated card images for PR review [skip ci]"
+              git push origin HEAD
+              echo "✅ Images committed and pushed"
+            else
+              echo "ℹ️ No new images to commit"
+            fi
+          else
+            echo "⚠️ No card-images directory found to commit"
+          fi
+          
       - name: Upload card images as artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,7 +81,7 @@ jobs:
           path: card-images/
           retention-days: 30
           
-      - name: Comment PR with card images
+      - name: Comment PR with embedded card images
         if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
         with:
@@ -95,26 +121,46 @@ jobs:
             
             // Read manifest for card information
             let cardList = [];
+            let cardImageMap = new Map(); // Map card descriptions to filenames
+            
             if (manifestFile) {
               const manifestPath = path.join(cardImagesDir, manifestFile);
               const manifestContent = fs.readFileSync(manifestPath, 'utf8');
               cardList = manifestContent.trim().split('\n').filter(line => line.trim());
               console.log(`📝 Manifest contains ${cardList.length} cards: ${cardList.join(', ')}`);
+              
+              // Create mapping from card description to image filename
+              cardList.forEach(cardInfo => {
+                // Convert card description to expected filename
+                const parts = cardInfo.split(' of ');
+                if (parts.length === 2) {
+                  const rank = parts[0].toLowerCase();
+                  const suit = parts[1].toLowerCase();
+                  const expectedFilename = `${suit}_${rank}.png`;
+                  if (imageFiles.includes(expectedFilename)) {
+                    cardImageMap.set(cardInfo, expectedFilename);
+                  }
+                }
+              });
             }
             
             // Create comment body
             let commentBody = `## 🃏 Sample Playing Cards Generated\n\n`;
+            commentBody += `The following sample cards were generated from the \`DisplayCard\` SwiftUI component:\n\n`;
             
-            if (cardList.length > 0) {
-              commentBody += `The following sample cards were generated from the \`DisplayCard\` SwiftUI component:\n\n`;
-              
-              const suitEmojis = {
-                'spades': '♠️',
-                'hearts': '♥️', 
-                'diamonds': '♦️',
-                'clubs': '♣️'
-              };
-              
+            const suitEmojis = {
+              'spades': '♠️',
+              'hearts': '♥️', 
+              'diamonds': '♦️',
+              'clubs': '♣️'
+            };
+            
+            // Get the current branch name for image URLs
+            const currentBranch = context.ref.replace('refs/heads/', '');
+            const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
+            
+            if (cardList.length > 0 && imageFiles.length > 0) {
+              // Embed actual images
               for (const cardInfo of cardList) {
                 // Try to add appropriate emoji based on suit
                 let displayName = cardInfo;
@@ -124,30 +170,45 @@ jobs:
                     break;
                   }
                 }
-                commentBody += `- ${displayName}\n`;
+                
+                const imageFilename = cardImageMap.get(cardInfo);
+                if (imageFilename) {
+                  // Embed the image using GitHub's raw content URL
+                  const imageUrl = `${repoUrl}/raw/${currentBranch}/card-images/${imageFilename}`;
+                  commentBody += `### ${displayName}\n`;
+                  commentBody += `![${cardInfo}](${imageUrl})\n\n`;
+                } else {
+                  commentBody += `### ${displayName}\n`;
+                  commentBody += `*Image generation failed for this card*\n\n`;
+                }
               }
-            } else if (imageFiles.length > 0) {
-              commentBody += `Generated ${imageFiles.length} card representation(s):\n\n`;
-              for (const imageFile of imageFiles) {
-                const cardName = imageFile.replace('.png', '').replace('_', ' of ');
-                commentBody += `- ${cardName}\n`;
+            } else if (cardList.length > 0) {
+              // Fallback to text list when no images available
+              for (const cardInfo of cardList) {
+                let displayName = cardInfo;
+                for (const [suit, emoji] of Object.entries(suitEmojis)) {
+                  if (cardInfo.toLowerCase().includes(suit)) {
+                    displayName = `${cardInfo} ${emoji}`;
+                    break;
+                  }
+                }
+                commentBody += `- ${displayName} *(image not available)*\n`;
               }
             } else {
-              commentBody += `Card generation completed with ${allFiles.length} output file(s).\n\n`;
+              commentBody += `Card generation completed but no valid cards were found.\n\n`;
             }
-            
-            commentBody += `\n📁 **Download**: The generated card representations are available as artifacts in the [Actions tab](${context.payload.repository.html_url}/actions/runs/${context.runId}).\n\n`;
-            commentBody += `These help reviewers visualize how the \`DisplayCard\` SwiftUI component renders different playing cards.\n\n`;
             
             if (imageFiles.length > 0) {
-              commentBody += `**Format**: PNG images with enhanced rendering for better quality\n\n`;
+              commentBody += `\n**Format**: ${imageFiles.length} PNG image(s) with enhanced rendering for better quality\n`;
             } else {
-              commentBody += `**Note**: Images generated as placeholders due to CI environment limitations\n\n`;
+              commentBody += `\n**Note**: Images could not be generated due to CI environment limitations\n`;
             }
             
+            commentBody += `\n📁 **Artifacts**: The generated files are also available as artifacts in the [Actions tab](${context.payload.repository.html_url}/actions/runs/${context.runId}).\n\n`;
+            commentBody += `These help reviewers visualize how the \`DisplayCard\` SwiftUI component renders different playing cards.\n\n`;
             commentBody += `**Generated**: ${allFiles.length} file(s) at ${new Date().toISOString()}`;
             
-            console.log('💬 Posting PR comment...');
+            console.log('💬 Posting PR comment with embedded images...');
             
             // Post comment on PR
             await github.rest.issues.createComment({
@@ -157,4 +218,4 @@ jobs:
               body: commentBody
             });
             
-            console.log('✅ Successfully posted PR comment with card information');
+            console.log('✅ Successfully posted PR comment with embedded card images');

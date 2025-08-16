@@ -1,0 +1,43 @@
+name: Cleanup Card Images
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true || github.event.pull_request.state == 'closed'
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Clean up card images
+        run: |
+          echo "🧹 Cleaning up card images from closed PR..."
+          
+          # Configure git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Remove card-images directory if it exists
+          if [ -d "card-images" ]; then
+            echo "📁 Removing card-images directory..."
+            git rm -rf card-images/
+            
+            # Only commit if there are changes
+            if ! git diff --cached --quiet; then
+              git commit -m "Cleanup card images from PR #${{ github.event.pull_request.number }} [skip ci]"
+              git push origin ${{ github.event.pull_request.base.ref }}
+              echo "✅ Card images cleaned up"
+            else
+              echo "ℹ️ No card images to clean up"
+            fi
+          else
+            echo "ℹ️ No card-images directory found"
+          fi

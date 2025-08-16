@@ -173,19 +173,85 @@ final class DisplayCardSnapshotTests: XCTestCase {
     }
     
     private func createPlaceholderImageData(for card: PlayingCard) -> Data {
-        // Create placeholder content that represents the card
-        // This isn't a real PNG but provides useful information about the card
+        // Create a simple PNG placeholder image when SwiftUI rendering fails
+        #if canImport(AppKit)
         let cardInfo = "\(card.rank.description) of \(card.suit.description)"
-        let timestamp = ISO8601DateFormatter().string(from: Date())
         
-        let placeholderContent = """
-        DisplayCard Placeholder
-        Card: \(cardInfo)
-        Generated: \(timestamp)
-        Note: This is a placeholder created when SwiftUI rendering failed in CI
-        """
+        // Create a simple 58x82 image with card information
+        let size = CGSize(width: 58, height: 82)
+        let image = NSImage(size: size)
         
-        return placeholderContent.data(using: .utf8) ?? Data()
+        image.lockFocus()
+        
+        // Fill with white background
+        NSColor.white.setFill()
+        NSRect(origin: .zero, size: size).fill()
+        
+        // Add a border
+        NSColor.black.setStroke()
+        let borderRect = NSRect(origin: .zero, size: size).insetBy(dx: 1, dy: 1)
+        borderRect.stroke()
+        
+        // Add card text
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 8),
+            .foregroundColor: NSColor.black
+        ]
+        
+        // Draw rank
+        let rankString = card.rank.description
+        let rankSize = rankString.size(withAttributes: attributes)
+        let rankRect = NSRect(x: 4, y: size.height - rankSize.height - 4, width: rankSize.width, height: rankSize.height)
+        rankString.draw(in: rankRect, withAttributes: attributes)
+        
+        // Draw suit symbol
+        let suitSymbol: String
+        switch card.suit {
+        case .hearts: suitSymbol = "♥"
+        case .diamonds: suitSymbol = "♦"
+        case .clubs: suitSymbol = "♣"
+        case .spades: suitSymbol = "♠"
+        }
+        
+        let suitAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 12),
+            .foregroundColor: (card.suit == .hearts || card.suit == .diamonds) ? NSColor.red : NSColor.black
+        ]
+        
+        let suitSize = suitSymbol.size(withAttributes: suitAttributes)
+        let suitRect = NSRect(x: (size.width - suitSize.width) / 2, y: (size.height - suitSize.height) / 2, width: suitSize.width, height: suitSize.height)
+        suitSymbol.draw(in: suitRect, withAttributes: suitAttributes)
+        
+        image.unlockFocus()
+        
+        // Convert to PNG data
+        if let tiffData = image.tiffRepresentation,
+           let bitmapImage = NSBitmapImageRep(data: tiffData),
+           let pngData = bitmapImage.representation(using: .png, properties: [:]) {
+            return pngData
+        }
+        #endif
+        
+        // Ultimate fallback - return a minimal PNG header
+        // This creates a 1x1 transparent PNG
+        let pngHeader: [UInt8] = [
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+            0x00, 0x00, 0x00, 0x0D, // IHDR chunk length
+            0x49, 0x48, 0x44, 0x52, // IHDR
+            0x00, 0x00, 0x00, 0x01, // Width: 1
+            0x00, 0x00, 0x00, 0x01, // Height: 1
+            0x08, 0x06, 0x00, 0x00, 0x00, // Bit depth, color type, compression, filter, interlace
+            0x1F, 0x15, 0xC4, 0x89, // CRC
+            0x00, 0x00, 0x00, 0x0A, // IDAT chunk length
+            0x49, 0x44, 0x41, 0x54, // IDAT
+            0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, // Compressed data
+            0x0D, 0x0A, 0x2D, 0xB4, // CRC
+            0x00, 0x00, 0x00, 0x00, // IEND chunk length
+            0x49, 0x45, 0x4E, 0x44, // IEND
+            0xAE, 0x42, 0x60, 0x82  // CRC
+        ]
+        
+        return Data(pngHeader)
     }
 }
 #endif

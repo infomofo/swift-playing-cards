@@ -110,6 +110,13 @@ Before submitting changes that involve CI workflows, especially those with Swift
    - Log extensively to help debug CI failures
    - Test assertions should focus on what CI workflows need, not perfect functionality
 
+5. **Embedding Images in PR Comments**:
+   - Generate actual PNG files, not text placeholders, for embedding in PR comments
+   - Commit images temporarily to repository for GitHub raw content URL access
+   - Use GitHub's file URLs: `https://github.com/owner/repo/raw/branch/path/to/image.png`
+   - Add cleanup workflows to remove images after PR closure
+   - Consider image file sizes to avoid repository bloat
+
 **CRITICAL: Common CI Test Failures and How to Prevent Them**
 
 1. **Test Discovery Issues**:
