@@ -7,6 +7,7 @@
 //  Created by Will Chiong on 4/2/23.
 //
 
+#if canImport(SwiftUI)
 import SwiftUI
 
 @available(macOS 10.15, *)
@@ -90,3 +91,4 @@ struct InteractiveCard_Previews: PreviewProvider {
         InteractiveCard(card: PlayingCard(rank: Rank.four, suit: Suit.hearts))
     }
 }
+#endif

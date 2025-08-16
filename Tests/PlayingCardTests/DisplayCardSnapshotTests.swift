@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import XCTest
 import SwiftUI
 @testable import PlayingCard
@@ -36,3 +37,4 @@ struct ImageRenderer<V: View> {
         return image
     }
 }
+#endif
