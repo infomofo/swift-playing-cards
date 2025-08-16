@@ -23,7 +23,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
     func testGenerateSampleCardImages() throws {
         // Only run on macOS where we have proper SwiftUI rendering support
         #if os(macOS)
-        print("Generating sample card images...")
+        print("🃏 Starting sample card image generation...")
         
         // Create sample cards that showcase different suits and notable ranks
         let sampleCards = [
@@ -35,13 +35,18 @@ final class DisplayCardSnapshotTests: XCTestCase {
         
         // Create output directory for images
         let outputURL = URL(fileURLWithPath: "card-images")
+        print("📁 Creating output directory: \(outputURL.path)")
         try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true, attributes: nil)
         
+        var generatedCount = 0
+        
         for card in sampleCards {
+            print("🎴 Generating image for \(card.rank.description) of \(card.suit.description)...")
             let view = DisplayCard(card: card)
             let renderer = ImageRenderer(content: view)
             
             if let image = renderer.nsImage {
+                print("✅ Successfully rendered NSImage for \(card.rank.description) of \(card.suit.description)")
                 // Convert NSImage to PNG data
                 if let tiffData = image.tiffRepresentation,
                    let bitmapImage = NSBitmapImageRep(data: tiffData),
@@ -51,14 +56,34 @@ final class DisplayCardSnapshotTests: XCTestCase {
                     let fileURL = outputURL.appendingPathComponent(filename)
                     
                     try pngData.write(to: fileURL)
-                    print("Generated image: \(filename)")
+                    generatedCount += 1
+                    print("💾 Saved image: \(filename) (\(pngData.count) bytes)")
+                } else {
+                    print("❌ Failed to convert NSImage to PNG for \(card.rank.description) of \(card.suit.description)")
                 }
+            } else {
+                print("❌ Failed to render NSImage for \(card.rank.description) of \(card.suit.description)")
             }
         }
         
-        print("Sample card images generated successfully in card-images/ directory")
+        print("🎉 Generated \(generatedCount) out of \(sampleCards.count) card images")
+        
+        // Verify the files exist
+        let contents = try FileManager.default.contentsOfDirectory(at: outputURL, includingPropertiesForKeys: nil)
+        print("📋 Final directory contents:")
+        for fileURL in contents {
+            let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+            let size = attrs[.size] as? Int ?? 0
+            print("  - \(fileURL.lastPathComponent) (\(size) bytes)")
+        }
+        
+        // Ensure we generated at least some images
+        XCTAssertGreaterThan(generatedCount, 0, "Should generate at least one card image")
+        XCTAssertEqual(generatedCount, sampleCards.count, "Should generate all \(sampleCards.count) card images")
+        
         #else
-        print("Skipping image generation on non-macOS platform")
+        print("⚠️ Skipping image generation on non-macOS platform")
+        throw XCTSkip("Image generation only supported on macOS")
         #endif
     }
 }

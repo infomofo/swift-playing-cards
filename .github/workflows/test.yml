@@ -27,8 +27,21 @@ jobs:
         run: make test
       
       - name: Generate sample card images
-        run: swift test --filter testGenerateSampleCardImages
+        run: swift test --filter PlayingCardTests.DisplayCardSnapshotTests.testGenerateSampleCardImages
         
+      - name: Check for generated images
+        run: |
+          echo "Checking for card images directory..."
+          if [ -d "card-images" ]; then
+            echo "✅ card-images directory exists"
+            echo "Contents:"
+            ls -la card-images/
+          else
+            echo "❌ card-images directory not found"
+            echo "Current directory contents:"
+            ls -la
+          fi
+          
       - name: Upload card images as artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -45,20 +58,32 @@ jobs:
             const fs = require('fs');
             const path = require('path');
             
+            console.log('🔍 Starting PR comment generation...');
+            
             // Check if card images directory exists
             const cardImagesDir = 'card-images';
             if (!fs.existsSync(cardImagesDir)) {
-              console.log('No card images found to post');
+              console.log('❌ No card images directory found');
+              // Check current directory to debug
+              console.log('📁 Current directory contents:');
+              fs.readdirSync('.').forEach(file => console.log(`  - ${file}`));
               return;
             }
+            
+            console.log('✅ Found card-images directory');
             
             // Get list of generated images
             const imageFiles = fs.readdirSync(cardImagesDir)
               .filter(file => file.endsWith('.png'))
               .sort();
               
+            console.log(`📋 Found ${imageFiles.length} PNG files:`, imageFiles);
+              
             if (imageFiles.length === 0) {
-              console.log('No PNG images found to post');
+              console.log('❌ No PNG images found in card-images directory');
+              // Show what files are actually there
+              const allFiles = fs.readdirSync(cardImagesDir);
+              console.log('📁 Directory contents:', allFiles);
               return;
             }
             
@@ -80,7 +105,10 @@ jobs:
             
             commentBody += `\n📁 **Download Images**: The generated card images are available as artifacts in the [Actions tab](${context.payload.repository.html_url}/actions/runs/${context.runId}).\n\n`;
             commentBody += `These images help reviewers visualize how the \`DisplayCard\` SwiftUI component renders different playing cards.\n\n`;
-            commentBody += `**Image Details**: 29×41px PNG format with proper suit colors (red: ♥️♦️, black: ♠️♣️)`;
+            commentBody += `**Image Details**: 29×41px PNG format with proper suit colors (red: ♥️♦️, black: ♠️♣️)\n\n`;
+            commentBody += `**Generated**: ${imageFiles.length} card image(s) at ${new Date().toISOString()}`;
+            
+            console.log('💬 Posting PR comment...');
             
             // Post comment on PR
             await github.rest.issues.createComment({
@@ -89,3 +117,5 @@ jobs:
               repo: context.repo.repo,
               body: commentBody
             });
+            
+            console.log('✅ Successfully posted PR comment with card images');
