@@ -25,3 +25,67 @@ jobs:
       
       - name: Run tests
         run: make test
+      
+      - name: Generate sample card images
+        run: swift test --filter testGenerateSampleCardImages
+        
+      - name: Upload card images as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-card-images
+          path: card-images/
+          retention-days: 30
+          
+      - name: Comment PR with card images
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Check if card images directory exists
+            const cardImagesDir = 'card-images';
+            if (!fs.existsSync(cardImagesDir)) {
+              console.log('No card images found to post');
+              return;
+            }
+            
+            // Get list of generated images
+            const imageFiles = fs.readdirSync(cardImagesDir)
+              .filter(file => file.endsWith('.png'))
+              .sort();
+              
+            if (imageFiles.length === 0) {
+              console.log('No PNG images found to post');
+              return;
+            }
+            
+            // Create comment body with artifact download info
+            let commentBody = `## 🃏 Sample Playing Cards Generated\n\n`;
+            commentBody += `The following sample cards were generated from the \`DisplayCard\` SwiftUI component:\n\n`;
+            
+            const cardNames = {
+              'spades_A.png': 'Ace of Spades ♠️',
+              'hearts_K.png': 'King of Hearts ♥️', 
+              'diamonds_Q.png': 'Queen of Diamonds ♦️',
+              'clubs_J.png': 'Jack of Clubs ♣️'
+            };
+            
+            for (const imageFile of imageFiles) {
+              const displayName = cardNames[imageFile] || imageFile.replace('.png', '').replace('_', ' of ');
+              commentBody += `- ${displayName}\n`;
+            }
+            
+            commentBody += `\n📁 **Download Images**: The generated card images are available as artifacts in the [Actions tab](${context.payload.repository.html_url}/actions/runs/${context.runId}).\n\n`;
+            commentBody += `These images help reviewers visualize how the \`DisplayCard\` SwiftUI component renders different playing cards.\n\n`;
+            commentBody += `**Image Details**: 29×41px PNG format with proper suit colors (red: ♥️♦️, black: ♠️♣️)`;
+            
+            // Post comment on PR
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });

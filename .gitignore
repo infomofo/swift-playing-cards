@@ -10,5 +10,8 @@
 # Generated test images (uploaded as CI artifacts instead)
 Tests/PlayingCardTests/*.png
 
+# Generated card images from snapshot tests (artifacts only)
+card-images/
+
 # SwiftLint temporary files
 .swiftlint_output
