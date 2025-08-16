@@ -24,6 +24,8 @@ final class DisplayCardSnapshotTests: XCTestCase {
     
     func testGenerateSampleCardImages() throws {
         print("🃏 Starting sample card image generation...")
+        print("🔍 Current working directory: \(FileManager.default.currentDirectoryPath)")
+        print("🔍 Environment info: SwiftUI available: \(true), macOS: \(ProcessInfo.processInfo.operatingSystemVersion)")
         
         // Create sample cards that showcase different suits and notable ranks
         let sampleCards = [
@@ -33,17 +35,47 @@ final class DisplayCardSnapshotTests: XCTestCase {
             PlayingCard(rank: .jack, suit: .clubs)     // Jack of Clubs - black suit
         ]
         
-        // Create output directory for images
+        // Create output directory for images with absolute path handling
         let outputURL = URL(fileURLWithPath: "card-images")
         print("📁 Creating output directory: \(outputURL.path)")
+        print("🔍 Absolute path: \(outputURL.absoluteURL.path)")
         
-        // Ensure directory creation always succeeds
+        // Clean up any existing directory to ensure fresh start
+        if FileManager.default.fileExists(atPath: outputURL.path) {
+            print("🗑️ Removing existing directory...")
+            try? FileManager.default.removeItem(at: outputURL)
+        }
+        
+        // Ensure directory creation always succeeds with multiple attempts
+        var directoryCreated = false
         do {
             try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true, attributes: nil)
+            directoryCreated = true
             print("✅ Successfully created directory")
         } catch {
-            print("⚠️ Directory creation failed, but continuing: \(error)")
-            // Try to continue anyway - maybe it already exists
+            print("⚠️ Directory creation failed: \(error)")
+            // Try alternative approach
+            do {
+                try FileManager.default.createDirectory(atPath: outputURL.path, withIntermediateDirectories: true, attributes: nil)
+                directoryCreated = true
+                print("✅ Directory created with alternative method")
+            } catch {
+                print("❌ Both directory creation methods failed: \(error)")
+            }
+        }
+        
+        // Verify directory exists before proceeding
+        if !FileManager.default.fileExists(atPath: outputURL.path) {
+            print("❌ Directory verification failed - attempting to create manually...")
+            // Last resort - try system command
+            let task = Process()
+            task.launchPath = "/bin/mkdir"
+            task.arguments = ["-p", outputURL.path]
+            task.launch()
+            task.waitUntilExit()
+            
+            directoryCreated = FileManager.default.fileExists(atPath: outputURL.path)
+            print(directoryCreated ? "✅ Manual directory creation succeeded" : "❌ All directory creation attempts failed")
         }
         
         var generatedCount = 0
