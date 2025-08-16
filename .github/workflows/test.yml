@@ -34,73 +34,8 @@ jobs:
       - name: Generate sample card images
         run: |
           echo "🔍 Current working directory: $(pwd)"
-          echo "🔍 Directory contents before test:"
-          ls -la
-          
-          echo "🔍 Checking if test exists..."
-          TEST_EXISTS=$(swift test list | grep testGenerateSampleCardImages | wc -l)
-          echo "📊 Found $TEST_EXISTS matching tests"
-          
           echo "🧪 Running image generation test..."
-          TEST_OUTPUT=$(swift test --filter PlayingCardTests.DisplayCardSnapshotTests.testGenerateSampleCardImages 2>&1)
-          TEST_EXIT_CODE=$?
-          echo "$TEST_OUTPUT"
-          
-          # Check if test actually executed (not just succeeded with 0 tests)
-          TESTS_EXECUTED=$(echo "$TEST_OUTPUT" | grep "Executed [0-9]* tests" | sed 's/.*Executed \([0-9]*\) tests.*/\1/')
-          
-          if [ "$TEST_EXIT_CODE" -eq 0 ] && [ "$TESTS_EXECUTED" -gt 0 ] && [ -d "card-images" ]; then
-            echo "✅ Test completed successfully and created output"
-          else
-            echo "⚠️ Test failed, found 0 tests, or didn't create output - creating bulletproof fallback structure..."
-            echo "📊 Test details: exit_code=$TEST_EXIT_CODE, tests_executed=$TESTS_EXECUTED"
-            
-            # Ensure we're in the right directory
-            cd "${GITHUB_WORKSPACE}"
-            echo "🔍 Fallback working directory: $(pwd)"
-            
-            # Remove any existing directory to start fresh
-            rm -rf card-images
-            
-            # Create directory with explicit error checking
-            echo "📁 Creating card-images directory..."
-            if mkdir -p card-images; then
-              echo "✅ Directory created successfully"
-            else
-              echo "❌ Failed to create directory, attempting alternative..."
-              mkdir card-images 2>/dev/null || true
-            fi
-            
-            # Verify directory exists
-            if [ -d "card-images" ]; then
-              echo "✅ card-images directory confirmed to exist"
-            else
-              echo "❌ card-images directory still missing - this is unexpected!"
-              echo "🔍 Current directory state:"
-              ls -la
-              exit 1
-            fi
-            
-            # Create valid minimal PNG files for the expected cards
-            echo "🖼️ Creating PNG files..."
-            printf '\x89\x50\x4E\x47\x0D\x0A\x1A\x0A\x00\x00\x00\x0D\x49\x48\x44\x52\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1F\x15\xC4\x89\x00\x00\x00\x0A\x49\x44\x41\x54\x78\x9C\x63\x00\x01\x00\x00\x05\x00\x01\x0D\x0A\x2D\xB4\x00\x00\x00\x00\x49\x45\x4E\x44\xAE\x42\x60\x82' > card-images/spades_A.png || echo "❌ Failed to create spades_A.png"
-            printf '\x89\x50\x4E\x47\x0D\x0A\x1A\x0A\x00\x00\x00\x0D\x49\x48\x44\x52\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1F\x15\xC4\x89\x00\x00\x00\x0A\x49\x44\x41\x54\x78\x9C\x63\x00\x01\x00\x00\x05\x00\x01\x0D\x0A\x2D\xB4\x00\x00\x00\x00\x49\x45\x4E\x44\xAE\x42\x60\x82' > card-images/hearts_K.png || echo "❌ Failed to create hearts_K.png"
-            printf '\x89\x50\x4E\x47\x0D\x0A\x1A\x0A\x00\x00\x00\x0D\x49\x48\x44\x52\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1F\x15\xC4\x89\x00\x00\x00\x0A\x49\x44\x41\x54\x78\x9C\x63\x00\x01\x00\x00\x05\x00\x01\x0D\x0A\x2D\xB4\x00\x00\x00\x00\x49\x45\x4E\x44\xAE\x42\x60\x82' > card-images/diamonds_Q.png || echo "❌ Failed to create diamonds_Q.png"
-            printf '\x89\x50\x4E\x47\x0D\x0A\x1A\x0A\x00\x00\x00\x0D\x49\x48\x44\x52\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1F\x15\xC4\x89\x00\x00\x00\x0A\x49\x44\x41\x54\x78\x9C\x63\x00\x01\x00\x00\x05\x00\x01\x0D\x0A\x2D\xB4\x00\x00\x00\x00\x49\x45\x4E\x44\xAE\x42\x60\x82' > card-images/clubs_J.png || echo "❌ Failed to create clubs_J.png"
-            
-            # Create manifest
-            echo "📝 Creating manifest file..."
-            cat > card-images/manifest.txt << 'EOF' || echo "❌ Failed to create manifest"
-            A of spades
-            K of hearts
-            Q of diamonds
-            J of clubs
-            EOF
-            
-            echo "✅ Fallback structure creation completed"
-            echo "🔍 Final directory contents:"
-            ls -la card-images/ || echo "❌ Cannot list card-images directory"
-          fi
+          swift test --filter PlayingCardTests.DisplayCardSnapshotTests.testGenerateSampleCardImages
         
       - name: Check for generated images
         run: |
@@ -155,7 +90,6 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const path = require('path');
             
             console.log('🔍 Starting PR comment generation...');
             
@@ -163,77 +97,36 @@ jobs:
             const cardImagesDir = 'card-images';
             if (!fs.existsSync(cardImagesDir)) {
               console.log('❌ No card images directory found');
-              // Check current directory to debug
-              console.log('📁 Current directory contents:');
-              fs.readdirSync('.').forEach(file => console.log(`  - ${file}`));
-              
-              // Post a comment about the failure
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `## ⚠️ Card Image Generation Failed\n\nThe workflow attempted to generate sample playing card images but the output directory was not created. This may indicate an issue with the test execution or CI environment.\n\n**Debug Info**: Generated at ${new Date().toISOString()}`
+                body: `## ⚠️ Card Image Generation Failed\n\nThe workflow was unable to generate sample playing card images. This indicates an issue with the test execution.\n\n**Debug Info**: Generated at ${new Date().toISOString()}`
               });
               return;
             }
             
             console.log('✅ Found card-images directory');
             
-            // Get list of generated files (including manifest)
+            // Get list of generated files
             const allFiles = fs.readdirSync(cardImagesDir).sort();
             const imageFiles = allFiles.filter(file => file.endsWith('.png'));
-            const manifestFile = allFiles.find(file => file === 'manifest.txt');
             
-            console.log(`📋 Found ${allFiles.length} total files: ${allFiles.join(', ')}`);
             console.log(`🖼️ Found ${imageFiles.length} PNG files: ${imageFiles.join(', ')}`);
-            
-            // Check if these are fallback images (minimal 1x1 PNG files)
-            let hasFallbackImages = false;
-            if (imageFiles.length > 0) {
-              const firstImagePath = path.join(cardImagesDir, imageFiles[0]);
-              const firstImageStats = fs.statSync(firstImagePath);
-              // Fallback images are exactly 67 bytes (minimal PNG)
-              if (firstImageStats.size === 67) {
-                hasFallbackImages = true;
-                console.log('🔄 Detected fallback PNG files (minimal size)');
-              } else {
-                console.log(`📏 Real images detected (${firstImageStats.size} bytes)`);
-              }
-            }
             
             // Read manifest for card information
             let cardList = [];
-            let cardImageMap = new Map(); // Map card descriptions to filenames
-            
-            if (manifestFile) {
-              const manifestPath = path.join(cardImagesDir, manifestFile);
+            const manifestFile = 'manifest.txt';
+            if (allFiles.includes(manifestFile)) {
+              const manifestPath = `${cardImagesDir}/${manifestFile}`;
               const manifestContent = fs.readFileSync(manifestPath, 'utf8');
               cardList = manifestContent.trim().split('\n').filter(line => line.trim());
               console.log(`📝 Manifest contains ${cardList.length} cards: ${cardList.join(', ')}`);
-              
-              // Create mapping from card description to image filename
-              cardList.forEach(cardInfo => {
-                // Convert card description to expected filename
-                const parts = cardInfo.split(' of ');
-                if (parts.length === 2) {
-                  const rank = parts[0].toLowerCase();
-                  const suit = parts[1].toLowerCase();
-                  const expectedFilename = `${suit}_${rank}.png`;
-                  if (imageFiles.includes(expectedFilename)) {
-                    cardImageMap.set(cardInfo, expectedFilename);
-                  }
-                }
-              });
             }
             
             // Create comment body
             let commentBody = `## 🃏 Sample Playing Cards Generated\n\n`;
-            
-            if (hasFallbackImages) {
-              commentBody += `⚠️ **Note**: Card images were generated using fallback mode due to SwiftUI rendering limitations in the CI environment. The images below are placeholders but demonstrate the workflow functionality.\n\n`;
-            } else {
-              commentBody += `The following sample cards were generated from the \`DisplayCard\` SwiftUI component:\n\n`;
-            }
+            commentBody += `The following sample cards were generated from the \`DisplayCard\` SwiftUI component:\n\n`;
             
             const suitEmojis = {
               'spades': '♠️',
@@ -247,9 +140,23 @@ jobs:
             const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
             
             if (cardList.length > 0 && imageFiles.length > 0) {
-              // Embed actual images (or placeholders)
+              // Create mapping from card description to image filename
+              const cardImageMap = new Map();
+              cardList.forEach(cardInfo => {
+                const parts = cardInfo.split(' of ');
+                if (parts.length === 2) {
+                  const rank = parts[0].toLowerCase();
+                  const suit = parts[1].toLowerCase();
+                  const expectedFilename = `${suit}_${rank}.png`;
+                  if (imageFiles.includes(expectedFilename)) {
+                    cardImageMap.set(cardInfo, expectedFilename);
+                  }
+                }
+              });
+              
+              // Embed actual images
               for (const cardInfo of cardList) {
-                // Try to add appropriate emoji based on suit
+                // Add appropriate emoji based on suit
                 let displayName = cardInfo;
                 for (const [suit, emoji] of Object.entries(suitEmojis)) {
                   if (cardInfo.toLowerCase().includes(suit)) {
@@ -263,50 +170,20 @@ jobs:
                   // Embed the image using GitHub's raw content URL
                   const imageUrl = `${repoUrl}/raw/${currentBranch}/card-images/${imageFilename}`;
                   commentBody += `### ${displayName}\n`;
-                  if (hasFallbackImages) {
-                    commentBody += `![${cardInfo} placeholder](${imageUrl}) *(Placeholder image)*\n\n`;
-                  } else {
-                    commentBody += `![${cardInfo}](${imageUrl})\n\n`;
-                  }
+                  commentBody += `![${cardInfo}](${imageUrl})\n\n`;
                 } else {
                   commentBody += `### ${displayName}\n`;
                   commentBody += `*Image generation failed for this card*\n\n`;
                 }
               }
-            } else if (cardList.length > 0) {
-              // Fallback to text list when no images available
-              for (const cardInfo of cardList) {
-                let displayName = cardInfo;
-                for (const [suit, emoji] of Object.entries(suitEmojis)) {
-                  if (cardInfo.toLowerCase().includes(suit)) {
-                    displayName = `${cardInfo} ${emoji}`;
-                    break;
-                  }
-                }
-                commentBody += `- ${displayName} *(image not available)*\n`;
-              }
+              
+              commentBody += `\n**Format**: ${imageFiles.length} PNG image(s) generated from SwiftUI DisplayCard component\n`;
             } else {
               commentBody += `Card generation completed but no valid cards were found.\n\n`;
             }
             
-            if (imageFiles.length > 0) {
-              if (hasFallbackImages) {
-                commentBody += `\n**Format**: ${imageFiles.length} placeholder PNG image(s) created due to CI limitations\n`;
-              } else {
-                commentBody += `\n**Format**: ${imageFiles.length} PNG image(s) with enhanced rendering for better quality\n`;
-              }
-            } else {
-              commentBody += `\n**Note**: Images could not be generated due to CI environment limitations\n`;
-            }
-            
             commentBody += `\n📁 **Artifacts**: The generated files are also available as artifacts in the [Actions tab](${context.payload.repository.html_url}/actions/runs/${context.runId}).\n\n`;
-            
-            if (hasFallbackImages) {
-              commentBody += `**Development Note**: This workflow runs on macOS CI where SwiftUI rendering should work properly. The fallback mode indicates an issue with the test environment.\n\n`;
-            } else {
-              commentBody += `These help reviewers visualize how the \`DisplayCard\` SwiftUI component renders different playing cards.\n\n`;
-            }
-            
+            commentBody += `These help reviewers visualize how the \`DisplayCard\` SwiftUI component renders different playing cards.\n\n`;
             commentBody += `**Generated**: ${allFiles.length} file(s) at ${new Date().toISOString()}`;
             
             console.log('💬 Posting PR comment with embedded images...');

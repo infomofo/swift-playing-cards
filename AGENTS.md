@@ -178,6 +178,25 @@ Before submitting changes that involve CI workflows, especially those with Swift
 5. **Embedding Images in PR Comments**:
    - Generate actual PNG files, not text placeholders, for embedding in PR comments
    - Commit images temporarily to repository for GitHub raw content URL access
+
+**CRITICAL LESSON: Simplicity Over Complexity**
+
+When dealing with brittle CI features like SwiftUI rendering in headless environments:
+
+**❌ AVOID**: Complex fallback logic in GitHub Actions YAML with multiple detection layers
+**✅ PREFER**: Simple, always-working solutions that focus on the core goal
+
+Example of the transformation:
+- **Before**: Conditional compilation + complex SwiftUI rendering + multiple fallback strategies + complex GitHub Actions detection logic
+- **After**: Always-available test + reliable image generation (AppKit on macOS, minimal PNG on other platforms) + simple workflow
+
+**The lesson**: When a user says "this keeps failing" and suggests "starting over", they're often right. Complex solutions that try to handle every edge case often fail more than simple solutions that work reliably.
+
+**Better approach**: 
+1. Remove conditional compilation so tests always exist
+2. Create simple, reliable image generation that doesn't depend on fragile SwiftUI rendering
+3. Simplify GitHub Actions workflows to remove complex detection logic
+4. Focus on the user's actual need (images in PR comments) rather than perfect technical implementation
    - Use GitHub's file URLs: `https://github.com/owner/repo/raw/branch/path/to/image.png`
    - Add cleanup workflows to remove images after PR closure
    - Consider image file sizes to avoid repository bloat
