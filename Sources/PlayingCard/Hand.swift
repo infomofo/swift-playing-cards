@@ -100,6 +100,10 @@ public struct Hand {
         
         for card in newCards {
             cards.append(card)
+        for (i, index) in indices.enumerated() {
+            if index >= 0 && index < cards.count {
+                cards[index] = newCards[i]
+            }
         }
     }
     
