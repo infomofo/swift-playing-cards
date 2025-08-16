@@ -21,11 +21,12 @@ final class DisplayCardSnapshotTests: XCTestCase {
         // requiring complex image rendering that can hang in headless environments
         print("DisplayCard view test completed successfully")
     }
-    
+
     func testGenerateSampleCardImages() throws {
         print("🃏 Starting sample card image generation...")
         print("🔍 Current working directory: \(FileManager.default.currentDirectoryPath)")
-        print("🔍 Environment info: SwiftUI available: \(true), macOS: \(ProcessInfo.processInfo.operatingSystemVersion)")
+        let osVersion = ProcessInfo.processInfo.operatingSystemVersion
+        print("🔍 Environment info: SwiftUI available: \(true), macOS: \(osVersion)")
         
         // Create sample cards that showcase different suits and notable ranks
         let sampleCards = [
@@ -45,7 +46,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
             print("🗑️ Removing existing directory...")
             try? FileManager.default.removeItem(at: outputURL)
         }
-        
+
         // Ensure directory creation always succeeds with multiple attempts
         var directoryCreated = false
         do {
@@ -56,7 +57,8 @@ final class DisplayCardSnapshotTests: XCTestCase {
             print("⚠️ Directory creation failed: \(error)")
             // Try alternative approach
             do {
-                try FileManager.default.createDirectory(atPath: outputURL.path, withIntermediateDirectories: true, attributes: nil)
+                let path = outputURL.path
+                try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
                 directoryCreated = true
                 print("✅ Directory created with alternative method")
             } catch {
@@ -75,7 +77,8 @@ final class DisplayCardSnapshotTests: XCTestCase {
             task.waitUntilExit()
             
             directoryCreated = FileManager.default.fileExists(atPath: outputURL.path)
-            print(directoryCreated ? "✅ Manual directory creation succeeded" : "❌ All directory creation attempts failed")
+            let status = directoryCreated ? "✅ Manual directory creation succeeded" : "❌ All directory creation attempts failed"
+            print(status)
         }
         
         var generatedCount = 0
@@ -240,7 +243,12 @@ final class DisplayCardSnapshotTests: XCTestCase {
         // Draw rank
         let rankString = card.rank.description
         let rankSize = rankString.size(withAttributes: attributes)
-        let rankRect = NSRect(x: 4, y: size.height - rankSize.height - 4, width: rankSize.width, height: rankSize.height)
+        let rankRect = NSRect(
+            x: 4,
+            y: size.height - rankSize.height - 4,
+            width: rankSize.width,
+            height: rankSize.height
+        )
         rankString.draw(in: rankRect, withAttributes: attributes)
         
         // Draw suit symbol
@@ -258,7 +266,12 @@ final class DisplayCardSnapshotTests: XCTestCase {
         ]
         
         let suitSize = suitSymbol.size(withAttributes: suitAttributes)
-        let suitRect = NSRect(x: (size.width - suitSize.width) / 2, y: (size.height - suitSize.height) / 2, width: suitSize.width, height: suitSize.height)
+        let suitRect = NSRect(
+            x: (size.width - suitSize.width) / 2,
+            y: (size.height - suitSize.height) / 2,
+            width: suitSize.width,
+            height: suitSize.height
+        )
         suitSymbol.draw(in: suitRect, withAttributes: suitAttributes)
         
         image.unlockFocus()
