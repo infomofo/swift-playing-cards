@@ -23,7 +23,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
     }
     
     @available(macOS 12.0, *)
-    func testGenerateSampleCardImages() throws {
+    @MainActor func testGenerateSampleCardImages() throws {
         // Only run on macOS where we have proper SwiftUI rendering support
         #if os(macOS)
         print("🃏 Starting sample card image generation...")

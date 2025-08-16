@@ -132,6 +132,20 @@ Before submitting changes that involve CI workflows, especially those with Swift
    - Cause: SwiftUI views trying to render in headless environment
    - Solution: Add timeouts, skip complex rendering, use XCTSkip for unsupported platforms
 
+5. **Swift Concurrency (@MainActor) Issues**:
+   - Problem: `main actor-isolated property 'X' can not be mutated from a nonisolated context`
+   - Cause: SwiftUI.ImageRenderer properties require MainActor context in Swift 5.5+
+   - Solution: Mark test functions with `@MainActor` or use `await MainActor.run { }`
+   - Example:
+     ```swift
+     @available(macOS 12.0, *)
+     @MainActor func testGenerateImages() throws {
+         let renderer = SwiftUI.ImageRenderer(content: view)
+         renderer.scale = 2.0  // This now works in MainActor context
+         if let nsImage = renderer.nsImage { /* ... */ }
+     }
+     ```
+
 **Prevention Strategy for Agents:**
 
 ```bash
