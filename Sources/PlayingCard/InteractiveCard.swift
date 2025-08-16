@@ -91,5 +91,4 @@ struct InteractiveCard_Previews: PreviewProvider {
         InteractiveCard(card: PlayingCard(rank: Rank.four, suit: Suit.hearts))
     }
 }
-
 #endif

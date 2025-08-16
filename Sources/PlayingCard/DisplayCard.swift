@@ -47,5 +47,4 @@ struct DisplayCard_Preview: PreviewProvider {
         DisplayCard(card: PlayingCard(rank: Rank.four, suit: Suit.hearts))
     }
 }
-
 #endif

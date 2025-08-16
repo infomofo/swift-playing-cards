@@ -19,4 +19,20 @@ final class DisplayCardSnapshotTests: XCTestCase {
     }
 }
 
+// Utility for rendering SwiftUI views to NSImage (macOS 12+)
+@available(macOS 12.0, *)
+struct ImageRenderer<V: View> {
+    let content: V
+    var nsImage: NSImage? {
+        let hosting = NSHostingView(rootView: content)
+        let size = hosting.fittingSize
+        guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else {
+            return nil
+        }
+        hosting.cacheDisplay(in: hosting.bounds, to: rep)
+        let image = NSImage(size: size)
+        image.addRepresentation(rep)
+        return image
+    }
+}
 #endif
