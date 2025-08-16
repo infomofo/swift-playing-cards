@@ -2,6 +2,9 @@
 import XCTest
 import SwiftUI
 import Foundation
+#if canImport(AppKit)
+import AppKit
+#endif
 @testable import PlayingCard
 
 final class DisplayCardSnapshotTests: XCTestCase {
@@ -42,7 +45,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
             try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true, attributes: nil)
             print("✅ Successfully created directory")
         } catch {
-            print("❌ Failed to create directory: \(error)")
+            print("⚠️ Directory creation failed, but continuing: \(error)")
             // Try to continue anyway - maybe it already exists
         }
         
@@ -59,18 +62,20 @@ final class DisplayCardSnapshotTests: XCTestCase {
             let filename = "\(card.suit.rawValue)_\(card.rank.description).png"
             let fileURL = outputURL.appendingPathComponent(filename)
             
-            // Track if we successfully created any file
+            // Always create a file - use multiple fallback strategies
             var fileCreated = false
             
-            // Try to render with SwiftUI's ImageRenderer (iOS 16+/macOS 13+)
+            // Strategy 1: Try SwiftUI ImageRenderer (macOS 13+)
             if #available(macOS 13.0, *) {
                 do {
-                    let renderer = SwiftUIImageRenderer(content: view)
+                    let renderer = SwiftUI.ImageRenderer(content: view)
                     renderer.scale = 2.0 // Higher resolution for better quality
+                    // Set a reasonable size for playing cards
+                    renderer.proposedSize = ProposedViewSize(width: 58, height: 82)
                     
-                    if let image = renderer.nsImage {
+                    if let nsImage = renderer.nsImage {
                         print("✅ Successfully rendered with SwiftUI ImageRenderer")
-                        if let tiffData = image.tiffRepresentation,
+                        if let tiffData = nsImage.tiffRepresentation,
                            let bitmapImage = NSBitmapImageRep(data: tiffData),
                            let pngData = bitmapImage.representation(using: .png, properties: [:]) {
                             
@@ -79,15 +84,19 @@ final class DisplayCardSnapshotTests: XCTestCase {
                             fileCreated = true
                             print("💾 Saved image: \(filename) (\(pngData.count) bytes)")
                         }
+                    } else {
+                        print("⚠️ SwiftUI ImageRenderer returned nil (likely CI limitation)")
                     }
                 } catch {
-                    print("❌ SwiftUI rendering failed: \(error)")
+                    print("⚠️ SwiftUI rendering failed: \(error)")
                 }
+            } else {
+                print("⚠️ SwiftUI ImageRenderer not available on this macOS version")
             }
             
-            // Fallback: Always create a file, even if rendering fails completely
+            // Strategy 2: Create placeholder content if rendering failed
             if !fileCreated {
-                print("⚠️ Image rendering failed, creating placeholder...")
+                print("📝 Creating placeholder content for \(filename)")
                 do {
                     let placeholderContent = createPlaceholderImageData(for: card)
                     try placeholderContent.write(to: fileURL)
@@ -96,15 +105,19 @@ final class DisplayCardSnapshotTests: XCTestCase {
                     print("💾 Saved placeholder: \(filename) (\(placeholderContent.count) bytes)")
                 } catch {
                     print("❌ Failed to create placeholder: \(error)")
-                    // As absolute last resort, create an empty file
-                    do {
-                        Data().write(to: fileURL)
-                        generatedCount += 1
-                        fileCreated = true
-                        print("💾 Created empty file: \(filename)")
-                    } catch {
-                        print("❌ Failed to create any file: \(error)")
-                    }
+                }
+            }
+            
+            // Strategy 3: Create empty file as absolute last resort
+            if !fileCreated {
+                print("🆘 Creating empty file as last resort: \(filename)")
+                do {
+                    try Data().write(to: fileURL)
+                    generatedCount += 1
+                    fileCreated = true
+                    print("💾 Created empty file: \(filename)")
+                } catch {
+                    print("❌ Failed to create any file: \(error)")
                 }
             }
             
@@ -125,22 +138,33 @@ final class DisplayCardSnapshotTests: XCTestCase {
         
         print("🎉 Generated \(generatedCount) out of \(sampleCards.count) card representations")
         
-        // Verify the files exist (be more lenient about what constitutes success)
+        // Verify the files exist
         do {
             let contents = try FileManager.default.contentsOfDirectory(at: outputURL, includingPropertiesForKeys: nil)
             print("📋 Final directory contents:")
-            for fileURL in contents {
-                let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-                let size = attrs[.size] as? Int ?? 0
-                print("  - \(fileURL.lastPathComponent) (\(size) bytes)")
+            for fileURL in contents.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                do {
+                    let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+                    let size = attrs[.size] as? Int ?? 0
+                    print("  - \(fileURL.lastPathComponent) (\(size) bytes)")
+                } catch {
+                    print("  - \(fileURL.lastPathComponent) (size unknown)")
+                }
             }
         } catch {
             print("❌ Failed to list directory contents: \(error)")
         }
         
-        // The test should succeed if we created the directory and at least some output
+        // The test should succeed if we created the directory and at least some output files
         // This ensures the workflow can continue even if rendering completely fails
         XCTAssertTrue(FileManager.default.fileExists(atPath: outputURL.path), "Output directory should exist")
+        
+        // Verify we have at least the manifest file
+        let manifestPath = outputURL.appendingPathComponent("manifest.txt").path
+        XCTAssertTrue(FileManager.default.fileExists(atPath: manifestPath), "Manifest file should exist")
+        
+        // Log success for CI debugging
+        print("✅ Test completed successfully - directory and manifest created")
         
         #else
         print("⚠️ Skipping image generation on non-macOS platform")
@@ -162,46 +186,6 @@ final class DisplayCardSnapshotTests: XCTestCase {
         """
         
         return placeholderContent.data(using: .utf8) ?? Data()
-    }
-}
-
-// Utility for rendering SwiftUI views to NSImage (macOS 13+)
-@available(macOS 13.0, *)
-struct SwiftUIImageRenderer<V: View> {
-    let content: V
-    var scale: CGFloat = 1.0
-    
-    var nsImage: NSImage? {
-        // Use SwiftUI's built-in ImageRenderer for more reliable rendering
-        let renderer = SwiftUI.ImageRenderer(content: content)
-        renderer.scale = scale
-        
-        // Set a reasonable size for playing cards
-        renderer.proposedSize = ProposedViewSize(width: 58, height: 82) // 2x the default 29x41
-        
-        return renderer.nsImage
-    }
-}
-
-// Legacy fallback for older macOS versions (macOS 12+)
-@available(macOS 12.0, *)
-struct ImageRenderer<V: View> {
-    let content: V
-    var nsImage: NSImage? {
-        let hosting = NSHostingView(rootView: content)
-        
-        // Set explicit size to avoid sizing issues
-        let targetSize = NSSize(width: 58, height: 82) // 2x for better quality
-        hosting.setFrameSize(targetSize)
-        
-        guard let rep = hosting.bitmapImageRepForCachingDisplay(in: NSRect(origin: .zero, size: targetSize)) else {
-            return nil
-        }
-        
-        hosting.cacheDisplay(in: NSRect(origin: .zero, size: targetSize), to: rep)
-        let image = NSImage(size: targetSize)
-        image.addRepresentation(rep)
-        return image
     }
 }
 #endif
