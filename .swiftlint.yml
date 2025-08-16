@@ -1,0 +1,35 @@
+# SwiftLint Configuration
+# Focused on whitespace and basic code quality issues
+
+# Included paths
+included:
+  - Sources
+  - Tests
+
+# Enable specific rules for whitespace and basic issues
+only_rules:
+  - trailing_whitespace
+  - trailing_newline
+  - leading_whitespace
+  - empty_count
+  - force_cast
+  - force_try
+  - unused_optional_binding
+  - vertical_whitespace
+  - line_length
+  - file_length
+
+# Rule configurations
+line_length:
+  warning: 120
+  error: 150
+
+file_length:
+  warning: 500
+  error: 1000
+
+# Disable rules that might be overly strict for this simple project
+disabled_rules: []
+
+# Exclude specific files if needed
+excluded: []
