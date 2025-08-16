@@ -91,11 +91,11 @@ jobs:
             # Create manifest
             echo "📝 Creating manifest file..."
             cat > card-images/manifest.txt << 'EOF' || echo "❌ Failed to create manifest"
-A of spades
-K of hearts
-Q of diamonds
-J of clubs
-EOF
+            A of spades
+            K of hearts
+            Q of diamonds
+            J of clubs
+            EOF
             
             echo "✅ Fallback structure creation completed"
             echo "🔍 Final directory contents:"
