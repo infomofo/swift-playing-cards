@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   test:
     runs-on: macos-latest
@@ -25,3 +30,170 @@ jobs:
       
       - name: Run tests
         run: make test
+      
+      - name: Generate sample card images
+        run: |
+          echo "🔍 Current working directory: $(pwd)"
+          echo "🧪 Running image generation test..."
+          swift test --filter PlayingCardTests.DisplayCardSnapshotTests.testGenerateSampleCardImages
+        
+      - name: Check for generated images
+        run: |
+          echo "Checking for card images directory..."
+          if [ -d "card-images" ]; then
+            echo "✅ card-images directory exists"
+            echo "Contents:"
+            ls -la card-images/
+          else
+            echo "❌ card-images directory not found"
+            echo "Current directory contents:"
+            ls -la
+          fi
+          
+      - name: Commit card images to repository
+        if: always()
+        run: |
+          # Configure git for the action
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Create a temporary branch for images if it doesn't exist
+          if [ -d "card-images" ]; then
+            echo "📸 Committing generated card images..."
+            
+            # Add the images to git
+            git add card-images/
+            
+            # Only commit if there are changes
+            if ! git diff --cached --quiet; then
+              git commit -m "Add generated card images for PR review [skip ci]"
+              git push origin HEAD
+              echo "✅ Images committed and pushed"
+            else
+              echo "ℹ️ No new images to commit"
+            fi
+          else
+            echo "⚠️ No card-images directory found to commit"
+          fi
+          
+      - name: Upload card images as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-card-images
+          path: card-images/
+          retention-days: 30
+          
+      - name: Comment PR with embedded card images
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            console.log('🔍 Starting PR comment generation...');
+            
+            // Check if card images directory exists
+            const cardImagesDir = 'card-images';
+            if (!fs.existsSync(cardImagesDir)) {
+              console.log('❌ No card images directory found');
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## ⚠️ Card Image Generation Failed\n\nThe workflow was unable to generate sample playing card images. This indicates an issue with the test execution.\n\n**Debug Info**: Generated at ${new Date().toISOString()}`
+              });
+              return;
+            }
+            
+            console.log('✅ Found card-images directory');
+            
+            // Get list of generated files
+            const allFiles = fs.readdirSync(cardImagesDir).sort();
+            const imageFiles = allFiles.filter(file => file.endsWith('.png'));
+            
+            console.log(`🖼️ Found ${imageFiles.length} PNG files: ${imageFiles.join(', ')}`);
+            
+            // Read manifest for card information
+            let cardList = [];
+            const manifestFile = 'manifest.txt';
+            if (allFiles.includes(manifestFile)) {
+              const manifestPath = `${cardImagesDir}/${manifestFile}`;
+              const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+              cardList = manifestContent.trim().split('\n').filter(line => line.trim());
+              console.log(`📝 Manifest contains ${cardList.length} cards: ${cardList.join(', ')}`);
+            }
+            
+            // Create comment body
+            let commentBody = `## 🃏 Sample Playing Cards Generated\n\n`;
+            commentBody += `The following sample cards were generated from the \`DisplayCard\` SwiftUI component:\n\n`;
+            
+            const suitEmojis = {
+              'spades': '♠️',
+              'hearts': '♥️', 
+              'diamonds': '♦️',
+              'clubs': '♣️'
+            };
+            
+            // Get the current branch name for image URLs
+            const currentBranch = context.ref.replace('refs/heads/', '');
+            const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
+            
+            if (cardList.length > 0 && imageFiles.length > 0) {
+              // Create mapping from card description to image filename
+              const cardImageMap = new Map();
+              cardList.forEach(cardInfo => {
+                const parts = cardInfo.split(' of ');
+                if (parts.length === 2) {
+                  const rank = parts[0].toLowerCase();
+                  const suit = parts[1].toLowerCase();
+                  const expectedFilename = `${suit}_${rank}.png`;
+                  if (imageFiles.includes(expectedFilename)) {
+                    cardImageMap.set(cardInfo, expectedFilename);
+                  }
+                }
+              });
+              
+              // Embed actual images
+              for (const cardInfo of cardList) {
+                // Add appropriate emoji based on suit
+                let displayName = cardInfo;
+                for (const [suit, emoji] of Object.entries(suitEmojis)) {
+                  if (cardInfo.toLowerCase().includes(suit)) {
+                    displayName = `${cardInfo} ${emoji}`;
+                    break;
+                  }
+                }
+                
+                const imageFilename = cardImageMap.get(cardInfo);
+                if (imageFilename) {
+                  // Embed the image using GitHub's raw content URL
+                  const imageUrl = `${repoUrl}/raw/${currentBranch}/card-images/${imageFilename}`;
+                  commentBody += `### ${displayName}\n`;
+                  commentBody += `![${cardInfo}](${imageUrl})\n\n`;
+                } else {
+                  commentBody += `### ${displayName}\n`;
+                  commentBody += `*Image generation failed for this card*\n\n`;
+                }
+              }
+              
+              commentBody += `\n**Format**: ${imageFiles.length} PNG image(s) generated from SwiftUI DisplayCard component\n`;
+            } else {
+              commentBody += `Card generation completed but no valid cards were found.\n\n`;
+            }
+            
+            commentBody += `\n📁 **Artifacts**: The generated files are also available as artifacts in the [Actions tab](${context.payload.repository.html_url}/actions/runs/${context.runId}).\n\n`;
+            commentBody += `These help reviewers visualize how the \`DisplayCard\` SwiftUI component renders different playing cards.\n\n`;
+            commentBody += `**Generated**: ${allFiles.length} file(s) at ${new Date().toISOString()}`;
+            
+            console.log('💬 Posting PR comment with embedded images...');
+            
+            // Post comment on PR
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
+            
+            console.log('✅ Successfully posted PR comment with embedded card images');
