@@ -3,7 +3,7 @@
 build:
 	swift build
 
-update: 
+update:
 	swift package update
 
 release:
@@ -14,3 +14,9 @@ test:
 
 clean:
 	rm -rf .build
+
+lint:
+	swiftlint
+
+lint-fix:
+	swiftlint --fix

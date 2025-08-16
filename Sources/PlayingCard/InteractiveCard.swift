@@ -2,7 +2,7 @@
 //  InteractiveCard.swift
 //
 //  An InteractiveCard can be clicked on, and can be flipped over.
-//  
+//
 //
 //  Created by Will Chiong on 4/2/23.
 //
@@ -15,18 +15,18 @@ struct InteractiveCard: View, Hashable {
     public init(card: PlayingCard){
         self.card = card
     }
-    
+
     public static func == (lhs: InteractiveCard, rhs: InteractiveCard) -> Bool {
         return lhs.card == rhs.card
     }
-    
+
     var suitColor:[Suit:Color] = [Suit.clubs:Color.black, Suit.spades: Color.black, Suit.diamonds: Color.red, Suit.hearts: Color.red]
-    
-    
+
+
     public func hash(into hasher: inout Hasher) {
         hasher.combine(self.card)
     }
-    
+
     var card: PlayingCard
     @State
     var selected: Bool = false
@@ -34,7 +34,7 @@ struct InteractiveCard: View, Hashable {
     private var degrees = 0.0
     @State
     private var bgColor: Color = Color.white
-    
+
     func toggleSelection() {
         selected = !selected
         if selected {
@@ -43,7 +43,7 @@ struct InteractiveCard: View, Hashable {
             bgColor = Color.gray
         }
     }
-    
+
     mutating func replace(replacement: PlayingCard) {
         print("replacing \(self.card) with \(replacement)")
         withAnimation {
@@ -51,7 +51,7 @@ struct InteractiveCard: View, Hashable {
             self.card = replacement
         }
     }
-    
+
     public var body: some View {
         Button(action: self.toggleSelection, label: {
             VStack(alignment: .center) {
@@ -74,14 +74,14 @@ struct InteractiveCard: View, Hashable {
                         .multilineTextAlignment(.center)
                 }
             }
-            
+
         })
         .rotation3DEffect(.degrees(degrees), axis: (x: 0, y: 1, z: 0))
         .frame(width: 50.0, height: 70.0)
         .background(bgColor)
         .cornerRadius(.infinity)
         .border(Color.black)
-        
+
     }
 }
 

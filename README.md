@@ -81,7 +81,36 @@ This library provides all components needed for video poker games:
 
 For agentic coding instructions and automation guidelines, see [AGENTS.md](./AGENTS.md).
 
-## Testing
+## Linting
+
+This project uses SwiftLint to enforce code style and prevent whitespace issues.
+
+### Running the linter
+
+```bash
+# Run linting checks
+make lint
+
+# Auto-fix issues
+make lint-fix
+```
+
+### CI Integration
+
+Linting is automatically run in CI/CD pipelines. The workflow will:
+1. Install SwiftLint on macOS runners
+2. Run linting checks before building
+3. Fail the build if any issues are found
+
+### Linting Rules
+
+The project focuses on essential whitespace and code quality rules:
+- No trailing whitespace
+- Proper final newlines
+- Line length limits (120 chars warning, 150 error)
+- Basic Swift best practices
+
+Configuration is stored in `.swiftlint.yml`.
 
 ### Running Tests
 ```bash
