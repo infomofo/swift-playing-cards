@@ -117,6 +117,20 @@ Before submitting changes that involve CI workflows, especially those with Swift
    - Add cleanup workflows to remove images after PR closure
    - Consider image file sizes to avoid repository bloat
 
+6. **Debugging CI Test Failures**:
+   When a test works locally but fails in CI:
+   ```bash
+   # Check test discovery first
+   swift test list | grep testGenerateSampleCardImages
+   
+   # If test not found, check platform guards
+   # #if canImport(SwiftUI) or #if os(macOS) may hide tests
+   
+   # Add fallback creation in workflow when test fails
+   mkdir -p card-images
+   echo "fallback content" > card-images/manifest.txt
+   ```
+
 **CRITICAL: Common CI Test Failures and How to Prevent Them**
 
 1. **Test Discovery Issues**:

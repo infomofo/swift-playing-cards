@@ -22,10 +22,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
         print("DisplayCard view test completed successfully")
     }
     
-    @available(macOS 12.0, *)
-    @MainActor func testGenerateSampleCardImages() throws {
-        // Only run on macOS where we have proper SwiftUI rendering support
-        #if os(macOS)
+    func testGenerateSampleCardImages() throws {
         print("🃏 Starting sample card image generation...")
         
         // Create sample cards that showcase different suits and notable ranks
@@ -65,36 +62,25 @@ final class DisplayCardSnapshotTests: XCTestCase {
             // Always create a file - use multiple fallback strategies
             var fileCreated = false
             
-            // Strategy 1: Try SwiftUI ImageRenderer (macOS 13+)
+            // Strategy 1: Try modern SwiftUI rendering on macOS 13+
+            #if os(macOS)
             if #available(macOS 13.0, *) {
                 do {
-                    let renderer = SwiftUI.ImageRenderer(content: view)
-                    renderer.scale = 2.0 // Higher resolution for better quality
-                    // Set a reasonable size for playing cards
-                    renderer.proposedSize = ProposedViewSize(width: 58, height: 82)
-                    
-                    if let nsImage = renderer.nsImage {
-                        print("✅ Successfully rendered with SwiftUI ImageRenderer")
-                        if let tiffData = nsImage.tiffRepresentation,
-                           let bitmapImage = NSBitmapImageRep(data: tiffData),
-                           let pngData = bitmapImage.representation(using: .png, properties: [:]) {
-                            
-                            try pngData.write(to: fileURL)
-                            generatedCount += 1
-                            fileCreated = true
-                            print("💾 Saved image: \(filename) (\(pngData.count) bytes)")
-                        }
-                    } else {
-                        print("⚠️ SwiftUI ImageRenderer returned nil (likely CI limitation)")
+                    // Use MainActor for SwiftUI operations
+                    let imageData = try createImageWithRenderer(view: view)
+                    if !imageData.isEmpty {
+                        try imageData.write(to: fileURL)
+                        generatedCount += 1
+                        fileCreated = true
+                        print("💾 Saved SwiftUI image: \(filename) (\(imageData.count) bytes)")
                     }
                 } catch {
                     print("⚠️ SwiftUI rendering failed: \(error)")
                 }
-            } else {
-                print("⚠️ SwiftUI ImageRenderer not available on this macOS version")
             }
+            #endif
             
-            // Strategy 2: Create placeholder content if rendering failed
+            // Strategy 2: Create placeholder content (works on all platforms)
             if !fileCreated {
                 print("📝 Creating placeholder content for \(filename)")
                 do {
@@ -165,16 +151,37 @@ final class DisplayCardSnapshotTests: XCTestCase {
         
         // Log success for CI debugging
         print("✅ Test completed successfully - directory and manifest created")
-        
-        #else
-        print("⚠️ Skipping image generation on non-macOS platform")
-        throw XCTSkip("Image generation only supported on macOS")
-        #endif
     }
+    
+    #if os(macOS)
+    @available(macOS 13.0, *)
+    private func createImageWithRenderer(view: DisplayCard) throws -> Data {
+        return try Task { @MainActor in
+            let renderer = SwiftUI.ImageRenderer(content: view)
+            renderer.scale = 2.0 // Higher resolution for better quality
+            renderer.proposedSize = ProposedViewSize(width: 58, height: 82)
+            
+            guard let nsImage = renderer.nsImage else {
+                print("⚠️ SwiftUI ImageRenderer returned nil (likely CI limitation)")
+                return Data()
+            }
+            
+            guard let tiffData = nsImage.tiffRepresentation,
+                  let bitmapImage = NSBitmapImageRep(data: tiffData),
+                  let pngData = bitmapImage.representation(using: .png, properties: [:]) else {
+                print("⚠️ Failed to convert NSImage to PNG")
+                return Data()
+            }
+            
+            print("✅ Successfully rendered with SwiftUI ImageRenderer")
+            return pngData
+        }.value
+    }
+    #endif
     
     private func createPlaceholderImageData(for card: PlayingCard) -> Data {
         // Create a simple PNG placeholder image when SwiftUI rendering fails
-        #if canImport(AppKit)
+        #if canImport(AppKit) && os(macOS)
         let cardInfo = "\(card.rank.description) of \(card.suit.description)"
         
         // Create a simple 58x82 image with card information
@@ -233,7 +240,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
         #endif
         
         // Ultimate fallback - return a minimal PNG header
-        // This creates a 1x1 transparent PNG
+        // This creates a 1x1 transparent PNG that's valid
         let pngHeader: [UInt8] = [
             0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
             0x00, 0x00, 0x00, 0x0D, // IHDR chunk length
