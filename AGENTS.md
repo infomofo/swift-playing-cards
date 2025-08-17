@@ -198,6 +198,44 @@ Example of the transformation:
 3. Simplify GitHub Actions workflows to remove complex detection logic
 4. Focus on the user's actual need (images in PR comments) rather than perfect technical implementation
    - Use GitHub's file URLs: `https://github.com/owner/repo/raw/branch/path/to/image.png`
+
+## ⚠️ FAILED APPROACHES - DO NOT REPEAT
+
+### Card Image Generation in CI (August 2025)
+
+**FAILED FEATURE**: Automated card image generation with PR comment embedding
+
+**What was attempted**: A CI workflow that would generate sample playing card images during PR builds and embed them in PR comments to help reviewers visualize card rendering.
+
+**Why it failed repeatedly**:
+1. **Test discovery inconsistency**: `#if canImport(SwiftUI)` conditional compilation meant tests didn't exist on some platforms, causing `swift test --filter` to succeed with 0 tests executed
+2. **SwiftUI rendering fragility**: Even on macOS CI runners, SwiftUI-to-image conversion (NSHostingView, SwiftUI.ImageRenderer) failed silently in headless environments
+3. **Complex fallback logic**: Multiple layers of fallback detection in GitHub Actions YAML became unmaintainable and introduced their own failure points
+4. **Iteration difficulty**: Agent couldn't predict failure scenarios, leading to 15+ commits of back-and-forth fixes without resolution
+
+**Specific technical failures**:
+- NSHostingView couldn't create valid NSImage from SwiftUI views in headless CI
+- SwiftUI.ImageRenderer with @MainActor annotation still failed to render
+- GitHub Actions `||` fallback syntax was unreliable with proper exit code handling
+- Test filter patterns failed when tests were conditionally compiled out
+- Complex PNG generation fallbacks created invalid files that broke subsequent workflow steps
+
+**Root cause**: **Over-engineering a simple problem**. The goal was just to show sample card images in PR comments, but the implementation became a complex system trying to handle every possible CI environment failure scenario.
+
+**Lesson for future attempts**:
+- **Don't attempt SwiftUI rendering in CI** - it's fundamentally unreliable in headless environments
+- **Don't use conditional compilation for CI-critical tests** - tests should exist on all platforms
+- **Start with the simplest possible solution** - static placeholder images may be better than complex rendering
+- **Test the CI scenario locally first** - but recognize that local testing may not catch all CI environment issues
+- **Have a clear "abort" criteria** - if something fails more than 3-4 iterations, the approach is likely fundamentally flawed
+
+**Alternative approaches to consider**:
+1. **Static sample images**: Pre-generated images committed to the repository
+2. **Manual image updates**: Developer-generated images updated when UI changes
+3. **Local-only image generation**: Developer runs script locally and commits results
+4. **Skip image generation entirely**: Focus on text-based PR descriptions of UI changes
+
+**DO NOT** attempt to resurrect this exact approach without fundamentally different technical strategy.
    - Add cleanup workflows to remove images after PR closure
    - Consider image file sizes to avoid repository bloat
 
