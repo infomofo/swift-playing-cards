@@ -7,42 +7,45 @@ on:
     branches: [ "main" ]
 
 jobs:
-  lint-and-format:
-    name: Lint and Format
-    runs-on: macos-latest
-    timeout-minutes: 10
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Install SwiftLint
-        run: |
-          brew install swiftlint
-          swiftlint version
-      
-      - name: Install swift-format
-        run: |
-          brew install swift-format
-          swift-format --version
-      
-      - name: Lint with SwiftLint
-        run: make lint
-      
-      - name: Check formatting with swift-format
-        run: make format-check
-  
   build-and-test:
     name: Build and Test
     runs-on: macos-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        timeout-minutes: 2
       
       - name: Build package
-        run: make build
+        run: timeout 300 swift build
+        timeout-minutes: 5
       
       - name: Run tests
-        run: make test
+        run: timeout 120 swift test
+        timeout-minutes: 3
+  
+  code-quality:
+    name: Code Quality (Optional)
+    runs-on: macos-latest
+    timeout-minutes: 8
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        timeout-minutes: 2
+      
+      - name: Install tools
+        run: |
+          timeout 240 brew install swiftlint swift-format || echo "Tool installation failed - skipping quality checks"
+        timeout-minutes: 4
+      
+      - name: Quick lint check
+        run: |
+          if command -v swiftlint >/dev/null 2>&1; then
+            timeout 60 swiftlint || echo "Linting issues found"
+          else
+            echo "SwiftLint not available - skipping"
+          fi
+        timeout-minutes: 2

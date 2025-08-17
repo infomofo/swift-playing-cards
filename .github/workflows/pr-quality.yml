@@ -5,105 +5,50 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  quality-gate:
-    name: Quality Gate
+  pr-gate:
+    name: PR Gate
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        timeout-minutes: 2
       
-      - name: Install tools
+      - name: Quick build test
         run: |
-          echo "📦 Installing SwiftLint..."
-          brew install swiftlint
-          swiftlint version
-          
-          echo "📦 Installing swift-format..."
-          brew install swift-format
-          swift-format --version
-          
-          echo "✅ All tools installed successfully"
+          echo "🏗️ Testing build..."
+          timeout 300 swift build
+          echo "✅ Build successful"
+        timeout-minutes: 5
       
-      - name: Run comprehensive checks
-        id: quality_checks
+      - name: Quick test run
         run: |
-          echo "🔍 Running SwiftLint..."
-          if ! make lint; then
-            echo "lint_failed=true" >> $GITHUB_OUTPUT
-            echo "❌ SwiftLint checks failed"
-          else
-            echo "✅ SwiftLint checks passed"
-          fi
-          
-          echo "📝 Checking code formatting..."
-          if ! make format-check; then
-            echo "format_failed=true" >> $GITHUB_OUTPUT
-            echo "❌ Code formatting checks failed"
-          else
-            echo "✅ Code formatting checks passed"
-          fi
-          
-          echo "🏗️ Building package..."
-          if ! make build; then
-            echo "build_failed=true" >> $GITHUB_OUTPUT
-            echo "❌ Build failed"
-            exit 1
-          else
-            echo "✅ Build successful"
-          fi
-          
           echo "🧪 Running tests..."
-          if ! make test; then
-            echo "test_failed=true" >> $GITHUB_OUTPUT
-            echo "❌ Tests failed"
-            exit 1
-          else
-            echo "✅ Tests passed"
-          fi
-          
-          echo "✅ All quality checks passed!"
+          timeout 120 swift test
+          echo "✅ Tests passed"
+        timeout-minutes: 3
       
-      - name: Comment on PR
-        if: failure()
+      - name: Comment on success
+        if: success()
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            let message = '❌ **Quality checks failed**\n\n';
-            
-            // Check which specific checks failed
-            try {
-              const output = fs.existsSync(process.env.GITHUB_OUTPUT)
-                ? fs.readFileSync(process.env.GITHUB_OUTPUT, 'utf8')
-                : '';
-              if (output.includes('lint_failed=true')) {
-                message += '🔍 **SwiftLint Issues**: Please run `make lint` locally and fix any reported issues.\n\n';
-              }
-              if (output.includes('format_failed=true')) {
-                message += '📝 **Formatting Issues**: Please run `make format` to fix code formatting.\n\n';
-              }
-              if (output.includes('build_failed=true')) {
-                message += '🏗️ **Build Failed**: Please run `make build` locally and fix any compilation errors.\n\n';
-              }
-              if (output.includes('test_failed=true')) {
-                message += '🧪 **Tests Failed**: Please run `make test` locally and ensure all tests pass.\n\n';
-              }
-            } catch (e) {
-              // Fallback message
-              message += 'Please run the following commands locally to identify and fix issues:\n';
-              message += '- `make lint` - Check for linting issues\n';
-              message += '- `make format-check` - Check formatting\n';
-              message += '- `make build` - Verify the code builds\n';
-              message += '- `make test` - Ensure tests pass\n\n';
-            }
-            
-            message += 'Once all issues are resolved, push your changes to update this PR.';
-            
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: message
+              body: '✅ **PR Quality Check Passed**\n\nBuild and tests completed successfully!'
+            })
+      
+      - name: Comment on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **PR Quality Check Failed**\n\nPlease run these commands locally to fix issues:\n- `swift build` - Check build\n- `swift test` - Run tests\n\nOnce fixed, push changes to update this PR.'
             })

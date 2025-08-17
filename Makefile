@@ -1,7 +1,7 @@
 # My Makefile - for server side Swift projects
 
 build:
-	swift build
+	timeout 300 swift build || swift build
 
 update:
 	swift package update
@@ -10,7 +10,7 @@ release:
 	swift build -c release
 
 test:
-	swift test --parallel
+	timeout 120 swift test || swift test
 
 clean:
 	rm -rf .build
