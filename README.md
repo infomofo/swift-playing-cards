@@ -113,34 +113,36 @@ Code quality checks are automatically run in CI/CD pipelines. The workflows incl
 
 **Main CI Workflow (`test.yml`)**:
 1. **Lint and Format Job**: Install SwiftLint and swift-format, run linting checks, verify code formatting
-2. **Build and Test Job**: Build the project and run all tests
+2. **Build and Test Job**: Build the project and run all tests in parallel
 
 **PR Quality Checks (`pr-quality.yml`)**:
 1. Comprehensive quality gate for pull requests
 2. Runs all linting, formatting, building, and testing
-3. Provides feedback comments on failed checks
+3. Provides detailed feedback comments on failed checks with specific guidance
 
-The build will fail if any linting, formatting, or test issues are found.
+**Dependabot (`dependabot.yml`)**:
+- Automatically keeps GitHub Actions dependencies up to date
+- Monthly checks for security updates
+
+The build will fail if any linting, formatting, or test issues are found, but jobs run independently for faster feedback.
 
 ### Linting Rules
 
-The project uses a comprehensive set of SwiftLint rules focused on:
-- Code quality and consistency
-- Whitespace and formatting
-- Swift best practices
-- Complexity management
-- Proper naming conventions
+The project uses a simplified, reliable set of SwiftLint rules focused on:
+- Essential code quality checks (empty_count, force_unwrapping)
+- Implicit getter enforcement
+- Redundant initialization detection
+- Reasonable line length limits (120 char warning, 200 char error)
 
-Configuration is stored in `.swiftlint.yml`.
+Configuration is stored in `.swiftlint.yml` with emphasis on stability over comprehensiveness.
 
 ### Formatting Rules
 
-Code formatting is enforced using swift-format with configuration in `.swift-format`. The formatting rules ensure:
+Code formatting is enforced using swift-format with a simplified configuration in `.swift-format`. The formatting rules ensure:
 - Consistent indentation (2 spaces)
 - Maximum line length of 120 characters
-- Proper spacing and line breaks
-- Consistent import ordering
-- Swift naming conventions
+- Ordered imports and standard Swift conventions
+- Essential formatting rules without compatibility issues
 
 ### Running Tests
 ```bash
