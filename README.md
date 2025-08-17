@@ -109,14 +109,18 @@ make format
 
 ### CI Integration
 
-Code quality checks are automatically run in CI/CD pipelines. The workflow will:
-1. Install SwiftLint and swift-format on macOS runners
-2. Run linting checks with comprehensive rules
-3. Verify consistent code formatting
-4. Build the project
-5. Run all tests
+Code quality checks are automatically run in CI/CD pipelines. The workflows include:
 
-The build will fail if any linting or formatting issues are found.
+**Main CI Workflow (`test.yml`)**:
+1. **Lint and Format Job**: Install SwiftLint and swift-format, run linting checks, verify code formatting
+2. **Build and Test Job**: Build the project and run all tests
+
+**PR Quality Checks (`pr-quality.yml`)**:
+1. Comprehensive quality gate for pull requests
+2. Runs all linting, formatting, building, and testing
+3. Provides feedback comments on failed checks
+
+The build will fail if any linting, formatting, or test issues are found.
 
 ### Linting Rules
 
