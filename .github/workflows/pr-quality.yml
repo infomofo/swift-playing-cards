@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   pr-gate:
     name: PR Gate
@@ -18,14 +23,14 @@ jobs:
       - name: Quick build test
         run: |
           echo "🏗️ Testing build..."
-          timeout 300 swift build
+          swift build
           echo "✅ Build successful"
         timeout-minutes: 5
       
       - name: Quick test run
         run: |
           echo "🧪 Running tests..."
-          timeout 120 swift test
+          swift test
           echo "✅ Tests passed"
         timeout-minutes: 3
       
