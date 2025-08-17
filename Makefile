@@ -20,3 +20,9 @@ lint:
 
 lint-fix:
 	swiftlint --fix
+
+format-check:
+	find Sources Tests -name "*.swift" | xargs swift-format --mode diff
+
+format:
+	find Sources Tests -name "*.swift" | xargs swift-format --mode write --in-place

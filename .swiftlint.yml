@@ -1,23 +1,41 @@
 # SwiftLint Configuration
-# Focused on whitespace and basic code quality issues
+# Focused on essential code quality and style issues
 
 # Included paths
 included:
   - Sources
   - Tests
 
-# Enable specific rules for whitespace and basic issues
-only_rules:
-  - trailing_whitespace
-  - trailing_newline
-  - leading_whitespace
+# Enable essential rules for code quality without being overly strict
+opt_in_rules:
   - empty_count
   - force_cast
   - force_try
   - unused_optional_binding
   - vertical_whitespace
+  - trailing_whitespace
+  - trailing_newline
+  - leading_whitespace
   - line_length
   - file_length
+  - colon
+  - comma
+  - opening_brace
+  - operator_whitespace
+  - return_arrow_whitespace
+  - shorthand_operator
+  - statement_position
+  - type_name
+  - identifier_name
+  - control_statement
+  - cyclomatic_complexity
+  - function_body_length
+  - nesting
+  - large_tuple
+  - redundant_optional_initialization
+  - empty_string
+  - implicit_getter
+  - redundant_void_return
 
 # Rule configurations
 line_length:
@@ -28,8 +46,31 @@ file_length:
   warning: 500
   error: 1000
 
-# Disable rules that might be overly strict for this simple project
-disabled_rules: []
+function_body_length:
+  warning: 50
+  error: 100
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+nesting:
+  type_level: 3
+  statement_level: 5
+
+large_tuple:
+  warning: 3
+  error: 4
+
+identifier_name:
+  min_length: 1
+  max_length: 40
+
+type_name:
+  min_length: 3
+  max_length: 40
 
 # Exclude specific files if needed
-excluded: []
+excluded:
+  - .build
+  - Package.swift

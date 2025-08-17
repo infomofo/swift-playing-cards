@@ -1,5 +1,7 @@
 # PlayingCard Swift Package
 
+[![CI](https://github.com/infomofo/swift-playing-cards/actions/workflows/test.yml/badge.svg)](https://github.com/infomofo/swift-playing-cards/actions/workflows/test.yml)
+
 A comprehensive Swift package for implementing video poker games on iOS devices (iPhone, iPad, Apple Watch) and other Apple platforms.
 
 This package provides all the essential functionality needed to build poker games, including card representation, deck management, hand evaluation, and SwiftUI display components.
@@ -81,9 +83,9 @@ This library provides all components needed for video poker games:
 
 For agentic coding instructions and automation guidelines, see [AGENTS.md](./AGENTS.md).
 
-## Linting
+## Linting and Formatting
 
-This project uses SwiftLint to enforce code style and prevent whitespace issues.
+This project uses SwiftLint and swift-format to enforce code style and maintain consistent formatting.
 
 ### Running the linter
 
@@ -91,26 +93,50 @@ This project uses SwiftLint to enforce code style and prevent whitespace issues.
 # Run linting checks
 make lint
 
-# Auto-fix issues
+# Auto-fix linting issues
 make lint-fix
+```
+
+### Running the formatter
+
+```bash
+# Check code formatting
+make format-check
+
+# Auto-format code
+make format
 ```
 
 ### CI Integration
 
-Linting is automatically run in CI/CD pipelines. The workflow will:
-1. Install SwiftLint on macOS runners
-2. Run linting checks before building
-3. Fail the build if any issues are found
+Code quality checks are automatically run in CI/CD pipelines. The workflow will:
+1. Install SwiftLint and swift-format on macOS runners
+2. Run linting checks with comprehensive rules
+3. Verify consistent code formatting
+4. Build the project
+5. Run all tests
+
+The build will fail if any linting or formatting issues are found.
 
 ### Linting Rules
 
-The project focuses on essential whitespace and code quality rules:
-- No trailing whitespace
-- Proper final newlines
-- Line length limits (120 chars warning, 150 error)
-- Basic Swift best practices
+The project uses a comprehensive set of SwiftLint rules focused on:
+- Code quality and consistency
+- Whitespace and formatting
+- Swift best practices
+- Complexity management
+- Proper naming conventions
 
 Configuration is stored in `.swiftlint.yml`.
+
+### Formatting Rules
+
+Code formatting is enforced using swift-format with configuration in `.swift-format`. The formatting rules ensure:
+- Consistent indentation (2 spaces)
+- Maximum line length of 120 characters
+- Proper spacing and line breaks
+- Consistent import ordering
+- Swift naming conventions
 
 ### Running Tests
 ```bash

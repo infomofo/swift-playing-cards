@@ -1,4 +1,4 @@
-name: Build and test Swift
+name: CI
 
 on:
   push:
@@ -7,20 +7,40 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test:
+  lint-and-format:
+    name: Lint and Format
     runs-on: macos-latest
     timeout-minutes: 10
-
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       
       - name: Install SwiftLint
         run: brew install swiftlint
       
-      - name: Lint
+      - name: Install swift-format
+        run: brew install swift-format
+      
+      - name: Lint with SwiftLint
         run: make lint
       
-      - name: Build
+      - name: Check formatting with swift-format
+        run: |
+          swift-format --version
+          find Sources Tests -name "*.swift" | xargs swift-format --mode diff
+  
+  build-and-test:
+    name: Build and Test
+    runs-on: macos-latest
+    timeout-minutes: 10
+    needs: lint-and-format
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build package
         run: make build
       
       - name: Run tests
