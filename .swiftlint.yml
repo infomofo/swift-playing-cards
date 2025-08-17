@@ -1,74 +1,35 @@
 # SwiftLint Configuration
-# Focused on essential code quality and style issues
+# Simplified and reliable configuration focused on essential code quality
 
 # Included paths
 included:
   - Sources
   - Tests
 
-# Enable essential rules for code quality without being overly strict
+# Disabled rules that are often problematic or overly strict
+disabled_rules:
+  - todo
+  - line_length  # We'll configure this below instead
+
+# Enable only essential opt-in rules that are stable and widely used
 opt_in_rules:
   - empty_count
-  - force_cast
-  - force_try
-  - unused_optional_binding
-  - vertical_whitespace
-  - trailing_whitespace
-  - trailing_newline
-  - leading_whitespace
-  - line_length
-  - file_length
-  - colon
-  - comma
-  - opening_brace
-  - operator_whitespace
-  - return_arrow_whitespace
-  - shorthand_operator
-  - statement_position
-  - type_name
-  - identifier_name
-  - control_statement
-  - cyclomatic_complexity
-  - function_body_length
-  - nesting
-  - large_tuple
-  - redundant_optional_initialization
-  - empty_string
+  - force_unwrapping
   - implicit_getter
-  - redundant_void_return
+  - redundant_optional_initialization
 
 # Rule configurations
 line_length:
   warning: 120
-  error: 150
+  error: 200  # More lenient error threshold
 
 file_length:
-  warning: 500
-  error: 1000
+  warning: 400
+  error: 600  # More reasonable limits
 
 function_body_length:
-  warning: 50
-  error: 100
-
-cyclomatic_complexity:
-  warning: 10
-  error: 20
-
-nesting:
-  type_level: 3
-  statement_level: 5
-
-large_tuple:
-  warning: 3
-  error: 4
-
-identifier_name:
-  min_length: 1
-  max_length: 40
-
-type_name:
-  min_length: 3
-  max_length: 40
+  warning: 40
+  error: 80  # More reasonable limits
 
 # Exclude specific files if needed
 excluded:

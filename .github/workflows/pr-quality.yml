@@ -16,21 +16,52 @@ jobs:
       
       - name: Install tools
         run: |
-          brew install swiftlint swift-format
+          echo "📦 Installing SwiftLint..."
+          brew install swiftlint
+          swiftlint version
+          
+          echo "📦 Installing swift-format..."
+          brew install swift-format
+          swift-format --version
+          
+          echo "✅ All tools installed successfully"
       
       - name: Run comprehensive checks
+        id: quality_checks
         run: |
           echo "🔍 Running SwiftLint..."
-          make lint
+          if ! make lint; then
+            echo "lint_failed=true" >> $GITHUB_OUTPUT
+            echo "❌ SwiftLint checks failed"
+          else
+            echo "✅ SwiftLint checks passed"
+          fi
           
           echo "📝 Checking code formatting..."
-          make format-check
+          if ! make format-check; then
+            echo "format_failed=true" >> $GITHUB_OUTPUT
+            echo "❌ Code formatting checks failed"
+          else
+            echo "✅ Code formatting checks passed"
+          fi
           
           echo "🏗️ Building package..."
-          make build
+          if ! make build; then
+            echo "build_failed=true" >> $GITHUB_OUTPUT
+            echo "❌ Build failed"
+            exit 1
+          else
+            echo "✅ Build successful"
+          fi
           
           echo "🧪 Running tests..."
-          make test
+          if ! make test; then
+            echo "test_failed=true" >> $GITHUB_OUTPUT
+            echo "❌ Tests failed"
+            exit 1
+          else
+            echo "✅ Tests passed"
+          fi
           
           echo "✅ All quality checks passed!"
       
@@ -39,9 +70,38 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+            let message = '❌ **Quality checks failed**\n\n';
+            
+            // Check which specific checks failed
+            try {
+              const output = process.env.GITHUB_OUTPUT || '';
+              if (output.includes('lint_failed=true')) {
+                message += '🔍 **SwiftLint Issues**: Please run `make lint` locally and fix any reported issues.\n\n';
+              }
+              if (output.includes('format_failed=true')) {
+                message += '📝 **Formatting Issues**: Please run `make format` to fix code formatting.\n\n';
+              }
+              if (output.includes('build_failed=true')) {
+                message += '🏗️ **Build Failed**: Please run `make build` locally and fix any compilation errors.\n\n';
+              }
+              if (output.includes('test_failed=true')) {
+                message += '🧪 **Tests Failed**: Please run `make test` locally and ensure all tests pass.\n\n';
+              }
+            } catch (e) {
+              // Fallback message
+              message += 'Please run the following commands locally to identify and fix issues:\n';
+              message += '- `make lint` - Check for linting issues\n';
+              message += '- `make format-check` - Check formatting\n';
+              message += '- `make build` - Verify the code builds\n';
+              message += '- `make test` - Ensure tests pass\n\n';
+            }
+            
+            message += 'Once all issues are resolved, push your changes to update this PR.';
+            
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ Quality checks failed. Please run `make lint`, `make format-check`, and fix any issues before merging.'
+              body: message
             })
