@@ -33,12 +33,16 @@ format-check:
 		echo "❌ swift-format not found. Please install it with: brew install swift-format"; \
 		exit 1; \
 	fi
-	@if find Sources Tests -name "*.swift" | xargs swift-format --mode diff 2>/dev/null | grep -q .; then \
-		echo "❌ Code formatting issues found. Run 'make format' to fix them."; \
-		find Sources Tests -name "*.swift" | xargs swift-format --mode diff; \
-		exit 1; \
+	@if [ -z "$$(find Sources Tests -name '*.swift' 2>/dev/null)" ]; then \
+		echo "⚠️  No Swift files found in Sources or Tests. Skipping format check."; \
 	else \
-		echo "✅ Code formatting is correct."; \
+		if find Sources Tests -name "*.swift" | xargs swift-format --mode diff 2>/dev/null | grep -q .; then \
+			echo "❌ Code formatting issues found. Run 'make format' to fix them."; \
+			find Sources Tests -name "*.swift" | xargs swift-format --mode diff; \
+			exit 1; \
+		else \
+			echo "✅ Code formatting is correct."; \
+		fi \
 	fi
 
 format:
@@ -47,5 +51,10 @@ format:
 		echo "❌ swift-format not found. Please install it with: brew install swift-format"; \
 		exit 1; \
 	fi
-	find Sources Tests -name "*.swift" | xargs swift-format --mode write --in-place
-	@echo "✅ Code formatting complete."
+	@if [ -z "$$(find Sources Tests -name '*.swift' 2>/dev/null)" ]; then \
+		echo "⚠️  No Swift files found in Sources or Tests. Skipping formatting."; \
+		exit 0; \
+	else \
+		find Sources Tests -name "*.swift" | xargs swift-format --mode write --in-place; \
+		echo "✅ Code formatting complete."; \
+	fi

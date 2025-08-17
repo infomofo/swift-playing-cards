@@ -75,7 +75,9 @@ jobs:
             
             // Check which specific checks failed
             try {
-              const output = process.env.GITHUB_OUTPUT || '';
+              const output = fs.existsSync(process.env.GITHUB_OUTPUT)
+                ? fs.readFileSync(process.env.GITHUB_OUTPUT, 'utf8')
+                : '';
               if (output.includes('lint_failed=true')) {
                 message += '🔍 **SwiftLint Issues**: Please run `make lint` locally and fix any reported issues.\n\n';
               }
