@@ -24,6 +24,87 @@ jobs:
       - name: Run tests
         run: swift test
         timeout-minutes: 3
+      
+      - name: Generate sample card images
+        run: |
+          echo "🎯 Generating sample card images..."
+          swift test --filter DisplayCardSnapshotTests.testGenerateSampleCardImages || {
+            echo "⚠️ Image generation test failed, checking for fallback files..."
+            ls -la card-images/ || echo "No card-images directory found"
+            if [ -d "card-images" ]; then
+              echo "✅ Directory exists, continuing with available files..."
+            else
+              echo "❌ Creating minimal fallback structure..."
+              mkdir -p card-images
+              echo "# Sample Card Images (Fallback)" > card-images/manifest.txt
+              echo "Generated: $(date)" >> card-images/manifest.txt
+              echo "⚠️ Image generation failed in CI environment" >> card-images/manifest.txt
+            fi
+          }
+        timeout-minutes: 5
+      
+      - name: Verify image output
+        run: |
+          echo "🔍 Checking generated files..."
+          if [ -d "card-images" ]; then
+            echo "📁 Contents of card-images directory:"
+            ls -la card-images/
+            echo ""
+            echo "📄 Manifest content:"
+            cat card-images/manifest.txt || echo "No manifest.txt found"
+          else
+            echo "❌ No card-images directory found"
+          fi
+      
+      - name: Upload card images as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-card-images
+          path: card-images/
+          retention-days: 7
+        if: always()
+
+  multi-platform-test:
+    name: Multi-Platform Tests  
+    runs-on: macos-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        destination:
+          - platform=iOS Simulator,name=iPhone 15,OS=17.5
+          - platform=iOS Simulator,name=iPad Pro (12.9-inch) (6th generation),OS=17.5 
+          - platform=watchOS Simulator,name=Apple Watch Series 9 (45mm),OS=10.5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        timeout-minutes: 2
+      
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+        timeout-minutes: 1
+      
+      - name: List available simulators
+        run: xcrun simctl list devices available | grep -E "(iPhone|iPad|Apple Watch)"
+        timeout-minutes: 1
+        continue-on-error: true
+      
+      - name: Create test scheme
+        run: swift package generate-xcodeproj
+        timeout-minutes: 2
+      
+      - name: Test on ${{ matrix.destination }}
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project PlayingCard.xcodeproj \
+            -scheme PlayingCard-Package \
+            -destination '${{ matrix.destination }}' \
+            -only-testing:PlayingCardTests \
+            CODE_SIGNING_ALLOWED=NO
+        timeout-minutes: 10
+        continue-on-error: true
   
   code-quality:
     name: Code Quality (Optional)
