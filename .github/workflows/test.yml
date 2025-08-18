@@ -24,7 +24,156 @@ jobs:
       - name: Run tests
         run: swift test
         timeout-minutes: 3
+
+  multi-platform-test:
+    name: Multi-Platform Tests  
+    runs-on: macos-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - iOS
+          - watchOS
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        timeout-minutes: 2
+      
+      - name: Test ${{ matrix.platform }} compatibility
+        run: |
+          echo "🧪 Testing ${{ matrix.platform }} package compatibility..."
+          
+          # Capture build results for better reporting
+          BUILD_RESULT="✅ Success"
+          BUILD_EXIT_CODE=0
+          
+          if [ "${{ matrix.platform }}" = "iOS" ]; then
+            if ! swift build --target PlayingCard --sdk iphoneos -Xswiftc -target -Xswiftc arm64-apple-ios13.0; then
+              BUILD_RESULT="❌ Failed - iOS compatibility issues detected"
+              BUILD_EXIT_CODE=1
+            fi
+          elif [ "${{ matrix.platform }}" = "watchOS" ]; then
+            if ! swift build --target PlayingCard --sdk watchos -Xswiftc -target -Xswiftc arm64-apple-watchos6.0; then
+              BUILD_RESULT="❌ Failed - watchOS compatibility issues detected"  
+              BUILD_EXIT_CODE=1
+            fi
+          fi
+          
+          echo "📊 ${{ matrix.platform }} Build Result: $BUILD_RESULT"
+          
+          # Write result to summary for PR visibility
+          echo "## ${{ matrix.platform }} Compatibility" >> $GITHUB_STEP_SUMMARY
+          echo "$BUILD_RESULT" >> $GITHUB_STEP_SUMMARY
+          
+          # Exit with proper code but allow job to continue due to continue-on-error
+          exit $BUILD_EXIT_CODE
+        timeout-minutes: 10
+        continue-on-error: true
   
+  card-image-generation:
+    name: Generate Sample Card Images
+    runs-on: macos-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        timeout-minutes: 2
+      
+      - name: Generate card images
+        run: |
+          echo "🎨 Generating sample card images..."
+          swift test --filter DisplayCardSnapshotTests.testGenerateSampleCardImages
+        timeout-minutes: 5
+        
+      - name: Upload card images as artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sample-card-images
+          path: card-images/
+          retention-days: 30
+          
+      - name: Comment PR with card images
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read manifest if it exists
+            let manifest = null;
+            try {
+              const manifestPath = path.join('card-images', 'manifest.json');
+              if (fs.existsSync(manifestPath)) {
+                manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+              }
+            } catch (error) {
+              console.log('Could not read manifest:', error.message);
+            }
+            
+            let comment = `## 🎴 Sample Card Images Generated
+            
+            The CI has generated sample playing card representations for this PR.
+            
+            `;
+            
+            if (manifest && manifest.cards) {
+              comment += `### Generated Cards (${manifest.total_cards} total)
+            
+            `;
+              
+              manifest.cards.forEach((card, index) => {
+                comment += `- **${card.rank} of ${card.suit}** ${card.suit_symbol}\n`;
+              });
+              
+              comment += `
+            ### 📦 Artifacts
+            
+            You can download the generated card images from the [Actions artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for this workflow run.
+            
+            The artifact contains:
+            - 🖼️ PNG images (macOS only)
+            - 🎨 SVG images (cross-platform compatible) 
+            - 📄 ASCII text representations
+            - 📋 JSON manifest with metadata
+            
+            Generated at: ${manifest.generated_at}
+            `;
+            } else {
+              comment += `⚠️ Card generation completed but manifest could not be read. Check the [workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for generated files.`;
+            }
+            
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.find(comment => 
+              comment.body.includes('🎴 Sample Card Images Generated')
+            );
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
   code-quality:
     name: Code Quality (Optional)
     runs-on: macos-latest

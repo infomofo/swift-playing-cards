@@ -112,19 +112,20 @@ make format
 Code quality checks are automatically run in CI/CD pipelines. The workflows include:
 
 **Main CI Workflow (`test.yml`)**:
-1. **Lint and Format Job**: Install SwiftLint and swift-format, run linting checks, verify code formatting
-2. **Build and Test Job**: Build the project and run all tests in parallel
+1. **Build and Test Job**: Build the project and run all tests
+2. **Multi-Platform Tests**: Verify package compatibility on iOS and watchOS
+3. **Code Quality Job**: Optional linting checks using SwiftLint
 
 **PR Quality Checks (`pr-quality.yml`)**:
 1. Comprehensive quality gate for pull requests
-2. Runs all linting, formatting, building, and testing
-3. Provides detailed feedback comments on failed checks with specific guidance
+2. Runs building and testing to ensure code quality
+3. Provides feedback comments on success or failure with specific guidance
 
 **Dependabot (`dependabot.yml`)**:
 - Automatically keeps GitHub Actions dependencies up to date
 - Monthly checks for security updates
 
-The build will fail if any linting, formatting, or test issues are found, but jobs run independently for faster feedback.
+The build will fail if any build or test issues are found, but jobs run independently for faster feedback.
 
 ### Linting Rules
 
@@ -161,6 +162,8 @@ This test generates sample images of playing cards using the `DisplayCard` compo
 - Various card combinations for visual verification
 
 Generated images are automatically uploaded as CI artifacts and posted as PR comments during the build process.
+
+**Platform Support**: Visual tests run on macOS CI and generate sample card images when SwiftUI rendering is available. On platforms without SwiftUI support, fallback placeholder files are created to ensure CI workflows complete successfully.
 
 ### Test Coverage
 - **37 total tests** covering all poker functionality

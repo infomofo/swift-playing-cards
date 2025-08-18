@@ -43,7 +43,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ **PR Quality Check Passed**\n\nBuild and tests completed successfully!'
+              body: '✅ **PR Quality Check Passed**\n\nBuild and tests completed successfully!\n\n## 🎴 Playing Card Package\n\nThis package provides Swift data structures and SwiftUI components for playing cards, supporting all standard ranks and suits with poker hand evaluation capabilities.'
             })
       
       - name: Comment on failure
