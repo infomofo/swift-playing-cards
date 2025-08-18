@@ -201,6 +201,54 @@ Example of the transformation:
 
 ## ⚠️ FAILED APPROACHES - DO NOT REPEAT
 
+### Hallucinated Content in Code Generation (August 2025)
+
+**CRITICAL ANTI-PATTERN**: Including company names, copyright holders, or other organizational references that are not verified to be accurate for the specific project.
+
+**What happened**: During CI configuration, an agent included "Realm Inc." as the copyright holder in a LICENSE file for the infomofo/swift-playing-cards project, despite this being completely unrelated to Realm.
+
+**Why this is problematic**:
+1. **Legal implications**: Incorrect copyright attribution can create legal confusion about project ownership
+2. **Professional credibility**: Suggests careless code generation that doesn't consider project context
+3. **Copy-paste artifacts**: Indicates templates or examples were used without proper customization
+4. **User trust**: Makes users question whether other generated content can be trusted
+
+**How to prevent**:
+1. **Verify project ownership**: Always check the repository owner (GitHub username/organization) before adding any legal text
+2. **Use placeholder text**: When unsure about legal details, use clear placeholders like `[Your Name or Organization]`
+3. **Ask for clarification**: When legal text is required, explicitly ask the user for correct details
+4. **Research project context**: Review existing files, README, Package.swift, etc. for clues about correct attributions
+5. **Avoid assumptions**: Never assume commercial relationships or company affiliations
+
+**Example of WRONG approach**:
+```
+Copyright (c) 2020 Realm Inc.  # ❌ Hallucinated - copied from some template
+```
+
+**Example of CORRECT approaches**:
+```
+Copyright (c) 2020 infomofo  # ✅ Based on GitHub repository owner
+```
+OR
+```
+Copyright (c) 2020 [Your Name or Organization]  # ✅ Clear placeholder requiring user input
+```
+
+**Detection patterns**: Watch for these warning signs in generated content:
+- Well-known company names (Google, Apple, Microsoft, Realm, etc.) in small/personal projects
+- Copyright dates that don't match project creation dates
+- LICENSE files with company names that don't match repository owners
+- Package.swift or other configuration with mismatched author information
+
+**This applies beyond copyright**:
+- API keys and service references
+- Company-specific configurations
+- Brand names and trademarks
+- Contact information and URLs
+- Documentation references to other organizations
+
+**When in doubt**: Use generic placeholders and ask the user to provide accurate information rather than guessing or using examples from other projects.
+
 ### Card Image Generation in CI (August 2025)
 
 **FAILED FEATURE**: Automated card image generation with PR comment embedding

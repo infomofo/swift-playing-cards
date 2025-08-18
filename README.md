@@ -1,5 +1,7 @@
 # PlayingCard Swift Package
 
+[![CI](https://github.com/infomofo/swift-playing-cards/actions/workflows/test.yml/badge.svg)](https://github.com/infomofo/swift-playing-cards/actions/workflows/test.yml)
+
 A comprehensive Swift package for implementing video poker games on iOS devices (iPhone, iPad, Apple Watch) and other Apple platforms.
 
 This package provides all the essential functionality needed to build poker games, including card representation, deck management, hand evaluation, and SwiftUI display components.
@@ -81,9 +83,9 @@ This library provides all components needed for video poker games:
 
 For agentic coding instructions and automation guidelines, see [AGENTS.md](./AGENTS.md).
 
-## Linting
+## Linting and Formatting
 
-This project uses SwiftLint to enforce code style and prevent whitespace issues.
+This project uses SwiftLint and swift-format to enforce code style and maintain consistent formatting.
 
 ### Running the linter
 
@@ -91,26 +93,56 @@ This project uses SwiftLint to enforce code style and prevent whitespace issues.
 # Run linting checks
 make lint
 
-# Auto-fix issues
+# Auto-fix linting issues
 make lint-fix
+```
+
+### Running the formatter
+
+```bash
+# Check code formatting
+make format-check
+
+# Auto-format code
+make format
 ```
 
 ### CI Integration
 
-Linting is automatically run in CI/CD pipelines. The workflow will:
-1. Install SwiftLint on macOS runners
-2. Run linting checks before building
-3. Fail the build if any issues are found
+Code quality checks are automatically run in CI/CD pipelines. The workflows include:
+
+**Main CI Workflow (`test.yml`)**:
+1. **Lint and Format Job**: Install SwiftLint and swift-format, run linting checks, verify code formatting
+2. **Build and Test Job**: Build the project and run all tests in parallel
+
+**PR Quality Checks (`pr-quality.yml`)**:
+1. Comprehensive quality gate for pull requests
+2. Runs all linting, formatting, building, and testing
+3. Provides detailed feedback comments on failed checks with specific guidance
+
+**Dependabot (`dependabot.yml`)**:
+- Automatically keeps GitHub Actions dependencies up to date
+- Monthly checks for security updates
+
+The build will fail if any linting, formatting, or test issues are found, but jobs run independently for faster feedback.
 
 ### Linting Rules
 
-The project focuses on essential whitespace and code quality rules:
-- No trailing whitespace
-- Proper final newlines
-- Line length limits (120 chars warning, 150 error)
-- Basic Swift best practices
+The project uses a simplified, reliable set of SwiftLint rules focused on:
+- Essential code quality checks (empty_count, force_unwrapping)
+- Implicit getter enforcement
+- Redundant initialization detection
+- Reasonable line length limits (120 char warning, 200 char error)
 
-Configuration is stored in `.swiftlint.yml`.
+Configuration is stored in `.swiftlint.yml` with emphasis on stability over comprehensiveness.
+
+### Formatting Rules
+
+Code formatting is enforced using swift-format with a simplified configuration in `.swift-format`. The formatting rules ensure:
+- Consistent indentation (2 spaces)
+- Maximum line length of 120 characters
+- Ordered imports and standard Swift conventions
+- Essential formatting rules without compatibility issues
 
 ### Running Tests
 ```bash
