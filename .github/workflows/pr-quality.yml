@@ -34,73 +34,16 @@ jobs:
           echo "✅ Tests passed"
         timeout-minutes: 3
       
-      - name: Generate sample card images for PR
-        run: |
-          echo "🎯 Generating sample card images for PR..."
-          swift test --filter DisplayCardSnapshotTests.testGenerateSampleCardImages || {
-            echo "⚠️ Image generation test failed, creating fallback..."
-            mkdir -p card-images
-            echo "# Sample Card Images" > card-images/manifest.txt
-            echo "Generated: $(date)" >> card-images/manifest.txt
-            echo "⚠️ Image generation failed - showing fallback" >> card-images/manifest.txt
-            # Create a simple text representation
-            echo "" >> card-images/manifest.txt
-            echo "Expected card samples:" >> card-images/manifest.txt
-            echo "- Ace of Spades" >> card-images/manifest.txt
-            echo "- King of Hearts" >> card-images/manifest.txt
-            echo "- Queen of Diamonds" >> card-images/manifest.txt
-            echo "- Jack of Clubs" >> card-images/manifest.txt
-            echo "- Ten of Spades" >> card-images/manifest.txt
-            echo "- Two of Hearts" >> card-images/manifest.txt
-          }
-          echo "🔍 Generated files:"
-          ls -la card-images/ || echo "No files generated"
-        timeout-minutes: 5
-      
-      - name: Upload card images
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-card-images
-          path: card-images/
-          retention-days: 3
-        if: always()
-      
       - name: Comment on success
         if: success()
         uses: actions/github-script@v7
         with:
           script: |
-            // Read the manifest file to get image information
-            const fs = require('fs');
-            const path = require('path');
-            
-            let imageInfo = '';
-            try {
-              const manifestPath = 'card-images/manifest.txt';
-              if (fs.existsSync(manifestPath)) {
-                const manifestContent = fs.readFileSync(manifestPath, 'utf8');
-                imageInfo = '\n\n## 🎴 Sample Card Images Generated\n\n```\n' + manifestContent + '\n```';
-                
-                // List any PNG files
-                const cardImagesDir = 'card-images';
-                if (fs.existsSync(cardImagesDir)) {
-                  const files = fs.readdirSync(cardImagesDir).filter(f => f.endsWith('.png'));
-                  if (files.length > 0) {
-                    imageInfo += '\n\n📸 **Generated image files:** ' + files.join(', ');
-                    imageInfo += '\n\n*Sample card images have been uploaded as build artifacts and can be downloaded from the Actions tab.*';
-                  }
-                }
-              }
-            } catch (error) {
-              console.log('Could not read manifest:', error);
-              imageInfo = '\n\n⚠️ Card image generation attempted (check artifacts for results)';
-            }
-            
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ **PR Quality Check Passed**\n\nBuild and tests completed successfully!' + imageInfo
+              body: '✅ **PR Quality Check Passed**\n\nBuild and tests completed successfully!\n\n## 🎴 Playing Card Package\n\nThis package provides Swift data structures and SwiftUI components for playing cards, supporting all standard ranks and suits with poker hand evaluation capabilities.'
             })
       
       - name: Comment on failure
