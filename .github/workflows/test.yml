@@ -17,7 +17,10 @@ jobs:
 
       - name: Install Swift
         run: |
-          curl -L https://swift.org/builds/swiftly/latest/swiftly-install.sh | bash -s -- -y --quiet-shell-followup
+          cd /tmp
+          curl -O https://download.swift.org/swiftly/linux/swiftly-x86_64.tar.gz
+          tar zxf swiftly-x86_64.tar.gz
+          ./swiftly init -y --quiet-shell-followup
           echo "$HOME/.local/share/swiftly/bin" >> $GITHUB_PATH
 
       - name: Run tests
