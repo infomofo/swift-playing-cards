@@ -41,6 +41,16 @@ extension Rank: CustomStringConvertible {
 
 /// Extensions for display purposes, especially for compact views
 extension Rank {
+    public var name: String {
+        switch self {
+        case .ace: return "Ace"
+        case .jack: return "Jack"
+        case .queen: return "Queen"
+        case .king: return "King"
+        default: return "\(rawValue)"
+        }
+    }
+
     /// Returns the first letter of the rank for compact display
     public var compactDescription: String {
         switch self {

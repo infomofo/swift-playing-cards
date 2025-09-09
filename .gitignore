@@ -14,5 +14,10 @@ card-images/
 # SwiftLint temporary files
 .swiftlint_output
 
+# Swiftly installer files
+swiftly*
+.swift-version
+LICENSE.txt
+
 # Temporary files
 /tmp

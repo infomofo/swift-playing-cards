@@ -49,19 +49,49 @@ final class DisplayCardSnapshotTests: XCTestCase {
         print("Generated \(generatedFiles.count) card representation files in card-images/ directory")
         print("Files: \(generatedFiles.joined(separator: ", "))")
     }
+
+    func testGenerateAllCardImages() throws {
+        // Create output directory
+        let outputURL = URL(fileURLWithPath: "card-images")
+        try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true, attributes: nil)
+
+        var generatedFiles: [String] = []
+
+        for suit in Suit.allCases {
+            for rank in Rank.allCases {
+                let card = PlayingCard(rank: rank, suit: suit)
+                let filename = "\(rank.name)_of_\(suit.rawValue)"
+
+                // Generate compact version description
+                let compactDescription = generateCardDescription(card: card, displayMode: "compact")
+                let compactURL = outputURL.appendingPathComponent("\(filename)_compact.txt")
+                try compactDescription.write(to: compactURL, atomically: true, encoding: .utf8)
+                generatedFiles.append("\(filename)_compact.txt")
+
+                // Generate large version description
+                let largeDescription = generateCardDescription(card: card, displayMode: "large")
+                let largeURL = outputURL.appendingPathComponent("\(filename)_large.txt")
+                try largeDescription.write(to: largeURL, atomically: true, encoding: .utf8)
+                generatedFiles.append("\(filename)_large.txt")
+            }
+        }
+
+        // Create manifest file
+        let manifestContent = generatedFiles.joined(separator: "\n")
+        let manifestURL = outputURL.appendingPathComponent("manifest.txt")
+        try manifestContent.write(to: manifestURL, atomically: true, encoding: .utf8)
+
+        // Verify files were created
+        XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path))
+        XCTAssertEqual(generatedFiles.count, 52 * 2)
+
+        print("Generated \(generatedFiles.count) card representation files in card-images/ directory")
+    }
     
     private func generateCardDescription(card: PlayingCard, displayMode: String) -> String {
         let modeDescription = displayMode == "compact" ? "COMPACT" : "LARGE"
         let suitName = card.suit.rawValue.capitalized
-        let rankName: String
-        
-        switch card.rank {
-        case .ace: rankName = "Ace"
-        case .jack: rankName = "Jack"
-        case .queen: rankName = "Queen" 
-        case .king: rankName = "King"
-        default: rankName = "\(card.rank.rawValue)"
-        }
+        let rankName = card.rank.name
         
         var description = """
         Card: \(rankName) of \(suitName)
