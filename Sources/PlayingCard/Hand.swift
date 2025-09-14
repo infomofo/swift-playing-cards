@@ -87,9 +87,9 @@ public struct Hand {
     public mutating func replaceCards(at indices: [Int], with newCards: [PlayingCard]) {
         guard indices.count == newCards.count else { return }
 
-        for (i, index) in indices.enumerated() {
+        for (cardIndex, index) in indices.enumerated() {
             if index >= 0 && index < cards.count {
-                cards[index] = newCards[i]
+                cards[index] = newCards[cardIndex]
             }
         }
     }
@@ -189,28 +189,24 @@ public struct Hand {
         }
 
         // Check for regular straight
-        for i in 1..<uniqueRanks.count {
-            if uniqueRanks[i].rawValue != uniqueRanks[i-1].rawValue + 1 {
-                return false
-            }
+        return !uniqueRanks.indices.dropFirst().contains { index in
+            uniqueRanks[index].rawValue != uniqueRanks[index-1].rawValue + 1
         }
-
-        return true
     }
 
-    private func generateCombinations<T>(from array: [T], taking k: Int) -> [[T]] {
-        guard k <= array.count else { return [] }
-        guard k > 0 else { return [[]] }
+    private func generateCombinations<T>(from array: [T], taking count: Int) -> [[T]] {
+        guard count <= array.count else { return [] }
+        guard count > 0 else { return [[]] }
 
-        if k == array.count {
+        if count == array.count {
             return [array]
         }
 
         let first = array[0]
         let rest = Array(array[1...])
 
-        let withFirst = generateCombinations(from: rest, taking: k - 1).map { [first] + $0 }
-        let withoutFirst = generateCombinations(from: rest, taking: k)
+        let withFirst = generateCombinations(from: rest, taking: count - 1).map { [first] + $0 }
+        let withoutFirst = generateCombinations(from: rest, taking: count)
 
         return withFirst + withoutFirst
     }
@@ -232,10 +228,8 @@ extension Hand: Comparable {
         let lhsSorted = lhs.cards.sorted(by: >)
         let rhsSorted = rhs.cards.sorted(by: >)
 
-        for (lhsCard, rhsCard) in zip(lhsSorted, rhsSorted) {
-            if lhsCard != rhsCard {
-                return lhsCard < rhsCard
-            }
+        for (lhsCard, rhsCard) in zip(lhsSorted, rhsSorted) where lhsCard != rhsCard {
+            return lhsCard < rhsCard
         }
 
         return false

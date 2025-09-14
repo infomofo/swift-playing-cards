@@ -31,9 +31,9 @@ public struct Deck {
 
     /// Shuffles the deck using Fisher-Yates algorithm with cryptographically secure randomization.
     public mutating func shuffle() {
-        for i in (1..<cards.count).reversed() {
-            let j = Int.random(in: 0...i)
-            cards.swapAt(i, j)
+        for index in (1..<cards.count).reversed() {
+            let randomIndex = Int.random(in: 0...index)
+            cards.swapAt(index, randomIndex)
         }
     }
 

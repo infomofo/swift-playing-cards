@@ -12,7 +12,7 @@ let package = Package(
         .tvOS(.v15)
     ],
     products: [
-        .library(name: "PlayingCard", targets: ["PlayingCard"]),
+        .library(name: "PlayingCard", targets: ["PlayingCard"])
     ],
     targets: [
         .target(
@@ -20,6 +20,6 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "PlayingCardTests",
-            dependencies: ["PlayingCard"]),
+            dependencies: ["PlayingCard"])
     ]
 )

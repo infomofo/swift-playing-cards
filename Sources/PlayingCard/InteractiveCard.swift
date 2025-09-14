@@ -8,14 +8,14 @@ public struct InteractiveCard: View {
     @State private var isSelected: Bool = false
     @State private var rotationDegrees: Double = 0
     @State private var card: PlayingCard
-    
+
     let onSelectionChanged: ((Bool) -> Void)?
-    
+
     public init(card: PlayingCard, onSelectionChanged: ((Bool) -> Void)? = nil) {
         self._card = State(initialValue: card)
         self.onSelectionChanged = onSelectionChanged
     }
-    
+
     public var body: some View {
         Button(action: toggleSelection) {
             DisplayCard(card: card, displayMode: .large)
@@ -33,7 +33,7 @@ public struct InteractiveCard: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
-    
+
     @ViewBuilder
     private var selectionOverlay: some View {
         if isSelected {
@@ -44,30 +44,30 @@ public struct InteractiveCard: View {
                 .offset(x: 8, y: -8)
         }
     }
-    
+
     private func toggleSelection() {
         withAnimation {
             isSelected.toggle()
             // Add a subtle flip animation when selected
             rotationDegrees += isSelected ? 10 : -10
         }
-        
+
         onSelectionChanged?(isSelected)
     }
-    
+
     /// Programmatically set the selection state
     public func setSelected(_ selected: Bool) {
         withAnimation {
             isSelected = selected
         }
     }
-    
+
     /// Replace this card with a new card (with animation)
     public func replace(with newCard: PlayingCard) {
         withAnimation(.easeInOut(duration: 0.6)) {
             rotationDegrees += 180
         }
-        
+
         // Update the card after half the animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.easeInOut(duration: 0.6)) {
@@ -85,7 +85,7 @@ extension InteractiveCard: Hashable, Equatable {
     public static func == (lhs: InteractiveCard, rhs: InteractiveCard) -> Bool {
         return lhs.card == rhs.card
     }
-    
+
     public func hash(into hasher: inout Hasher) {
         hasher.combine(card)
     }
@@ -106,7 +106,7 @@ struct InteractiveCard_Previews: PreviewProvider {
                 }
             }
             .previewDisplayName("Interactive Cards")
-            
+
             // Video poker hand example
             VideoPokerHandView()
                 .previewDisplayName("Video Poker Hand")
@@ -118,7 +118,7 @@ struct InteractiveCard_Previews: PreviewProvider {
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 private struct VideoPokerHandView: View {
     @State private var selectedCards: Set<Int> = []
-    
+
     let hand = [
         PlayingCard(rank: .ace, suit: .spades),
         PlayingCard(rank: .ace, suit: .hearts),
@@ -126,13 +126,13 @@ private struct VideoPokerHandView: View {
         PlayingCard(rank: .queen, suit: .clubs),
         PlayingCard(rank: .jack, suit: .spades)
     ]
-    
+
     var body: some View {
         VStack {
             Text("Select cards to hold")
                 .font(.headline)
                 .padding()
-            
+
             HStack(spacing: 10) {
                 ForEach(0..<hand.count, id: \.self) { index in
                     InteractiveCard(card: hand[index]) { isSelected in
@@ -145,7 +145,7 @@ private struct VideoPokerHandView: View {
                 }
             }
             .padding()
-            
+
             if !selectedCards.isEmpty {
                 Text("Holding cards: \(selectedCards.map { $0 + 1 }.sorted().map(String.init).joined(separator: ", "))")
                     .font(.caption)

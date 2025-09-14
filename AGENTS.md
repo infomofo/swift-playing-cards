@@ -42,7 +42,7 @@ Customizations and clarifications for this repository. Specify how general laws 
 
 - **On Actionable Comments When Reviewing PRs**: For this repo, agents should always provide code suggestions for Swift, and prefer testable examples for poker hand logic and UI components. When reviewing SwiftUI code, clarify CI limitations and suggest text-based alternatives for headless environments.
 - **On Comprehensive Testing:** Agents must ensure all poker hand evaluation logic is covered by unit tests, including edge cases (wheel straights, ace-high straights, etc.), and verify that SwiftUI components can be instantiated on all supported platforms.
-- **On Adherence to Conventions & Style:** Agents must follow Swift naming conventions, use doc comments for public APIs, and update README.md for any new features or changes. **MANDATORY: Agents must run SwiftLint, build tests, and verify all CI checks pass locally before submitting PRs to prevent iteration waste.**
+- **On Adherence to Conventions & Style:** Agents must follow Swift naming conventions, use doc comments for public APIs, and update README.md for any new features or changes. **MANDATORY: Agents must run SwiftLint locally before submitting PRs. Use the exact same SwiftLint version as CI (check .github/workflows/lint.yml) and ensure zero violations to prevent iteration waste and wasted premium requests.**
 - **On Collaboration When Blocked:** If platform-specific features (e.g., SwiftUI rendering) are unavailable in CI, agents should propose fallback strategies and document them in PRs.
 
 ## Additional Repo-Specific Laws
@@ -51,13 +51,14 @@ Customizations and clarifications for this repository. Specify how general laws 
 2. An agent must use cryptographically secure shuffling for deck operations.
 3. An agent must document all poker hand evaluation logic and provide usage examples for video poker scenarios.
 4. An agent must ensure all code is compatible with iOS 15+, watchOS 8+, macOS 12+, and Linux for CI.
-5. **An agent must validate all changes with local linting, building, and testing before any PR submission to prevent CI failures and iteration overhead.**
+5. **An agent must validate all changes with local linting using the exact same SwiftLint version as CI, building, and testing before any PR submission to prevent CI failures, iteration overhead, and wasted premium requests.**
 
 ### Repo-Specific Law Clarifications
 
 - For SwiftUI component tests, agents should not require pixel-perfect image comparisons in CI, and should use text-based representations for validation.
 - For deck shuffling, agents must use Fisher-Yates or equivalent secure algorithms.
 - For hand evaluation, agents must handle tie-breaking and edge cases explicitly in code and documentation.
+- **For SwiftLint validation**: Agents must run SwiftLint using Docker with the exact same version as CI: `docker run --rm -v "$(pwd):/workdir" -w /workdir ghcr.io/realm/swiftlint:0.55.1 swiftlint lint`. Zero violations are required before PR submission to prevent wasted premium requests and iteration cycles.
 
 ---
 
