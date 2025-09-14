@@ -60,14 +60,7 @@ public struct DisplayCard: View {
 
             VStack {
                 HStack {
-                    VStack {
-                        Text(card.rank.description)
-                            .font(.title2)
-                            .bold()
-                            .foregroundColor(suitColor)
-                        Text(card.suit.description)
-                            .font(.caption)
-                    }
+                    topLeftCorner
                     Spacer()
                 }
                 .padding(.top, 8)
@@ -82,22 +75,48 @@ public struct DisplayCard: View {
 
                 HStack {
                     Spacer()
-                    VStack {
-                        Text(card.suit.description)
-                            .font(.caption)
-                            .rotationEffect(.degrees(180))
-                        Text(card.rank.description)
-                            .font(.title2)
-                            .bold()
-                            .foregroundColor(suitColor)
-                            .rotationEffect(.degrees(180))
-                    }
+                    bottomRightCorner
                 }
                 .padding(.bottom, 8)
                 .padding(.trailing, 8)
             }
         }
         .frame(width: 120, height: 168)
+    }
+
+    // MARK: - Corner Views
+
+    @ViewBuilder
+    private var topLeftCorner: some View {
+        VStack {
+            Text(card.rank.description)
+                .font(.title2)
+                .bold()
+                .foregroundColor(suitColor)
+
+            // Only show suit icon for face cards and Ace
+            if !isNumberCard {
+                Text(card.suit.description)
+                    .font(.caption)
+            }
+        }
+    }
+    @ViewBuilder
+    private var bottomRightCorner: some View {
+        VStack {
+            // Only show suit icon for face cards and Ace
+            if !isNumberCard {
+                Text(card.suit.description)
+                    .font(.caption)
+                    .rotationEffect(.degrees(180))
+            }
+
+            Text(card.rank.description)
+                .font(.title2)
+                .bold()
+                .foregroundColor(suitColor)
+                .rotationEffect(.degrees(180))
+        }
     }
 
     // MARK: - Card Center Content
@@ -170,6 +189,15 @@ public struct DisplayCard: View {
     }
 
     // MARK: - Computed Properties
+
+    private var isNumberCard: Bool {
+        switch card.rank {
+        case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
+            return true
+        case .ace, .jack, .queen, .king:
+            return false
+        }
+    }
 
     private var suitColor: Color {
         switch card.suit {
