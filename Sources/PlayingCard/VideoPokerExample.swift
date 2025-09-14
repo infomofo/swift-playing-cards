@@ -155,7 +155,7 @@ public struct VideoPokerExample {
         
         // If we have high cards, hold them
         if !highCards.isEmpty {
-            for (index, _) in cards.enumerated() {
+            for index in cards.indices {
                 if !highCards.contains(index) {
                     cardsToReplace.append(index)
                 }

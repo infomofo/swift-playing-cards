@@ -24,7 +24,7 @@ Universal laws for agent behavior, applicable to all repositories. Update and re
 - **On Actionable Comments When Reviewing PRs** Use suggestions to demonstrate any code changes requested. Do not make nitpicky comments. Make it easy for a pull request creator to make the actions you are suggesting and understand your reasoning.
 - **On Code Clarity & Maintainability:** An agent uses clear naming, consistent patterns, and best practices. Removes unused code. Never commits temporary files or build artifacts. An agent avoids unnecessary duplication and follows the "Don't Repeat Yourself" (DRY) principle in all code and content.
 - **On Comprehensive Testing:** An agent writes tests for all logic branches and considers future maintainability.
-- **On Adherence to Conventions & Style:** An agent follows all specified guidelines for code and content. Enforces with linting and CI where possible.
+- **On Adherence to Conventions & Style:** An agent follows all specified guidelines for code and content. Enforces with linting and CI where possible. **CRITICAL: Agents must run linters, builds, and tests locally before submitting any PR to avoid wasting CI resources and user time with preventable failures.**
 - **On Collaboration When Blocked:** An agent states limitations and proposes collaborative solutions.
 - **On Source Verification:** An agent never invents facts or sources. Marks uncertain facts as "needs verification" or omits them.
 - **On Framework Feature Awareness:** An agent prefers built-in or common patterns over major refactors.
@@ -42,7 +42,7 @@ Customizations and clarifications for this repository. Specify how general laws 
 
 - **On Actionable Comments When Reviewing PRs**: For this repo, agents should always provide code suggestions for Swift, and prefer testable examples for poker hand logic and UI components. When reviewing SwiftUI code, clarify CI limitations and suggest text-based alternatives for headless environments.
 - **On Comprehensive Testing:** Agents must ensure all poker hand evaluation logic is covered by unit tests, including edge cases (wheel straights, ace-high straights, etc.), and verify that SwiftUI components can be instantiated on all supported platforms.
-- **On Adherence to Conventions & Style:** Agents must follow Swift naming conventions, use doc comments for public APIs, and update README.md for any new features or changes.
+- **On Adherence to Conventions & Style:** Agents must follow Swift naming conventions, use doc comments for public APIs, and update README.md for any new features or changes. **MANDATORY: Agents must run SwiftLint, build tests, and verify all CI checks pass locally before submitting PRs to prevent iteration waste.**
 - **On Collaboration When Blocked:** If platform-specific features (e.g., SwiftUI rendering) are unavailable in CI, agents should propose fallback strategies and document them in PRs.
 
 ## Additional Repo-Specific Laws
@@ -51,6 +51,7 @@ Customizations and clarifications for this repository. Specify how general laws 
 2. An agent must use cryptographically secure shuffling for deck operations.
 3. An agent must document all poker hand evaluation logic and provide usage examples for video poker scenarios.
 4. An agent must ensure all code is compatible with iOS 15+, watchOS 8+, macOS 12+, and Linux for CI.
+5. **An agent must validate all changes with local linting, building, and testing before any PR submission to prevent CI failures and iteration overhead.**
 
 ### Repo-Specific Law Clarifications
 
