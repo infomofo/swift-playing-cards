@@ -6,17 +6,17 @@ import SwiftUI
 public struct DisplayCard: View {
     let card: PlayingCard
     let displayMode: DisplayMode
-    
+
     public enum DisplayMode {
         case compact  // For Apple Watch - small size to fit 5 cards wide
         case large    // For iPhone/iPad - larger detailed view
     }
-    
+
     public init(card: PlayingCard, displayMode: DisplayMode = .large) {
         self.card = card
         self.displayMode = displayMode
     }
-    
+
     public var body: some View {
         switch displayMode {
         case .compact:
@@ -25,16 +25,16 @@ public struct DisplayCard: View {
             largeView
         }
     }
-    
+
     // MARK: - Compact View (Apple Watch)
-    
+
     private var compactView: some View {
         VStack(alignment: .center, spacing: 2) {
             Text(card.rank.compactDescription)
                 .font(.caption2)
                 .bold()
                 .foregroundColor(suitColor)
-            
+
             Text(card.suit.description)
                 .font(.caption)
         }
@@ -46,9 +46,9 @@ public struct DisplayCard: View {
                 .stroke(Color.black, lineWidth: 1)
         )
     }
-    
+
     // MARK: - Large View (iPhone/iPad)
-    
+
     private var largeView: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
@@ -57,7 +57,7 @@ public struct DisplayCard: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.black, lineWidth: 2)
                 )
-            
+
             VStack {
                 HStack {
                     VStack {
@@ -72,14 +72,14 @@ public struct DisplayCard: View {
                 }
                 .padding(.top, 8)
                 .padding(.leading, 8)
-                
+
                 Spacer()
-                
+
                 // Card center content
                 cardCenterContent
-                
+
                 Spacer()
-                
+
                 HStack {
                     Spacer()
                     VStack {
@@ -99,16 +99,16 @@ public struct DisplayCard: View {
         }
         .frame(width: 120, height: 168)
     }
-    
+
     // MARK: - Card Center Content
-    
+
     @ViewBuilder
     private var cardCenterContent: some View {
         switch card.rank {
         case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
             // Number cards: suit icons arranged like mahjong tiles
             numberCardLayout
-            
+
         case .ace, .jack:
             // Ace and Jack: large letter with centered suit
             VStack {
@@ -119,7 +119,7 @@ public struct DisplayCard: View {
                 Text(card.suit.description)
                     .font(.title)
             }
-            
+
         case .queen:
             // Queen: emoji + suit
             VStack(spacing: 4) {
@@ -128,7 +128,7 @@ public struct DisplayCard: View {
                 Text(card.suit.description)
                     .font(.title2)
             }
-            
+
         case .king:
             // King: emoji + suit
             VStack(spacing: 4) {
@@ -139,17 +139,17 @@ public struct DisplayCard: View {
             }
         }
     }
-    
+
     // MARK: - Number Card Layout
-    
+
     private var numberCardLayout: some View {
         let suitCount = card.rank.rawValue
         return suitIconGrid(count: suitCount)
     }
-    
+
     private func suitIconGrid(count: Int) -> some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: gridColumnCount(for: count))
-        
+
         return LazyVGrid(columns: columns, spacing: 4) {
             ForEach(0..<count, id: \.self) { _ in
                 Text(card.suit.description)
@@ -158,7 +158,7 @@ public struct DisplayCard: View {
         }
         .frame(maxWidth: 80)
     }
-    
+
     private func gridColumnCount(for suitCount: Int) -> Int {
         switch suitCount {
         case 2, 3: return 1
@@ -168,9 +168,9 @@ public struct DisplayCard: View {
         default: return 1
         }
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var suitColor: Color {
         switch card.suit {
         case .hearts, .diamonds:
@@ -179,7 +179,7 @@ public struct DisplayCard: View {
             return .black
         }
     }
-    
+
     private var queenEmoji: String {
         switch card.suit {
         case .hearts: return "👸🏼"
@@ -188,7 +188,7 @@ public struct DisplayCard: View {
         case .diamonds: return "👸🏾"
         }
     }
-    
+
     private var kingEmoji: String {
         switch card.suit {
         case .hearts: return "🤴🏼"
@@ -213,7 +213,7 @@ struct DisplayCard_Previews: PreviewProvider {
                 DisplayCard(card: PlayingCard(rank: .nine, suit: .clubs), displayMode: .large)
             }
             .previewDisplayName("Large Cards")
-            
+
             // Compact view examples
             HStack {
                 ForEach([

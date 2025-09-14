@@ -55,146 +55,133 @@ public struct VideoPokerExample {
         // Calculate payout
         let payout = calculatePayout(handType: finalHandType)
         output.append("Final payout: \(payout)x")
-        
+
         if payout > 0 {
             output.append("🎉 WINNER! 🎉")
         } else {
             output.append("Better luck next time!")
         }
-        
+
         output.append("")
         return output.joined(separator: "\n")
     }
 
     /// Simulates an intelligent player strategy for card replacement
     private static func simulatePlayerStrategy(hand: Hand) -> [Int] {
-        let cards = hand.handCards
         let handType = hand.evaluate()
 
         switch handType {
         case .royalFlush, .straightFlush, .fourOfAKind, .fullHouse, .flush, .straight:
-            // Always hold made hands
-            return []
-            
+            return [] // Always hold made hands
         case .threeOfAKind:
-            // Hold the three of a kind, replace the other two
-            let rankCounts = Dictionary(grouping: cards, by: { $0.rank }).mapValues { $0.count }
-            let threeOfAKindRank = rankCounts.first { $0.value == 3 }?.key
-            
-            var cardsToReplace: [Int] = []
-            for (index, card) in cards.enumerated() {
-                if card.rank != threeOfAKindRank {
-                    cardsToReplace.append(index)
-                }
-            }
-            return cardsToReplace
-            
+            return handleThreeOfAKind(cards: hand.handCards)
         case .twoPair:
-            // Hold both pairs, replace the kicker
-            let rankCounts = Dictionary(grouping: cards, by: { $0.rank }).mapValues { $0.count }
-            let pairRanks = Set(rankCounts.filter { $0.value == 2 }.keys)
-            
-            var cardsToReplace: [Int] = []
-            for (index, card) in cards.enumerated() {
-                if !pairRanks.contains(card.rank) {
-                    cardsToReplace.append(index)
-                }
-            }
-            return cardsToReplace
-            
+            return handleTwoPair(cards: hand.handCards)
         case .pair:
-            // Hold the pair, replace the other three
-            let rankCounts = Dictionary(grouping: cards, by: { $0.rank }).mapValues { $0.count }
-            let pairRank = rankCounts.first { $0.value == 2 }?.key
-            
-            var cardsToReplace: [Int] = []
-            for (index, card) in cards.enumerated() {
-                if card.rank != pairRank {
-                    cardsToReplace.append(index)
-                }
-            }
-            return cardsToReplace
-            
+            return handlePair(cards: hand.handCards)
         case .highCard:
-            // Hold high cards (J, Q, K, A) and suited connectors
-            return simulateHighCardStrategy(cards: cards)
+            return simulateHighCardStrategy(cards: hand.handCards)
         }
     }
-    
+
+    private static func handleThreeOfAKind(cards: [PlayingCard]) -> [Int] {
+        let rankCounts = Dictionary(grouping: cards, by: { $0.rank }).mapValues { $0.count }
+        let threeOfAKindRank = rankCounts.first { $0.value == 3 }?.key
+
+        var cardsToReplace: [Int] = []
+        for (index, card) in cards.enumerated() where card.rank != threeOfAKindRank {
+            cardsToReplace.append(index)
+        }
+        return cardsToReplace
+    }
+
+    private static func handleTwoPair(cards: [PlayingCard]) -> [Int] {
+        let rankCounts = Dictionary(grouping: cards, by: { $0.rank }).mapValues { $0.count }
+        let pairRanks = Set(rankCounts.filter { $0.value == 2 }.keys)
+
+        var cardsToReplace: [Int] = []
+        for (index, card) in cards.enumerated() where !pairRanks.contains(card.rank) {
+            cardsToReplace.append(index)
+        }
+        return cardsToReplace
+    }
+
+    private static func handlePair(cards: [PlayingCard]) -> [Int] {
+        let rankCounts = Dictionary(grouping: cards, by: { $0.rank }).mapValues { $0.count }
+        let pairRank = rankCounts.first { $0.value == 2 }?.key
+
+        var cardsToReplace: [Int] = []
+        for (index, card) in cards.enumerated() where card.rank != pairRank {
+            cardsToReplace.append(index)
+        }
+        return cardsToReplace
+    }
+
     private static func simulateHighCardStrategy(cards: [PlayingCard]) -> [Int] {
         var cardsToReplace: [Int] = []
         var highCards: [Int] = []
-        
+
         // Identify high cards (Jack or better)
-        for (index, card) in cards.enumerated() {
-            if card.rank.rawValue >= Rank.jack.rawValue {
-                highCards.append(index)
-            }
+        for (index, card) in cards.enumerated() where card.rank.rawValue >= Rank.jack.rawValue {
+            highCards.append(index)
         }
-        
+
         // Check for flush draw (4 cards of same suit)
         let suitCounts = Dictionary(grouping: cards, by: { $0.suit }).mapValues { $0.count }
         let flushSuit = suitCounts.first { $0.value == 4 }?.key
-        
+
         if let flushSuit = flushSuit {
             // Hold the 4 cards of the flush suit
-            for (index, card) in cards.enumerated() {
-                if card.suit != flushSuit {
-                    cardsToReplace.append(index)
-                }
+            for (index, card) in cards.enumerated() where card.suit != flushSuit {
+                cardsToReplace.append(index)
             }
             return cardsToReplace
         }
-        
+
         // Check for straight draw
         let sortedRanks = cards.map { $0.rank }.sorted()
         if isOpenEndedStraightDraw(ranks: sortedRanks) {
             // Hold all cards for straight draw
             return []
         }
-        
+
         // If we have high cards, hold them
         if !highCards.isEmpty {
-            for (index, _) in cards.enumerated() {
-                if !highCards.contains(index) {
-                    cardsToReplace.append(index)
-                }
+            for index in cards.indices where !highCards.contains(index) {
+                cardsToReplace.append(index)
             }
         } else {
             // No high cards, replace lowest 3 cards
-            let sortedWithIndices = cards.enumerated().sorted { $0.element < $1.element }
-            for i in 0..<3 {
-                cardsToReplace.append(sortedWithIndices[i].offset)
+            let cardsWithIndices = Array(zip(cards.indices, cards))
+            let sortedWithIndices = cardsWithIndices.sorted { $0.1 < $1.1 }
+            for cardIndex in 0..<3 {
+                cardsToReplace.append(sortedWithIndices[cardIndex].0)
             }
         }
-        
+
         return cardsToReplace
     }
-    
+
     private static func isOpenEndedStraightDraw(ranks: [Rank]) -> Bool {
         let uniqueRanks = Array(Set(ranks)).sorted()
         guard uniqueRanks.count >= 4 else { return false }
-        
+
         // Check for consecutive sequences of 4 cards
-        for i in 0...(uniqueRanks.count - 4) {
-            var isConsecutive = true
-            for j in 1..<4 {
-                if uniqueRanks[i + j].rawValue != uniqueRanks[i + j - 1].rawValue + 1 {
-                    isConsecutive = false
-                    break
-                }
+        for startIndex in 0...(uniqueRanks.count - 4) {
+            let isConsecutive = (1..<4).allSatisfy { offset in
+                uniqueRanks[startIndex + offset].rawValue == uniqueRanks[startIndex + offset - 1].rawValue + 1
             }
             if isConsecutive {
                 return true
             }
         }
-        
+
         // Check for wheel draw (A, 2, 3, 4)
-        if uniqueRanks.contains(.ace) && uniqueRanks.contains(.two) && 
+        if uniqueRanks.contains(.ace) && uniqueRanks.contains(.two) &&
            uniqueRanks.contains(.three) && uniqueRanks.contains(.four) {
             return true
         }
-        
+
         return false
     }
 
@@ -267,12 +254,12 @@ public struct VideoPokerExample {
 
         return output.joined(separator: "\n")
     }
-    
+
     /// Demonstrates probability analysis for different starting hands
     public static func demonstrateProbabilities() -> String {
         var output: [String] = []
         output.append("=== Probability Analysis Example ===\n")
-        
+
         // Example probabilities for common video poker scenarios
         let scenarios = [
             ("Royal Flush (dealt)", "1 in 649,740"),
@@ -285,28 +272,28 @@ public struct VideoPokerExample {
             ("Two Pair (dealt)", "1 in 21"),
             ("Jacks or Better (dealt)", "1 in 6")
         ]
-        
+
         output.append("Probability of being dealt various hands:")
         for (hand, probability) in scenarios {
             output.append("  \(hand): \(probability)")
         }
-        
+
         output.append("\nNote: These are theoretical probabilities.")
         output.append("Actual gameplay involves drawing decisions that affect final outcomes.")
-        
+
         return output.joined(separator: "\n")
     }
-    
+
     /// Runs multiple example hands to show variety
     public static func runMultipleHands(count: Int = 3) -> String {
         var output: [String] = []
-        
-        for i in 1...count {
-            output.append("HAND #\(i)")
+
+        for handNumber in 1...count {
+            output.append("HAND #\(handNumber)")
             output.append(String(repeating: "=", count: 50))
             output.append(playExampleHand())
         }
-        
+
         return output.joined(separator: "\n")
     }
 }
