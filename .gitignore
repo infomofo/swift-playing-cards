@@ -13,6 +13,7 @@ card-images/
 
 # SwiftLint temporary files
 .swiftlint_output
+swiftlint_linux.zip*
 
 # Swiftly installer files
 swiftly*
