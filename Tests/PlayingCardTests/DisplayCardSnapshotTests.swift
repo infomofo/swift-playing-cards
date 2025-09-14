@@ -118,7 +118,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
             
             switch card.rank {
             case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
-                description += "\n- Center: \(card.rank.rawValue) \(card.suit.description) symbols arranged in grid"
+                description += "\n- Center: \(card.rank.description) \(card.suit.description) symbols arranged in grid"
             case .ace, .jack:
                 description += "\n- Center: Large '\(card.rank.description)' with \(card.suit.description) below"
             case .queen:

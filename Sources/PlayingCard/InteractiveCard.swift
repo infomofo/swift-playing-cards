@@ -7,12 +7,12 @@ import SwiftUI
 public struct InteractiveCard: View {
     @State private var isSelected: Bool = false
     @State private var rotationDegrees: Double = 0
+    @State private var card: PlayingCard
     
-    let card: PlayingCard
     let onSelectionChanged: ((Bool) -> Void)?
     
     public init(card: PlayingCard, onSelectionChanged: ((Bool) -> Void)? = nil) {
-        self.card = card
+        self._card = State(initialValue: card)
         self.onSelectionChanged = onSelectionChanged
     }
     
@@ -63,15 +63,17 @@ public struct InteractiveCard: View {
     }
     
     /// Replace this card with a new card (with animation)
-    public mutating func replace(with newCard: PlayingCard) {
+    public func replace(with newCard: PlayingCard) {
         withAnimation(.easeInOut(duration: 0.6)) {
             rotationDegrees += 180
         }
         
         // Update the card after half the animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            // In a real implementation, this would update the card
-            // For now, this demonstrates the animation pattern
+            withAnimation(.easeInOut(duration: 0.6)) {
+                card = newCard
+                rotationDegrees += 180
+            }
         }
     }
 }
