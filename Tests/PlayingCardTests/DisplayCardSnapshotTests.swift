@@ -24,17 +24,17 @@ final class DisplayCardSnapshotTests: XCTestCase {
         var generatedFiles: [String] = []
 
         for (filename, card) in testCards {
-            // Generate compact version description
-            let compactDescription = generateCardDescription(card: card, displayMode: "compact")
-            let compactURL = outputURL.appendingPathComponent("\(filename)_compact.txt")
-            try compactDescription.write(to: compactURL, atomically: true, encoding: .utf8)
-            generatedFiles.append("\(filename)_compact.txt")
+            // Generate compact version SVG
+            let compactSVG = generateCardSVG(card: card, displayMode: .compact)
+            let compactURL = outputURL.appendingPathComponent("\(filename)_compact.svg")
+            try compactSVG.write(to: compactURL, atomically: true, encoding: .utf8)
+            generatedFiles.append("\(filename)_compact.svg")
 
-            // Generate large version description
-            let largeDescription = generateCardDescription(card: card, displayMode: "large")
-            let largeURL = outputURL.appendingPathComponent("\(filename)_large.txt")
-            try largeDescription.write(to: largeURL, atomically: true, encoding: .utf8)
-            generatedFiles.append("\(filename)_large.txt")
+            // Generate large version SVG
+            let largeSVG = generateCardSVG(card: card, displayMode: .large)
+            let largeURL = outputURL.appendingPathComponent("\(filename)_large.svg")
+            try largeSVG.write(to: largeURL, atomically: true, encoding: .utf8)
+            generatedFiles.append("\(filename)_large.svg")
         }
 
         // Create manifest file
@@ -46,7 +46,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path))
         XCTAssertGreaterThan(generatedFiles.count, 0)
 
-        print("Generated \(generatedFiles.count) card representation files in card-images/ directory")
+        print("Generated \(generatedFiles.count) SVG card image files in card-images/ directory")
         print("Files: \(generatedFiles.joined(separator: ", "))")
     }
 
@@ -62,17 +62,17 @@ final class DisplayCardSnapshotTests: XCTestCase {
                 let card = PlayingCard(rank: rank, suit: suit)
                 let filename = "\(rank.name)_of_\(suit.rawValue)"
 
-                // Generate compact version description
-                let compactDescription = generateCardDescription(card: card, displayMode: "compact")
-                let compactURL = outputURL.appendingPathComponent("\(filename)_compact.txt")
-                try compactDescription.write(to: compactURL, atomically: true, encoding: .utf8)
-                generatedFiles.append("\(filename)_compact.txt")
+                // Generate compact version SVG
+                let compactSVG = generateCardSVG(card: card, displayMode: .compact)
+                let compactURL = outputURL.appendingPathComponent("\(filename)_compact.svg")
+                try compactSVG.write(to: compactURL, atomically: true, encoding: .utf8)
+                generatedFiles.append("\(filename)_compact.svg")
 
-                // Generate large version description
-                let largeDescription = generateCardDescription(card: card, displayMode: "large")
-                let largeURL = outputURL.appendingPathComponent("\(filename)_large.txt")
-                try largeDescription.write(to: largeURL, atomically: true, encoding: .utf8)
-                generatedFiles.append("\(filename)_large.txt")
+                // Generate large version SVG
+                let largeSVG = generateCardSVG(card: card, displayMode: .large)
+                let largeURL = outputURL.appendingPathComponent("\(filename)_large.svg")
+                try largeSVG.write(to: largeURL, atomically: true, encoding: .utf8)
+                generatedFiles.append("\(filename)_large.svg")
             }
         }
 
@@ -85,53 +85,196 @@ final class DisplayCardSnapshotTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path))
         XCTAssertEqual(generatedFiles.count, 52 * 2)
 
-        print("Generated \(generatedFiles.count) card representation files in card-images/ directory")
+        print("Generated \(generatedFiles.count) SVG card image files in card-images/ directory")
+        print("Files include both compact (28x36) and large (120x168) versions of all 52 cards")
     }
 
-    private func generateCardDescription(card: PlayingCard, displayMode: String) -> String {
-        let modeDescription = displayMode == "compact" ? "COMPACT" : "LARGE"
-        let suitName = card.suit.rawValue.capitalized
-        let rankName = card.rank.name
+    enum DisplayMode {
+        case compact
+        case large
+    }
 
-        var description = """
-        Card: \(rankName) of \(suitName)
-        Display Mode: \(modeDescription)
-        Rank Symbol: \(card.rank.description)
-        Suit Symbol: \(card.suit.description)
-        Color: \(card.suit == .hearts || card.suit == .diamonds ? "Red" : "Black")
+    private func generateCardSVG(card: PlayingCard, displayMode: DisplayMode) -> String {
+        switch displayMode {
+        case .compact:
+            return generateCompactCardSVG(card: card)
+        case .large:
+            return generateLargeCardSVG(card: card)
+        }
+    }
 
+    private func generateCompactCardSVG(card: PlayingCard) -> String {
+        let color = (card.suit == .hearts || card.suit == .diamonds) ? "red" : "black"
+
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
+          <!-- Card background -->
+          <rect x="0" y="0" width="28" height="36" fill="white" stroke="black" stroke-width="1" rx="4"/>
+
+          <!-- Rank -->
+          <text x="14" y="16" text-anchor="middle" font-family="Arial, sans-serif"
+                font-size="10" font-weight="bold" fill="\(color)">
+            \(card.rank.compactDescription)
+          </text>
+
+          <!-- Suit -->
+          <text x="14" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="\(color)">
+            \(card.suit.description)
+          </text>
+        </svg>
+        """
+    }
+
+    private func generateLargeCardSVG(card: PlayingCard) -> String {
+        let color = (card.suit == .hearts || card.suit == .diamonds) ? "red" : "black"
+        let isNumberCard = isNumberCard(card.rank)
+
+        var svg = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <svg width="120" height="168" viewBox="0 0 120 168" xmlns="http://www.w3.org/2000/svg">
+          <!-- Card background -->
+          <rect x="0" y="0" width="120" height="168" fill="white" stroke="black" stroke-width="2" rx="8"/>
+
+          <!-- Top left corner -->
+          <text x="12" y="24" text-anchor="start" font-family="Arial, sans-serif"
+                font-size="16" font-weight="bold" fill="\(color)">
+            \(card.rank.description)
+          </text>
         """
 
-        if displayMode == "compact" {
-            description += """
-            Compact Layout:
-            - Size: 28x36 pixels (fits 5 cards wide on Apple Watch)
-            - Rank: \(card.rank.compactDescription) (top, bold, \
-                     \(card.suit == .hearts || card.suit == .diamonds ? "red" : "black"))
-            - Suit: \(card.suit.description) (bottom, larger)
+        // Only show suit in corner for face cards and Ace
+        if !isNumberCard {
+            svg += """
+              <text x="12" y="38" text-anchor="start" font-family="Arial, sans-serif" font-size="10" fill="\(color)">
+                \(card.suit.description)
+              </text>
             """
-        } else {
-            description += """
-            Large Layout:
-            - Size: 120x168 pixels (suitable for iPhone/iPad)
-            - Corner indicators: \(card.rank.description) and \(card.suit.description) in corners
-            """
-
-            switch card.rank {
-            case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
-                description += "\n- Center: \(card.rank.description) \(card.suit.description) symbols arranged in grid"
-            case .ace, .jack:
-                description += "\n- Center: Large '\(card.rank.description)' with \(card.suit.description) below"
-            case .queen:
-                let emoji = getQueenEmoji(for: card.suit)
-                description += "\n- Center: \(emoji) emoji with \(card.suit.description) below"
-            case .king:
-                let emoji = getKingEmoji(for: card.suit)
-                description += "\n- Center: \(emoji) emoji with \(card.suit.description) below"
-            }
         }
 
-        return description
+        // Bottom right corner (rotated)
+        if !isNumberCard {
+            svg += """
+              <text x="108" y="144" text-anchor="end" font-family="Arial, sans-serif"
+                    font-size="10" fill="\(color)" transform="rotate(180 108 144)">
+                \(card.suit.description)
+              </text>
+            """
+        }
+
+        svg += """
+          <text x="108" y="158" text-anchor="end" font-family="Arial, sans-serif"
+                font-size="16" font-weight="bold" fill="\(color)" transform="rotate(180 108 158)">
+            \(card.rank.description)
+          </text>
+        """
+
+        // Center content
+        svg += generateCenterContent(card: card, color: color)
+
+        svg += """
+        </svg>
+        """
+
+        return svg
+    }
+
+    private func generateCenterContent(card: PlayingCard, color: String) -> String {
+        switch card.rank {
+        case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
+            return generateNumberCardCenter(card: card, color: color)
+        case .ace, .jack:
+            return """
+              <!-- Center: Large rank letter -->
+              <text x="60" y="74" text-anchor="middle" font-family="Arial, sans-serif"
+                    font-size="24" font-weight="bold" fill="\(color)">
+                \(card.rank.description)
+              </text>
+              <text x="60" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="\(color)">
+                \(card.suit.description)
+              </text>
+            """
+        case .queen:
+            return """
+              <!-- Center: Queen emoji -->
+              <text x="60" y="84" text-anchor="middle" font-family="Arial, sans-serif" font-size="24">
+                \(getQueenEmoji(for: card.suit))
+              </text>
+              <text x="60" y="104" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="\(color)">
+                \(card.suit.description)
+              </text>
+            """
+        case .king:
+            return """
+              <!-- Center: King emoji -->
+              <text x="60" y="84" text-anchor="middle" font-family="Arial, sans-serif" font-size="24">
+                \(getKingEmoji(for: card.suit))
+              </text>
+              <text x="60" y="104" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="\(color)">
+                \(card.suit.description)
+              </text>
+            """
+        }
+    }
+
+    private func generateNumberCardCenter(card: PlayingCard, color: String) -> String {
+        let count = card.rank.rawValue
+        let positions = getSuitPositions(for: count)
+
+        var centerSVG = "  <!-- Center: Suit symbols arranged in grid -->\n"
+
+        for (xPos, yPos) in positions {
+            centerSVG += """
+              <text x="\(xPos)" y="\(yPos)" text-anchor="middle" font-family="Arial, sans-serif"
+                    font-size="14" fill="\(color)">
+                \(card.suit.description)
+              </text>
+
+            """
+        }
+
+        return centerSVG
+    }
+
+    private func getSuitPositions(for count: Int) -> [(Int, Int)] {
+        let centerX = 60
+        let topY = 60
+        let bottomY = 108
+        let midY = 84
+
+        switch count {
+        case 2:
+            return [(centerX, topY), (centerX, bottomY)]
+        case 3:
+            return [(centerX, topY), (centerX, midY), (centerX, bottomY)]
+        case 4:
+            return [(40, topY), (80, topY), (40, bottomY), (80, bottomY)]
+        case 5:
+            return [(40, topY), (80, topY), (centerX, midY), (40, bottomY), (80, bottomY)]
+        case 6:
+            return [(40, topY), (80, topY), (40, midY), (80, midY), (40, bottomY), (80, bottomY)]
+        case 7:
+            return [(40, topY), (80, topY), (40, 70), (60, midY), (80, 70), (40, bottomY), (80, bottomY)]
+        case 8:
+            return [(40, topY), (80, topY), (40, 70), (80, 70), (40, 98), (80, 98), (40, bottomY), (80, bottomY)]
+        case 9:
+            return [(40, topY), (60, topY), (80, topY), (40, 78), (80, 78),
+                    (40, 90), (60, 90), (80, 90), (60, bottomY)]
+        case 10:
+            return [(40, topY), (80, topY), (40, 68), (80, 68), (40, 76), (80, 76),
+                    (40, 92), (80, 92), (40, bottomY), (80, bottomY)]
+        default:
+            return [(centerX, midY)]
+        }
+    }
+
+    private func isNumberCard(_ rank: Rank) -> Bool {
+        switch rank {
+        case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
+            return true
+        case .ace, .jack, .queen, .king:
+            return false
+        }
     }
 
     private func getQueenEmoji(for suit: Suit) -> String {
