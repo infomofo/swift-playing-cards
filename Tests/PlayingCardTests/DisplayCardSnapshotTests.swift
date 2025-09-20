@@ -254,15 +254,19 @@ final class DisplayCardSnapshotTests: XCTestCase {
         case 6:
             return [(40, topY), (80, topY), (40, midY), (80, midY), (40, bottomY), (80, bottomY)]
         case 7:
-            return [(40, topY), (80, topY), (40, 70), (60, midY), (80, 70), (40, bottomY), (80, bottomY)]
+            // 7: 2 top, 1 center top, 2 center bottom, 2 bottom - better spacing
+            return [(40, topY), (80, topY), (40, 72), (60, midY), (80, 72), (40, bottomY), (80, bottomY)]
         case 8:
-            return [(40, topY), (80, topY), (40, 70), (80, 70), (40, 98), (80, 98), (40, bottomY), (80, bottomY)]
+            // 8: 2 top, 2 center top, 2 center bottom, 2 bottom - even distribution
+            return [(40, topY), (80, topY), (40, 72), (80, 72), (40, 96), (80, 96), (40, bottomY), (80, bottomY)]
         case 9:
-            return [(40, topY), (60, topY), (80, topY), (40, 78), (80, 78),
-                    (40, 90), (60, 90), (80, 90), (60, bottomY)]
+            // 9: 3 top, 2 center, 3 center bottom, 1 bottom - improved spacing
+            return [(40, topY), (60, topY), (80, topY), (40, 76), (80, 76),
+                    (40, 88), (60, 88), (80, 88), (60, bottomY)]
         case 10:
-            return [(40, topY), (80, topY), (40, 68), (80, 68), (40, 76), (80, 76),
-                    (40, 92), (80, 92), (40, bottomY), (80, bottomY)]
+            // 10: 2 top, 2 upper middle, 2 lower middle, 2 center bottom, 2 bottom - evenly distributed
+            return [(40, topY), (80, topY), (40, 70), (80, 70), (40, 80), (80, 80),
+                    (40, 90), (80, 90), (40, bottomY), (80, bottomY)]
         default:
             return [(centerX, midY)]
         }

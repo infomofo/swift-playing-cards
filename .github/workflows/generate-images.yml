@@ -26,8 +26,98 @@ jobs:
       - name: Generate images
         run: swift test --filter testGenerateAllCardImages
 
-      - name: Upload card images
+      - name: Organize images by suit and type
+        run: |
+          mkdir -p artifacts/hearts artifacts/diamonds artifacts/clubs artifacts/spades
+          mkdir -p artifacts/face-cards artifacts/number-cards artifacts/aces
+          mkdir -p artifacts/compact-cards artifacts/large-cards
+          
+          # Copy by suit (creates organized views for easy browsing)
+          find card-images/ -name "*_of_hearts_*" -exec cp {} artifacts/hearts/ \;
+          find card-images/ -name "*_of_diamonds_*" -exec cp {} artifacts/diamonds/ \;
+          find card-images/ -name "*_of_clubs_*" -exec cp {} artifacts/clubs/ \;
+          find card-images/ -name "*_of_spades_*" -exec cp {} artifacts/spades/ \;
+          
+          # Copy by type (alternative view of same cards)
+          find card-images/ -name "Ace_of_*" -exec cp {} artifacts/aces/ \;
+          find card-images/ -name "Jack_of_*" -exec cp {} artifacts/face-cards/ \;
+          find card-images/ -name "Queen_of_*" -exec cp {} artifacts/face-cards/ \;
+          find card-images/ -name "King_of_*" -exec cp {} artifacts/face-cards/ \;
+          find card-images/ -name "[2-9]_of_*" -exec cp {} artifacts/number-cards/ \;
+          find card-images/ -name "10_of_*" -exec cp {} artifacts/number-cards/ \;
+          
+          # Copy by size (alternative view for different use cases)
+          find card-images/ -name "*_compact.svg" -exec cp {} artifacts/compact-cards/ \;
+          find card-images/ -name "*_large.svg" -exec cp {} artifacts/large-cards/ \;
+          
+          # Summary
+          echo "Organized cards into artifacts:"
+          echo "Hearts: $(ls artifacts/hearts/ | wc -l) files"
+          echo "Diamonds: $(ls artifacts/diamonds/ | wc -l) files"
+          echo "Clubs: $(ls artifacts/clubs/ | wc -l) files"
+          echo "Spades: $(ls artifacts/spades/ | wc -l) files"
+          echo "Aces: $(ls artifacts/aces/ | wc -l) files"
+          echo "Face cards: $(ls artifacts/face-cards/ | wc -l) files"
+          echo "Number cards: $(ls artifacts/number-cards/ | wc -l) files"
+          echo "Compact: $(ls artifacts/compact-cards/ | wc -l) files"
+          echo "Large: $(ls artifacts/large-cards/ | wc -l) files"
+
+      - name: Upload Hearts Cards
         uses: actions/upload-artifact@v4
         with:
-          name: card-images
+          name: hearts-cards
+          path: artifacts/hearts/
+
+      - name: Upload Diamonds Cards
+        uses: actions/upload-artifact@v4
+        with:
+          name: diamonds-cards
+          path: artifacts/diamonds/
+
+      - name: Upload Clubs Cards
+        uses: actions/upload-artifact@v4
+        with:
+          name: clubs-cards
+          path: artifacts/clubs/
+
+      - name: Upload Spades Cards
+        uses: actions/upload-artifact@v4
+        with:
+          name: spades-cards
+          path: artifacts/spades/
+
+      - name: Upload Face Cards
+        uses: actions/upload-artifact@v4
+        with:
+          name: face-cards
+          path: artifacts/face-cards/
+
+      - name: Upload Number Cards (2-10)
+        uses: actions/upload-artifact@v4
+        with:
+          name: number-cards
+          path: artifacts/number-cards/
+
+      - name: Upload Aces
+        uses: actions/upload-artifact@v4
+        with:
+          name: aces
+          path: artifacts/aces/
+
+      - name: Upload Compact Cards (Watch Size)
+        uses: actions/upload-artifact@v4
+        with:
+          name: compact-cards
+          path: artifacts/compact-cards/
+
+      - name: Upload Large Cards (iPhone/iPad Size)
+        uses: actions/upload-artifact@v4
+        with:
+          name: large-cards
+          path: artifacts/large-cards/
+
+      - name: Upload All Card Images (Complete Set)
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-card-images
           path: card-images/
