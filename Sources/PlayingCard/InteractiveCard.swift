@@ -8,6 +8,7 @@ public struct InteractiveCard: View {
     @State private var isSelected: Bool = false
     @State private var rotationDegrees: Double = 0
     @State private var card: PlayingCard
+    @State private var isShowingBack: Bool = false
 
     let onSelectionChanged: ((Bool) -> Void)?
 
@@ -18,20 +19,44 @@ public struct InteractiveCard: View {
 
     public var body: some View {
         Button(action: toggleSelection) {
-            DisplayCard(card: card, displayMode: .large)
-                .overlay(
-                    selectionOverlay,
-                    alignment: .topTrailing
-                )
-                .rotation3DEffect(
-                    .degrees(rotationDegrees),
-                    axis: (x: 0, y: 1, z: 0)
-                )
-                .scaleEffect(isSelected ? 1.05 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: isSelected)
-                .animation(.easeInOut(duration: 0.6), value: rotationDegrees)
+            ZStack {
+                if isShowingBack {
+                    cardBackView
+                } else {
+                    DisplayCard(card: card, displayMode: .large)
+                        .overlay(
+                            selectionOverlay,
+                            alignment: .topTrailing
+                        )
+                }
+            }
+            .rotation3DEffect(
+                .degrees(rotationDegrees),
+                axis: (x: 0, y: 1, z: 0)
+            )
+            .scaleEffect(isSelected ? 1.05 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isSelected)
+            .animation(.easeInOut(duration: 0.6), value: rotationDegrees)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    // MARK: - Card Back View
+
+    private var cardBackView: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.black, lineWidth: 2)
+            )
+            .frame(width: 120, height: 168)
     }
 
     @ViewBuilder
@@ -61,18 +86,24 @@ public struct InteractiveCard: View {
             isSelected = selected
         }
     }
+    /// Returns whether the card is currently selected
+    public var isCardSelected: Bool {
+        return isSelected
+    }
 
     /// Replace this card with a new card (with animation)
     public func replace(with newCard: PlayingCard) {
-        withAnimation(.easeInOut(duration: 0.6)) {
-            rotationDegrees += 180
+        withAnimation(.easeInOut(duration: 0.3)) {
+            rotationDegrees += 90
+            isShowingBack = true
         }
 
-        // Update the card after half the animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(.easeInOut(duration: 0.6)) {
-                card = newCard
-                rotationDegrees += 180
+        // Update the card and flip back after showing the back
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            card = newCard
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isShowingBack = false
+                rotationDegrees += 90
             }
         }
     }
@@ -118,24 +149,33 @@ struct InteractiveCard_Previews: PreviewProvider {
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 private struct VideoPokerHandView: View {
     @State private var selectedCards: Set<Int> = []
+    @State private var currentHand: [PlayingCard] = []
+    @State private var deck = Deck()
+    @State private var cardRefs: [InteractiveCard] = []
 
-    let hand = [
-        PlayingCard(rank: .ace, suit: .spades),
-        PlayingCard(rank: .ace, suit: .hearts),
-        PlayingCard(rank: .king, suit: .diamonds),
-        PlayingCard(rank: .queen, suit: .clubs),
-        PlayingCard(rank: .jack, suit: .spades)
-    ]
+    init() {
+        _deck = State(initialValue: {
+            var deck = Deck()
+            deck.shuffle()
+            return deck
+        }())
+
+        _currentHand = State(initialValue: {
+            var deck = Deck()
+            deck.shuffle()
+            return deck.dealCards(5)
+        }())
+    }
 
     var body: some View {
-        VStack {
-            Text("Select cards to hold")
+        VStack(spacing: 20) {
+            Text("Video Poker - Select cards to hold")
                 .font(.headline)
                 .padding()
 
             HStack(spacing: 10) {
-                ForEach(0..<hand.count, id: \.self) { index in
-                    InteractiveCard(card: hand[index]) { isSelected in
+                ForEach(0..<currentHand.count, id: \.self) { index in
+                    InteractiveCard(card: currentHand[index]) { isSelected in
                         if isSelected {
                             selectedCards.insert(index)
                         } else {
@@ -146,12 +186,55 @@ private struct VideoPokerHandView: View {
             }
             .padding()
 
-            if !selectedCards.isEmpty {
-                Text("Holding cards: \(selectedCards.map { $0 + 1 }.sorted().map(String.init).joined(separator: ", "))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            VStack(spacing: 12) {
+                if !selectedCards.isEmpty {
+                    let selectedText = selectedCards.map { $0 + 1 }.sorted().map(String.init).joined(separator: ", ")
+                    Text("Holding cards: \(selectedText)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Button(action: redealCards) {
+                    Text("Redeal Non-Selected Cards")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.blue)
+                        .cornerRadius(8)
+                }
+                .disabled(selectedCards.count == 5) // Can't redeal if all cards are held
+
+                Text("Current Hand: \(evaluateCurrentHand())")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                    .padding(.top)
             }
         }
+        .padding()
+    }
+    private func redealCards() {
+        let cardsToReplace = Set(0..<5).subtracting(selectedCards)
+
+        guard !cardsToReplace.isEmpty else { return }
+
+        // Deal new cards
+        let newCards = deck.dealCards(cardsToReplace.count)
+        var newCardIndex = 0
+
+        // Replace cards with animation
+        for cardIndex in cardsToReplace.sorted() where newCardIndex < newCards.count {
+            // Update the hand immediately
+            currentHand[cardIndex] = newCards[newCardIndex]
+            newCardIndex += 1
+        }
+
+        // Reset selections after redeal
+        selectedCards.removeAll()
+    }
+    private func evaluateCurrentHand() -> String {
+        let hand = Hand(cards: currentHand)
+        return hand.evaluate().description
     }
 }
 

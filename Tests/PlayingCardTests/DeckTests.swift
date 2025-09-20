@@ -52,7 +52,7 @@ final class DeckTests: XCTestCase {
 
     func testDeckShuffle() {
         var deck1 = Deck()
-        var deck2 = Deck()
+        let deck2 = Deck()
 
         deck1.shuffle()
 
