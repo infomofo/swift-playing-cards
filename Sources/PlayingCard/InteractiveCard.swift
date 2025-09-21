@@ -179,39 +179,35 @@ private struct VideoPokerHandView: View {
             HStack(spacing: 10) {
                 ForEach(0..<currentHand.count, id: \.self) { index in
                     let card = currentHand[index]
+                    // True 3D card flip using both views with proper depth
                     ZStack {
-                        // Simple but working animation using scale and fade
-                        if flipDegrees[index] <= 90 {
-                            // Front face - scales down and fades out
-                            InteractiveCard(card: card) { isSelected in
-                                if isSelected {
-                                    selectedCards.insert(index)
-                                } else {
-                                    selectedCards.remove(index)
-                                }
+                        // Card back - always present, rotated 180° initially
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.black, lineWidth: 2)
+                            )
+                            .frame(width: 120, height: 168)
+                            .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+                        
+                        // Card front - always present, starts at 0°
+                        InteractiveCard(card: card) { isSelected in
+                            if isSelected {
+                                selectedCards.insert(index)
+                            } else {
+                                selectedCards.remove(index)
                             }
-                            .scaleEffect(1.0 - (flipDegrees[index] / 90.0) * 0.3) // Scale from 1.0 to 0.7
-                            .opacity(1.0 - (flipDegrees[index] / 90.0)) // Fade from 1.0 to 0.0
-                        } else {
-                            // Back face - scales up and fades in
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.black, lineWidth: 2)
-                                )
-                                .frame(width: 120, height: 168)
-                                .scaleEffect(0.7 + ((flipDegrees[index] - 90) / 90.0) * 0.3) // Scale from 0.7 to 1.0
-                                .opacity((flipDegrees[index] - 90) / 90.0) // Fade from 0.0 to 1.0
                         }
                     }
-                    .animation(.easeInOut(duration: 0.3), value: flipDegrees[index])
+                    .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
+                    .clipped()
                     .id("card-\(index)-\(card.rank.rawValue)-\(card.suit.rawValue)-flip-\(flipDegrees[index])")
                     .transition(.identity)
                 }
