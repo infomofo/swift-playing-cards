@@ -180,7 +180,7 @@ private struct VideoPokerHandView: View {
                 ForEach(0..<currentHand.count, id: \.self) { index in
                     let card = currentHand[index]
                     ZStack {
-                        // Card front
+                        // Card front 
                         InteractiveCard(card: card) { isSelected in
                             if isSelected {
                                 selectedCards.insert(index)
@@ -188,9 +188,8 @@ private struct VideoPokerHandView: View {
                                 selectedCards.remove(index)
                             }
                         }
-                        .opacity(flipDegrees[index] > 90 ? 0 : 1)
-
-                        // Card back (visible when rotated past 90 degrees)
+                        
+                        // Card back - positioned 180° behind the front
                         RoundedRectangle(cornerRadius: 8)
                             .fill(
                                 LinearGradient(
@@ -204,9 +203,7 @@ private struct VideoPokerHandView: View {
                                     .stroke(Color.black, lineWidth: 2)
                             )
                             .frame(width: 120, height: 168)
-                            // Pre-rotate back so it appears correctly when card is flipped
                             .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
-                            .opacity(flipDegrees[index] > 90 ? 1 : 0)
                     }
                     .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
                     .id("card-\(index)-\(card.rank.rawValue)-\(card.suit.rawValue)-flip-\(flipDegrees[index])")
