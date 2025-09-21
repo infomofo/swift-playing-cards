@@ -1,5 +1,10 @@
 #if canImport(SwiftUI)
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// An interactive playing card that can be selected and animated.
 /// Useful for video poker where players need to choose which cards to hold.
@@ -152,6 +157,9 @@ private struct VideoPokerHandView: View {
     @State private var currentHand: [PlayingCard] = []
     @State private var deck = Deck()
     @State private var cardRefs: [InteractiveCard] = []
+    @State private var isDealing = false
+    @State private var flipDegrees: [Double] = Array(repeating: 0, count: 5)
+    @State private var showingBack: Set<Int> = []
 
     init() {
         _deck = State(initialValue: {
@@ -160,11 +168,7 @@ private struct VideoPokerHandView: View {
             return deck
         }())
 
-        _currentHand = State(initialValue: {
-            var deck = Deck()
-            deck.shuffle()
-            return deck.dealCards(5)
-        }())
+        _currentHand = State(initialValue: [])
     }
 
     var body: some View {
@@ -175,15 +179,39 @@ private struct VideoPokerHandView: View {
 
             HStack(spacing: 10) {
                 ForEach(0..<currentHand.count, id: \.self) { index in
-                    InteractiveCard(card: currentHand[index]) { isSelected in
-                        if isSelected {
-                            selectedCards.insert(index)
+                    let card = currentHand[index]
+                    ZStack {
+                        // Back of card
+                        if showingBack.contains(index) {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.black, lineWidth: 2)
+                                )
+                                .frame(width: 120, height: 168)
                         } else {
-                            selectedCards.remove(index)
+                            InteractiveCard(card: card) { isSelected in
+                                if isSelected {
+                                    selectedCards.insert(index)
+                                } else {
+                                    selectedCards.remove(index)
+                                }
+                            }
                         }
                     }
+                    .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
+                    .id("card-\(index)-\(card.rank.rawValue)-\(card.suit.rawValue)-flip-\(flipDegrees[index])")
+                    .transition(.identity)
                 }
             }
+            .perspective(800)
             .padding()
 
             VStack(spacing: 12) {
@@ -195,15 +223,18 @@ private struct VideoPokerHandView: View {
                 }
 
                 Button(action: redealCards) {
-                    Text("Redeal Non-Selected Cards")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.blue)
-                        .cornerRadius(8)
+                    HStack(spacing: 8) {
+                        if isDealing { ProgressView().progressViewStyle(.circular) }
+                        Text(isDealing ? "Dealing…" : "Redeal Non-Selected Cards")
+                    }
+                    .font(.title2)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(isDealing ? Color.gray : Color.blue)
+                    .cornerRadius(8)
                 }
-                .disabled(selectedCards.count == 5) // Can't redeal if all cards are held
+                .disabled(isDealing || selectedCards.count == 5)
 
                 Text("Current Hand: \(evaluateCurrentHand())")
                     .font(.subheadline)
@@ -212,25 +243,100 @@ private struct VideoPokerHandView: View {
             }
         }
         .padding()
+        .onAppear {
+            if currentHand.isEmpty {
+                currentHand = deck.dealCards(5)
+            }
+        }
     }
     private func redealCards() {
-        let cardsToReplace = Set(0..<5).subtracting(selectedCards)
-
+        // Determine which indices are not held
+        let cardsToReplace = Set(0..<currentHand.count).subtracting(selectedCards)
         guard !cardsToReplace.isEmpty else { return }
 
-        // Deal new cards
-        let newCards = deck.dealCards(cardsToReplace.count)
-        var newCardIndex = 0
+        isDealing = true
 
-        // Replace cards with animation
-        for cardIndex in cardsToReplace.sorted() where newCardIndex < newCards.count {
-            // Update the hand immediately
-            currentHand[cardIndex] = newCards[newCardIndex]
-            newCardIndex += 1
+        let needed = cardsToReplace.count
+
+        // First attempt to deal from the current deck
+        var newCards = deck.dealCards(needed)
+
+        // If we didn't get enough cards, reset/shuffle a fresh deck and deal again
+        if newCards.count < needed {
+            // Robust fallback: construct the full set of cards, exclude current hand, and draw from that pool
+            var allCards: [PlayingCard] = []
+
+            // Try to use top-level Suit/Rank allCases if available; otherwise fall back to hardcoded lists
+            #if compiler(>=5.7)
+            if let suitAllCases = (Suit.self as? any CaseIterable.Type) as? any Collection,
+               let rankAllCases = (Rank.self as? any CaseIterable.Type) as? any Collection,
+               let suits = suitAllCases as? [Suit],
+               let ranks = rankAllCases as? [Rank] {
+                for suit in suits {
+                    for rank in ranks {
+                        allCards.append(PlayingCard(rank: rank, suit: suit))
+                    }
+                }
+            } else {
+                let allSuits: [Suit] = [.clubs, .diamonds, .hearts, .spades]
+                let allRanks: [Rank] = [.two, .three, .four, .five, .six, .seven, .eight, .nine, .ten, .jack, .queen, .king, .ace]
+                for suit in allSuits {
+                    for rank in allRanks {
+                        allCards.append(PlayingCard(rank: rank, suit: suit))
+                    }
+                }
+            }
+            #else
+            let allSuits: [Suit] = [.clubs, .diamonds, .hearts, .spades]
+            let allRanks: [Rank] = [.two, .three, .four, .five, .six, .seven, .eight, .nine, .ten, .jack, .queen, .king, .ace]
+            for suit in allSuits {
+                for rank in allRanks {
+                    allCards.append(PlayingCard(rank: rank, suit: suit))
+                }
+            }
+            #endif
+
+            // Exclude any cards currently in hand to prevent duplicates
+            let pool = allCards.filter { !currentHand.contains($0) }.shuffled()
+            newCards = Array(pool.prefix(needed))
         }
 
-        // Reset selections after redeal
-        selectedCards.removeAll()
+        guard newCards.count == needed else { isDealing = false; return }
+
+        let indices = cardsToReplace.sorted()
+
+        // Phase 1: flip to back (90 degrees) and show back
+        withAnimation(.easeOut(duration: 0.18)) {
+            for idx in indices {
+                flipDegrees[idx] = 90
+                showingBack.insert(idx)
+            }
+        }
+
+        // After the first half flip completes, set new cards and complete the flip
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.19) {
+            for (offset, idx) in indices.enumerated() {
+                currentHand[idx] = newCards[offset]
+            }
+
+            withAnimation(.easeIn(duration: 0.22)) {
+                for idx in indices {
+                    flipDegrees[idx] = 180
+                }
+            }
+
+            // Reset rotation back to 0 (front) and hide back after the second half completes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.23) {
+                for idx in indices {
+                    flipDegrees[idx] = 0
+                    showingBack.remove(idx)
+                }
+
+                // Clear selections after redeal so the user can choose again
+                selectedCards.removeAll()
+                isDealing = false
+            }
+        }
     }
     private func evaluateCurrentHand() -> String {
         let hand = Hand(cards: currentHand)
@@ -238,4 +344,44 @@ private struct VideoPokerHandView: View {
     }
 }
 
+// MARK: - Perspective support for more realistic 3D flips
+private struct CATransform3DPerspectiveModifier: ViewModifier {
+    let distance: CGFloat
+
+    func body(content: Content) -> some View {
+        content.background(PlatformPerspectiveApplier(distance: distance))
+    }
+
+    #if canImport(UIKit)
+    private struct PlatformPerspectiveApplier: UIViewRepresentable {
+        let distance: CGFloat
+
+        func makeUIView(context: Context) -> UIView { UIView() }
+        func updateUIView(_ view: UIView, context: Context) {
+            var transform = CATransform3DIdentity
+            transform.m34 = -1 / max(distance, 0.001)
+            view.superview?.layer.sublayerTransform = transform
+        }
+    }
+    #elseif canImport(AppKit)
+    private struct PlatformPerspectiveApplier: NSViewRepresentable {
+        let distance: CGFloat
+
+        func makeNSView(context: Context) -> NSView { NSView() }
+        func updateNSView(_ view: NSView, context: Context) {
+            var transform = CATransform3DIdentity
+            transform.m34 = -1 / max(distance, 0.001)
+            view.superview?.layer?.sublayerTransform = transform
+        }
+    }
+    #endif
+}
+
+private extension View {
+    func perspective(_ distance: CGFloat) -> some View {
+        modifier(CATransform3DPerspectiveModifier(distance: distance))
+    }
+}
+
 #endif
+
