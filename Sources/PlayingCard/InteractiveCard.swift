@@ -179,9 +179,9 @@ private struct VideoPokerHandView: View {
             HStack(spacing: 10) {
                 ForEach(0..<currentHand.count, id: \.self) { index in
                     let card = currentHand[index]
-                    // True 3D card flip using both views with proper depth
+                    // 3D card flip with proper backface visibility
                     ZStack {
-                        // Card back - always present, rotated 180° initially
+                        // Card back - visible when rotated past 90°
                         RoundedRectangle(cornerRadius: 8)
                             .fill(
                                 LinearGradient(
@@ -196,8 +196,9 @@ private struct VideoPokerHandView: View {
                             )
                             .frame(width: 120, height: 168)
                             .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+                            .opacity(abs(sin(flipDegrees[index] * .pi / 180)) > 0.5 ? 1 : 0)
                         
-                        // Card front - always present, starts at 0°
+                        // Card front - visible when facing forward
                         InteractiveCard(card: card) { isSelected in
                             if isSelected {
                                 selectedCards.insert(index)
@@ -205,9 +206,9 @@ private struct VideoPokerHandView: View {
                                 selectedCards.remove(index)
                             }
                         }
+                        .opacity(abs(sin(flipDegrees[index] * .pi / 180)) <= 0.5 ? 1 : 0)
                     }
                     .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
-                    .clipped()
                     .id("card-\(index)-\(card.rank.rawValue)-\(card.suit.rawValue)-flip-\(flipDegrees[index])")
                     .transition(.identity)
                 }
