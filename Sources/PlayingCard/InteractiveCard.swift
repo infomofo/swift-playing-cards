@@ -179,36 +179,34 @@ private struct VideoPokerHandView: View {
             HStack(spacing: 10) {
                 ForEach(0..<currentHand.count, id: \.self) { index in
                     let card = currentHand[index]
-                    // Create a true 3D card with proper front and back positioning
                     ZStack {
-                        // Front face of the card
-                        InteractiveCard(card: card) { isSelected in
-                            if isSelected {
-                                selectedCards.insert(index)
-                            } else {
-                                selectedCards.remove(index)
+                        if flipDegrees[index] <= 90 {
+                            // Front face - visible when facing forward
+                            InteractiveCard(card: card) { isSelected in
+                                if isSelected {
+                                    selectedCards.insert(index)
+                                } else {
+                                    selectedCards.remove(index)
+                                }
                             }
-                        }
-                        .zIndex(1) // Ensure front is in front
-                        
-                        // Back face of the card positioned 180° behind front
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
+                        } else {
+                            // Back face - visible when rotated past 90°
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.black, lineWidth: 2)
-                            )
-                            .frame(width: 120, height: 168)
-                            .zIndex(0) // Ensure back is behind
-                            .rotation3DEffect(.degrees(180), axis: (x: 1, y: 0, z: 0))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.black, lineWidth: 2)
+                                )
+                                .frame(width: 120, height: 168)
+                        }
                     }
-                    .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 1, y: 0, z: 0))
+                    .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
                     .id("card-\(index)-\(card.rank.rawValue)-\(card.suit.rawValue)-flip-\(flipDegrees[index])")
                     .transition(.identity)
                 }
