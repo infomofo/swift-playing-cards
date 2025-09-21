@@ -113,13 +113,13 @@ final class DisplayCardSnapshotTests: XCTestCase {
           <rect x="0" y="0" width="28" height="36" fill="white" stroke="black" stroke-width="1" rx="4"/>
 
           <!-- Rank -->
-          <text x="14" y="16" text-anchor="middle" font-family="Arial, sans-serif"
+          <text x="14" y="15" text-anchor="middle" font-family="Arial, sans-serif"
                 font-size="10" font-weight="bold" fill="\(color)">
             \(card.rank.compactDescription)
           </text>
 
           <!-- Suit -->
-          <text x="14" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="\(color)">
+          <text x="14" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="\(color)">
             \(card.suit.description)
           </text>
         </svg>

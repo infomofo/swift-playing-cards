@@ -1,9 +1,6 @@
 name: Generate Card Images
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main

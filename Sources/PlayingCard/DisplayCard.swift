@@ -29,7 +29,7 @@ public struct DisplayCard: View {
     // MARK: - Compact View (Apple Watch)
 
     private var compactView: some View {
-        VStack(alignment: .center, spacing: 2) {
+        VStack(alignment: .center, spacing: 4) {
             Text(card.rank.compactDescription)
                 .font(.caption2)
                 .bold()
