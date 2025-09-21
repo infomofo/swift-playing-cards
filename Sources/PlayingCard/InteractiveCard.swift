@@ -180,9 +180,9 @@ private struct VideoPokerHandView: View {
                 ForEach(0..<currentHand.count, id: \.self) { index in
                     let card = currentHand[index]
                     ZStack {
-                        // Single card view that rotates and changes content
-                        if flipDegrees[index] < 90 || flipDegrees[index] >= 270 {
-                            // Front face
+                        // Simple but working animation using scale and fade
+                        if flipDegrees[index] <= 90 {
+                            // Front face - scales down and fades out
                             InteractiveCard(card: card) { isSelected in
                                 if isSelected {
                                     selectedCards.insert(index)
@@ -190,8 +190,10 @@ private struct VideoPokerHandView: View {
                                     selectedCards.remove(index)
                                 }
                             }
+                            .scaleEffect(1.0 - (flipDegrees[index] / 90.0) * 0.3) // Scale from 1.0 to 0.7
+                            .opacity(1.0 - (flipDegrees[index] / 90.0)) // Fade from 1.0 to 0.0
                         } else {
-                            // Back face
+                            // Back face - scales up and fades in
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(
                                     LinearGradient(
@@ -205,10 +207,11 @@ private struct VideoPokerHandView: View {
                                         .stroke(Color.black, lineWidth: 2)
                                 )
                                 .frame(width: 120, height: 168)
+                                .scaleEffect(0.7 + ((flipDegrees[index] - 90) / 90.0) * 0.3) // Scale from 0.7 to 1.0
+                                .opacity((flipDegrees[index] - 90) / 90.0) // Fade from 0.0 to 1.0
                         }
                     }
-                    .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
-                    .animation(.linear(duration: 0.4), value: flipDegrees[index])
+                    .animation(.easeInOut(duration: 0.3), value: flipDegrees[index])
                     .id("card-\(index)-\(card.rank.rawValue)-\(card.suit.rawValue)-flip-\(flipDegrees[index])")
                     .transition(.identity)
                 }
