@@ -179,9 +179,21 @@ private struct VideoPokerHandView: View {
             HStack(spacing: 10) {
                 ForEach(0..<currentHand.count, id: \.self) { index in
                     let card = currentHand[index]
-                    // 3D card flip with proper backface visibility
+                    // Proper 3D card flip using established SwiftUI patterns
                     ZStack {
-                        // Card back - visible when rotated past 90°
+                        // Card front - rotates from 0° to 90°
+                        InteractiveCard(card: card) { isSelected in
+                            if isSelected {
+                                selectedCards.insert(index)
+                            } else {
+                                selectedCards.remove(index)
+                            }
+                        }
+                        .opacity(flipDegrees[index] <= 90 ? 1 : 0)
+                        .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(flipDegrees[index] <= 90 ? 1.0 - (flipDegrees[index] / 90) * 0.1 : 0.9)
+                        
+                        // Card back - rotates from -90° to 0° (appears to rotate from 90° to 180°)
                         RoundedRectangle(cornerRadius: 8)
                             .fill(
                                 LinearGradient(
@@ -195,20 +207,10 @@ private struct VideoPokerHandView: View {
                                     .stroke(Color.black, lineWidth: 2)
                             )
                             .frame(width: 120, height: 168)
-                            .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
-                            .opacity(abs(sin(flipDegrees[index] * .pi / 180)) > 0.5 ? 1 : 0)
-                        
-                        // Card front - visible when facing forward
-                        InteractiveCard(card: card) { isSelected in
-                            if isSelected {
-                                selectedCards.insert(index)
-                            } else {
-                                selectedCards.remove(index)
-                            }
-                        }
-                        .opacity(abs(sin(flipDegrees[index] * .pi / 180)) <= 0.5 ? 1 : 0)
+                            .opacity(flipDegrees[index] > 90 ? 1 : 0)
+                            .rotation3DEffect(.degrees(flipDegrees[index] - 180), axis: (x: 0, y: 1, z: 0))
+                            .scaleEffect(flipDegrees[index] > 90 ? 0.9 + ((flipDegrees[index] - 90) / 90) * 0.1 : 1.0)
                     }
-                    .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
                     .id("card-\(index)-\(card.rank.rawValue)-\(card.suit.rawValue)-flip-\(flipDegrees[index])")
                     .transition(.identity)
                 }
