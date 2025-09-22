@@ -159,7 +159,6 @@ private struct VideoPokerHandView: View {
     @State private var cardRefs: [InteractiveCard] = []
     @State private var isDealing = false
     @State private var flipDegrees: [Double] = Array(repeating: 0, count: 5)
-    @State private var showingBack: Set<Int> = []
 
     init() {
         _deck = State(initialValue: {
@@ -180,33 +179,38 @@ private struct VideoPokerHandView: View {
             HStack(spacing: 10) {
                 ForEach(0..<currentHand.count, id: \.self) { index in
                     let card = currentHand[index]
+                    // Proper 3D card flip using established SwiftUI patterns
                     ZStack {
-                        // Back of card
-                        if showingBack.contains(index) {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.black, lineWidth: 2)
-                                )
-                                .frame(width: 120, height: 168)
-                        } else {
-                            InteractiveCard(card: card) { isSelected in
-                                if isSelected {
-                                    selectedCards.insert(index)
-                                } else {
-                                    selectedCards.remove(index)
-                                }
+                        // Card front - rotates from 0° to 90°
+                        InteractiveCard(card: card) { isSelected in
+                            if isSelected {
+                                selectedCards.insert(index)
+                            } else {
+                                selectedCards.remove(index)
                             }
                         }
+                        .opacity(flipDegrees[index] <= 90 ? 1 : 0)
+                        .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(flipDegrees[index] <= 90 ? 1.0 - (flipDegrees[index] / 90) * 0.1 : 0.9)
+                        
+                        // Card back - rotates from -90° to 0° (appears to rotate from 90° to 180°)
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.black, lineWidth: 2)
+                            )
+                            .frame(width: 120, height: 168)
+                            .opacity(flipDegrees[index] > 90 ? 1 : 0)
+                            .rotation3DEffect(.degrees(flipDegrees[index] - 180), axis: (x: 0, y: 1, z: 0))
+                            .scaleEffect(flipDegrees[index] > 90 ? 0.9 + ((flipDegrees[index] - 90) / 90) * 0.1 : 1.0)
                     }
-                    .rotation3DEffect(.degrees(flipDegrees[index]), axis: (x: 0, y: 1, z: 0))
                     .id("card-\(index)-\(card.rank.rawValue)-\(card.suit.rawValue)-flip-\(flipDegrees[index])")
                     .transition(.identity)
                 }
@@ -279,7 +283,8 @@ private struct VideoPokerHandView: View {
                 }
             } else {
                 let allSuits: [Suit] = [.clubs, .diamonds, .hearts, .spades]
-                let allRanks: [Rank] = [.two, .three, .four, .five, .six, .seven, .eight, .nine, .ten, .jack, .queen, .king, .ace]
+                let allRanks: [Rank] = [.two, .three, .four, .five, .six, .seven, .eight, .nine, .ten,
+                                        .jack, .queen, .king, .ace]
                 for suit in allSuits {
                     for rank in allRanks {
                         allCards.append(PlayingCard(rank: rank, suit: suit))
@@ -288,7 +293,8 @@ private struct VideoPokerHandView: View {
             }
             #else
             let allSuits: [Suit] = [.clubs, .diamonds, .hearts, .spades]
-            let allRanks: [Rank] = [.two, .three, .four, .five, .six, .seven, .eight, .nine, .ten, .jack, .queen, .king, .ace]
+            let allRanks: [Rank] = [.two, .three, .four, .five, .six, .seven, .eight, .nine, .ten,
+                                    .jack, .queen, .king, .ace]
             for suit in allSuits {
                 for rank in allRanks {
                     allCards.append(PlayingCard(rank: rank, suit: suit))
@@ -305,36 +311,34 @@ private struct VideoPokerHandView: View {
 
         let indices = cardsToReplace.sorted()
 
-        // Phase 1: flip to back (90 degrees) and show back
-        withAnimation(.easeOut(duration: 0.18)) {
-            for idx in indices {
-                flipDegrees[idx] = 90
-                showingBack.insert(idx)
-            }
-        }
+        // Phase 1: flip to back (90 degrees) with ripple effect
+        for (order, idx) in indices.enumerated() {
+            let delay = Double(order) * 0.1 // 100ms delay between each card
 
-        // After the first half flip completes, set new cards and complete the flip
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.19) {
-            for (offset, idx) in indices.enumerated() {
-                currentHand[idx] = newCards[offset]
-            }
-
-            withAnimation(.easeIn(duration: 0.22)) {
-                for idx in indices {
-                    flipDegrees[idx] = 180
-                }
-            }
-
-            // Reset rotation back to 0 (front) and hide back after the second half completes
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.23) {
-                for idx in indices {
-                    flipDegrees[idx] = 0
-                    showingBack.remove(idx)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                withAnimation(.easeOut(duration: 0.18)) {
+                    flipDegrees[idx] = 90
                 }
 
-                // Clear selections after redeal so the user can choose again
-                selectedCards.removeAll()
-                isDealing = false
+                // After the first half flip completes, set new card and complete the flip
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.19) {
+                    currentHand[idx] = newCards[order]
+
+                    withAnimation(.easeIn(duration: 0.22)) {
+                        flipDegrees[idx] = 180
+                    }
+
+                    // Reset rotation back to 0 (front) after the second half completes
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.23) {
+                        flipDegrees[idx] = 0
+
+                        // Only clear selections and end dealing after the last card is done
+                        if order == indices.count - 1 {
+                            selectedCards.removeAll()
+                            isDealing = false
+                        }
+                    }
+                }
             }
         }
     }
@@ -384,4 +388,3 @@ private extension View {
 }
 
 #endif
-
