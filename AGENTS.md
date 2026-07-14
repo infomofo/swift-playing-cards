@@ -1,69 +1,122 @@
-# infomofo's Agentic Laws (General Principles)
+# AGENTS.md
 
-**Description:**
-Universal laws for agent behavior, applicable to all repositories. Update and refine as collaborative practices evolve.
+## Skills
 
-## General Laws (Priority Order)
+This project has task-specific skills available.
 
-1. An agent must be helpful and productive.
-2. An agent makes pull requests easy to approve by demonstrating their work clearly.
-3. An agent makes empathetic actionable comments when reviewing a pull request.
-4. An agent writes clear and maintainable code.
-5. An agent ensures code is well-tested.
-6. An agent adheres to project conventions, style, and tone.
-7. An agent collaborates when blocked.
-8. An agent verifies information with real sources.
-9. An agent researches existing framework features before refactoring.
-10. An agent must adhere to required content and data structure for posts, files, and directories.
-11. An agent writes user-facing content that responsibly represents the original author.
+> **MANDATORY:** Before writing any code, creating any file, or running any command,
+> you **MUST** first read `.claude/skills/*/SKILL.md` and check for relevant skill files.
+> This step is **non-negotiable** and applies to **every task** without exception.
 
-### General Law Clarifications
+**Steps to follow before any task:**
+1. `.claude/skills/*/SKILL.md` — discover all available skill files
+2. `view` every skill file that is plausibly relevant to the task
+3. Only then proceed with the task
 
-- **On Helpfulness & Productivity:** An agent maintains a positive, solution-oriented tone and focuses on what can be accomplished.
-- **On Approve-Ready Pull Requests:** An agent demonstrates changes clearly—prefer automated tests, but documentation or samples are acceptable. Always edit main documents, not separate analysis files.
-- **On Actionable Comments When Reviewing PRs** Use suggestions to demonstrate any code changes requested. Do not make nitpicky comments. Make it easy for a pull request creator to make the actions you are suggesting and understand your reasoning.
-- **On Code Clarity & Maintainability:** An agent uses clear naming, consistent patterns, and best practices. Removes unused code. Never commits temporary files or build artifacts. An agent avoids unnecessary duplication and follows the "Don't Repeat Yourself" (DRY) principle in all code and content.
-- **On Comprehensive Testing:** An agent writes tests for all logic branches and considers future maintainability.
-- **On Adherence to Conventions & Style:** An agent follows all specified guidelines for code and content. Enforces with linting and CI where possible. **CRITICAL: Agents must run linters, builds, and tests locally before submitting any PR to avoid wasting CI resources and user time with preventable failures.**
-- **On Collaboration When Blocked:** An agent states limitations and proposes collaborative solutions.
-- **On Source Verification:** An agent never invents facts or sources. Marks uncertain facts as "needs verification" or omits them.
-- **On Framework Feature Awareness:** An agent prefers built-in or common patterns over major refactors.
-- **On Content & Data Structure Compliance:** An agent always follows required structure for posts, files, and directories.
-- **On User-Facing Content:** An agent maintains matter-of-fact, authentic, and simple language in all content and code comments; avoids marketing language, overstated claims, anecdotes, SEO optimization, em-dashes, and experiences not had; only recommends products/tools actually used and liked, and keeps affiliate promotion natural and genuine; uses clear, simple titles and honest assessment; leads content with the core topic, focuses on practical use cases, and references existing work when relevant.
+Skipping this step is not allowed, even if you believe you already know how to do the task.
+Skills encode environment-specific constraints that override general knowledge.
+
+## Critical Rules
+
+- **Save agent-specific learnings and worklogs in agent-specific markdown files under their respective agent directories (e.g., `.Jules/`, `.claude/`, `.copilot/`).** Do not commit other unrelated documentation files.
 
 ---
 
-# Repository-Specific Agentic Laws
+## Tooling
 
-**Description:**
-Customizations and clarifications for this repository. Specify how general laws are interpreted or extended for this project.
+This repo uses **mise** for task running and **prek** for git hooks. Hooks are defined in `.pre-commit-config.yaml`; prek runs them.
 
-## Repo-Specific Clarifications of General Laws
+### Quick Commands
 
-- **On Actionable Comments When Reviewing PRs**: For this repo, agents should always provide code suggestions for Swift, and prefer testable examples for poker hand logic and UI components. When reviewing SwiftUI code, clarify CI limitations and suggest text-based alternatives for headless environments.
-- **On Comprehensive Testing:** Agents must ensure all poker hand evaluation logic is covered by unit tests, including edge cases (wheel straights, ace-high straights, etc.), and verify that SwiftUI components can be instantiated on all supported platforms.
-- **On Adherence to Conventions & Style:** Agents must follow Swift naming conventions, use doc comments for public APIs, and update README.md for any new features or changes. **MANDATORY: Agents must run SwiftLint locally before submitting PRs. Use the exact same SwiftLint version as CI (check .github/workflows/lint.yml) and ensure zero violations to prevent iteration waste and wasted premium requests.**
-- **On Collaboration When Blocked:** If platform-specific features (e.g., SwiftUI rendering) are unavailable in CI, agents should propose fallback strategies and document them in PRs.
+```bash
+# First-time setup: installs SwiftLint (via mise) and git hooks (via prek)
+mise install
 
-## Additional Repo-Specific Laws
+# Build
+mise run build
 
-1. An agent must optimize card display components for small screens (Apple Watch) and touch interaction.
-2. An agent must use cryptographically secure shuffling for deck operations.
-3. An agent must document all poker hand evaluation logic and provide usage examples for video poker scenarios.
-4. An agent must ensure all code is compatible with iOS 15+, watchOS 8+, macOS 12+, and Linux for CI.
-5. **An agent must validate all changes with local linting using the exact same SwiftLint version as CI, building, and testing before any PR submission to prevent CI failures, iteration overhead, and wasted premium requests.**
+# Test
+mise run test
 
-### Repo-Specific Law Clarifications
+# Lint (required before every PR)
+mise run lint
+```
 
-- For SwiftUI component tests, agents should not require pixel-perfect image comparisons in CI, and should use text-based representations for validation.
-- For deck shuffling, agents must use Fisher-Yates or equivalent secure algorithms.
-- For hand evaluation, agents must handle tie-breaking and edge cases explicitly in code and documentation.
-- **For SwiftLint validation**: Agents must run SwiftLint using Docker with the exact same version as CI: `docker run --rm -v "$(pwd):/workdir" -w /workdir ghcr.io/realm/swiftlint:0.55.1 swiftlint lint`. Zero violations are required before PR submission to prevent wasted premium requests and iteration cycles.
+`mise install` pins and downloads all tools from `.mise.toml` and then automatically runs `prek install --install-hooks` via the `postinstall` hook.
+
+### SwiftLint
+
+SwiftLint and SwiftFormat are managed by mise. Versions are pinned in `.mise.toml` and match CI:
+
+```bash
+mise install   # downloads SwiftLint and SwiftFormat at pinned versions
+```
+
+After install, `mise exec -- swiftlint lint` and `mise exec -- swiftformat --lint` resolve to the pinned versions. No Docker required.
+
+### Git Hooks
+
+`.pre-commit-config.yaml` configures: trailing whitespace, end-of-file fixes, YAML/TOML validation, merge conflict detection, and SwiftLint. The `postinstall` hook in `.mise.toml` runs `prek install --install-hooks` automatically after `mise install`, so hooks are registered as part of first-time setup.
 
 ---
 
-**Tips for Agents:**
-- Update the general laws section as best practices evolve.
-- Add repo-specific clarifications when a general law needs more detail for this project.
-- Add new repo-specific laws only when a law is unique to this repo and not a clarification of a general law.
-- Use clear, numbered lists and concise language for easy parsing and future automation.
+## Code Rules
+
+- Follow Swift naming conventions throughout.
+- Use doc comments (`///`) on all public APIs.
+- Remove unused code — never commit dead code or build artifacts.
+- Prefer built-in language and framework operators over new utilities.
+- Don't Repeat Yourself (DRY). Factor out repeated patterns.
+- Solve root causes, not symptoms.
+- Read 2-3 existing examples before writing anything new. Match structure and style.
+- Ensure all code is compatible with iOS 15+, watchOS 8+, macOS 12+, and Linux for CI.
+
+## Testing Rules
+
+- Write tests for all logic branches, including edge cases.
+- Poker hand evaluation must cover: all hand types, wheel straights (A-2-3-4-5), ace-high straights, tie-breaking, and 5+ card hand evaluation (Texas Hold'em style).
+- SwiftUI components: use text-based representations for validation in headless CI — no pixel-perfect image comparisons.
+- Run `swift test` before every PR. Fix all failures before submitting.
+
+## Card and Game Logic Rules
+
+- Use cryptographically secure shuffling (Fisher-Yates with `SystemRandomNumberGenerator` or `SecRandomCopyBytes`).
+- Document all poker hand evaluation logic with usage examples for video poker scenarios.
+- Optimize card display components for small screens (Apple Watch: 28×36px compact mode).
+
+## Pull Request Rules
+
+- Run lint and tests locally before opening a PR. Do not rely on CI to catch lint violations.
+- PRs modifying logic must include tests for core behavior, boundary conditions, and edge cases.
+- Always edit main documents (README.md, AGENTS.md), not separate analysis files.
+- When reviewing SwiftUI code, clarify CI limitations and suggest text-based alternatives for headless environments.
+- Provide code suggestions for Swift when reviewing PRs. Do not leave nitpicky comments.
+- If platform-specific features (e.g., SwiftUI rendering) are unavailable in CI, propose fallback strategies and document them in the PR.
+- Update README.md for any new public APIs or features.
+
+## Git Rules
+
+- **NEVER push to main or master directly.** Create a feature branch first.
+- **NEVER commit without explicit approval.** Show the diff and wait for confirmation.
+- **NEVER force push** (`--force`, `--force-with-lease`).
+- **NEVER chain `git commit` and `git push`.** They must be separate commands.
+- Verify branch with `git branch --show-current` before any write operation.
+- Use `git revert` to undo changes on remote-tracking branches, not `git reset --hard`.
+
+### Pre-commit Checklist
+
+1. `git branch --show-current` — confirm you are on a feature branch.
+2. Run lint: `mise run lint`
+3. Run tests: `mise run test`
+4. `git status` — check for untracked files that should not be staged.
+5. `git diff --stat` — show the diff and wait for explicit approval before committing.
+
+## Writing Style
+
+All prose (code comments, commit messages, PR descriptions, documentation):
+
+- No em-dashes. Use commas or restructure.
+- No hedging ("arguably", "could potentially", "generally speaking").
+- No sycophantic openers or filler transitions.
+- Terse, direct, first-person. Vary sentence length. State positions.
+- Matter-of-fact language in user-facing content. No marketing language.

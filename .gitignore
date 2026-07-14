@@ -22,3 +22,7 @@ LICENSE.txt
 
 # Temporary files
 /tmp
+
+# mise
+.mise.local.toml
+
