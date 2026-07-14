@@ -1,6 +1,7 @@
 [tools]
 swiftlint = "0.65.0"
 swiftformat = "0.62.1"
+prek = "latest"
 
 [hooks]
 postinstall = "prek install --install-hooks"

@@ -57,10 +57,11 @@ This repo uses [mise](https://mise.jdx.dev) for task running and [prek](https://
 
 ```bash
 # mise
-curl https://mise.run | sh
+curl -fsSL https://mise.run | sh
 
-# prek (Homebrew)
-brew install j178/tap/prek
+# prek — mise will install it automatically, but install manually first if needed
+brew install j178/tap/prek          # macOS
+pip install prek                    # Linux
 ```
 
 ### macOS
@@ -76,7 +77,7 @@ Clone and set up:
 ```bash
 git clone https://github.com/infomofo/swift-playing-cards-2.git
 cd swift-playing-cards-2
-mise install   # installs SwiftLint and registers git hooks automatically
+mise install   # installs SwiftLint, SwiftFormat, prek, and registers git hooks
 mise run build
 mise run test
 ```
@@ -113,7 +114,7 @@ mise run test
 
 | Task | Description |
 |------|-------------|
-| `mise install` | Install tools (SwiftLint) and register git hooks |
+| `mise install` | Install SwiftLint, SwiftFormat, prek, and register git hooks |
 | `mise run build` | `swift build` |
 | `mise run test` | `swift test` |
 | `mise run lint` | Run all hooks via `prek run --all-files` |
