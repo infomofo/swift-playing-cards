@@ -59,7 +59,7 @@ This repo uses [mise](https://mise.jdx.dev) for task running and [prek](https://
 # mise
 curl -fsSL https://mise.run | sh
 
-# prek — mise will install it automatically, but install manually first if needed
+# prek: mise will install it automatically, but install manually first if needed
 brew install j178/tap/prek          # macOS
 pip install prek                    # Linux
 ```

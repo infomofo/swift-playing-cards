@@ -9,9 +9,16 @@ excludeAgent: "cloud-agent"
 
 Before flagging that the lint CI workflow needs the Swift toolchain installed:
 
-1. Verify that the mise `aqua:realm/SwiftLint` backend installs a static binary (`swiftlint-static`) with no Swift runtime dependency.
-2. The lint workflow uses `jdx/mise-action` + `mise exec -- swiftlint lint`, which resolves the static binary — no separate Swift install step is required.
-3. Only flag a missing Swift toolchain in `lint.yml` if you can confirm the installed binary dynamically links against Swift libraries on Ubuntu.
+1. Check whether the mise backend for SwiftLint installs a static binary. The `aqua:realm/SwiftLint` backend (the mise registry default) provides a `swiftlint-static` build on Linux with no Swift runtime dependency.
+2. Confirm by inspecting the SwiftLint GitHub release assets for the platform. If the asset is named `swiftlint-static` or is a fully self-contained binary, no Swift toolchain is needed.
+3. Only flag a missing Swift toolchain if you can show the specific binary dynamically links against Swift libraries on the target platform.
+
+## SwiftLint pre-commit hook: pass_filenames
+
+Before suggesting `pass_filenames: true` for the SwiftLint pre-commit hook:
+
+1. Verify that SwiftLint rules in use do not require whole-project context. Rules like `unused_import` and cross-file analysis only work correctly when SwiftLint sees the full source tree.
+2. If the project uses any project-level rules, `pass_filenames: false` is correct and intentional. Do not flag it as a performance issue without confirming no project-level rules are active.
 
 ## mise-managed tools
 

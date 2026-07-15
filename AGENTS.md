@@ -9,7 +9,7 @@ This project has task-specific skills available.
 > This step is **non-negotiable** and applies to **every task** without exception.
 
 **Steps to follow before any task:**
-1. `.claude/skills/*/SKILL.md` — discover all available skill files
+1. `.claude/skills/*/SKILL.md`: discover all available skill files
 2. `view` every skill file that is plausibly relevant to the task
 3. Only then proceed with the task
 
@@ -64,7 +64,7 @@ After install, `mise exec -- swiftlint lint` and `mise exec -- swiftformat --lin
 
 - Follow Swift naming conventions throughout.
 - Use doc comments (`///`) on all public APIs.
-- Remove unused code — never commit dead code or build artifacts.
+- Remove unused code. Never commit dead code or build artifacts.
 - Prefer built-in language and framework operators over new utilities.
 - Don't Repeat Yourself (DRY). Factor out repeated patterns.
 - Solve root causes, not symptoms.
@@ -75,7 +75,7 @@ After install, `mise exec -- swiftlint lint` and `mise exec -- swiftformat --lin
 
 - Write tests for all logic branches, including edge cases.
 - Poker hand evaluation must cover: all hand types, wheel straights (A-2-3-4-5), ace-high straights, tie-breaking, and 5+ card hand evaluation (Texas Hold'em style).
-- SwiftUI components: use text-based representations for validation in headless CI — no pixel-perfect image comparisons.
+- SwiftUI components: use text-based representations for validation in headless CI. No pixel-perfect image comparisons.
 - Run `swift test` before every PR. Fix all failures before submitting.
 
 ## Card and Game Logic Rules
@@ -105,11 +105,11 @@ After install, `mise exec -- swiftlint lint` and `mise exec -- swiftformat --lin
 
 ### Pre-commit Checklist
 
-1. `git branch --show-current` — confirm you are on a feature branch.
+1. `git branch --show-current`: confirm you are on a feature branch.
 2. Run lint: `mise run lint`
 3. Run tests: `mise run test`
-4. `git status` — check for untracked files that should not be staged.
-5. `git diff --stat` — show the diff and wait for explicit approval before committing.
+4. `git status`: check for untracked files that should not be staged.
+5. `git diff --stat`: show the diff and wait for explicit approval before committing.
 
 ## Writing Style
 
