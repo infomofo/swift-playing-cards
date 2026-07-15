@@ -157,7 +157,7 @@ struct ContentView: View {
         PlayingCard(rank: .jack, suit: .clubs),
         PlayingCard(rank: .ten, suit: .spades)
     ]
-    
+
     var body: some View {
         // Large cards for iPhone/iPad
         HStack {
@@ -165,7 +165,7 @@ struct ContentView: View {
                 DisplayCard(card: card, displayMode: .large)
             }
         }
-        
+
         // Compact cards for Apple Watch
         HStack {
             ForEach(hand, id: \.description) { card in
@@ -221,7 +221,7 @@ ls card-images/                     # View generated card descriptions
 The library is designed with clear separation of concerns:
 
 - **Core Models** (`Suit`, `Rank`, `PlayingCard`): Immutable value types with proper `Comparable` and `Hashable` conformance
-- **Game Logic** (`Deck`, `Hand`): Mutable reference types for game state management  
+- **Game Logic** (`Deck`, `Hand`): Mutable reference types for game state management
 - **UI Components** (`DisplayCard`): SwiftUI views with conditional compilation for platform availability
 - **Algorithms**: Efficient poker hand evaluation using bit manipulation and combinatorics
 
