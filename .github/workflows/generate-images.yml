@@ -47,7 +47,7 @@ jobs:
           <body>
               <div class="container">
                   <h1>🃏 Playing Cards - Layout Improvements</h1>
-                  
+
                   <div class="card">
                       <h2>🔧 What Was Fixed</h2>
                       <div class="improvement">
@@ -59,13 +59,13 @@ jobs:
                               <li><strong>7 card:</strong> Enhanced positioning for clearer visibility</li>
                           </ul>
                       </div>
-                      
+
                       <div class="highlight">
-                          <strong>📱 Mobile Viewing:</strong> All 104 SVG files are included in this download. 
+                          <strong>📱 Mobile Viewing:</strong> All 104 SVG files are included in this download.
                           The individual files can be opened directly in any modern mobile browser.
                       </div>
                   </div>
-                  
+
                   <div class="card">
                       <h2>📊 Generated Files</h2>
                       <p><strong>Total:</strong> 104 card images (52 cards × 2 sizes)</p>
@@ -74,7 +74,7 @@ jobs:
                           <li><strong>Compact:</strong> 28×36px (optimized for Apple Watch)</li>
                           <li><strong>Large:</strong> 120×168px (for iPhone/iPad)</li>
                       </ul>
-                      
+
                       <div class="highlight">
                           <strong>🔍 To View Individual Cards:</strong><br>
                           1. Extract this ZIP file<br>
@@ -82,7 +82,7 @@ jobs:
                           3. SVG files display perfectly on all modern mobile devices
                       </div>
                   </div>
-                  
+
                   <div class="card">
                       <h2>🎯 Key Improvements</h2>
                       <div class="before-after">
@@ -102,7 +102,7 @@ jobs:
           </body>
           </html>
           EOF
-          
+
           echo "Created mobile-friendly preview: README.html"
           echo "Total card files: $(ls card-images/*.svg | wc -l)"
 
