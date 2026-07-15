@@ -276,38 +276,12 @@
                 // Robust fallback: construct the full set of cards, exclude current hand, and draw from that pool
                 var allCards: [PlayingCard] = []
 
-                // Try to use top-level Suit/Rank allCases if available; otherwise fall back to hardcoded lists
-                #if compiler(>=5.7)
-                    if let suitAllCases = (Suit.self as? any CaseIterable.Type) as? any Collection,
-                       let rankAllCases = (Rank.self as? any CaseIterable.Type) as? any Collection,
-                       let suits = suitAllCases as? [Suit],
-                       let ranks = rankAllCases as? [Rank]
-                    {
-                        for suit in suits {
-                            for rank in ranks {
-                                allCards.append(PlayingCard(rank: rank, suit: suit))
-                            }
-                        }
-                    } else {
-                        let allSuits: [Suit] = [.clubs, .diamonds, .hearts, .spades]
-                        let allRanks: [Rank] = [.two, .three, .four, .five, .six, .seven, .eight, .nine, .ten,
-                                                .jack, .queen, .king, .ace]
-                        for suit in allSuits {
-                            for rank in allRanks {
-                                allCards.append(PlayingCard(rank: rank, suit: suit))
-                            }
-                        }
+                // Both Suit and Rank conform to CaseIterable; use allCases directly (matches Deck.swift)
+                for suit in Suit.allCases {
+                    for rank in Rank.allCases {
+                        allCards.append(PlayingCard(rank: rank, suit: suit))
                     }
-                #else
-                    let allSuits: [Suit] = [.clubs, .diamonds, .hearts, .spades]
-                    let allRanks: [Rank] = [.two, .three, .four, .five, .six, .seven, .eight, .nine, .ten,
-                                            .jack, .queen, .king, .ace]
-                    for suit in allSuits {
-                        for rank in allRanks {
-                            allCards.append(PlayingCard(rank: rank, suit: suit))
-                        }
-                    }
-                #endif
+                }
 
                 // Exclude any cards currently in hand to prevent duplicates
                 let pool = allCards.filter { !currentHand.contains($0) }.shuffled()
