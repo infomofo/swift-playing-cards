@@ -51,54 +51,73 @@ Or in Xcode:
 
 ## Development Environment Setup
 
-### macOS Development
+This repo uses [mise](https://mise.jdx.dev) for task running and [prek](https://prek.j178.dev) for git hooks. `.pre-commit-config.yaml` defines all hooks; prek runs them.
 
-1. **Install Swift**: Swift comes bundled with Xcode
-   ```bash
-   # Install Xcode from App Store or developer portal
-   xcode-select --install
-   
-   # Verify Swift installation
-   swift --version
-   ```
+### Install tools
 
-2. **Clone and build**:
-   ```bash
-   git clone https://github.com/infomofo/swift-playing-cards-2.git
-   cd swift-playing-cards-2
-   swift build
-   swift test
-   ```
+```bash
+# mise
+curl -fsSL https://mise.run | sh
 
-3. **Xcode development**:
-   ```bash
-   swift package generate-xcodeproj
-   open PlayingCard.xcodeproj
-   ```
+# prek: mise will install it automatically, but install manually first if needed
+brew install j178/tap/prek          # macOS
+pip install prek                    # Linux
+```
 
-### Ubuntu Development
+### macOS
 
-1. **Install Swift**:
-   ```bash
-   # Ubuntu 20.04/22.04
-   wget https://download.swift.org/swift-6.1.2-release/ubuntu2004/swift-6.1.2-RELEASE-ubuntu20.04.tar.gz
-   tar xzf swift-6.1.2-RELEASE-ubuntu20.04.tar.gz
-   sudo mv swift-6.1.2-RELEASE-ubuntu20.04 /opt/swift
-   echo 'export PATH=/opt/swift/usr/bin:$PATH' >> ~/.bashrc
-   source ~/.bashrc
-   
-   # Install dependencies
-   sudo apt update
-   sudo apt install clang libicu-dev pkg-config libssl-dev zlib1g-dev
-   ```
+Swift comes with Xcode:
 
-2. **Clone and build**:
-   ```bash
-   git clone https://github.com/infomofo/swift-playing-cards-2.git
-   cd swift-playing-cards-2
-   swift build
-   swift test
-   ```
+```bash
+xcode-select --install
+```
+
+Clone and set up:
+
+```bash
+git clone https://github.com/infomofo/swift-playing-cards-2.git
+cd swift-playing-cards-2
+mise install   # installs SwiftLint, SwiftFormat, prek, and registers git hooks
+mise run build
+mise run test
+```
+
+Open in Xcode:
+
+```bash
+swift package generate-xcodeproj
+open PlayingCard.xcodeproj
+```
+
+### Linux (Ubuntu 20.04/22.04)
+
+Install Swift via [swiftly](https://github.com/swift-server/swiftly):
+
+```bash
+sudo apt update && sudo apt install clang libicu-dev pkg-config libssl-dev zlib1g-dev
+curl -O https://download.swift.org/swiftly/linux/swiftly-x86_64.tar.gz
+tar zxf swiftly-x86_64.tar.gz
+./swiftly init -y --quiet-shell-followup
+```
+
+Then clone and set up:
+
+```bash
+git clone https://github.com/infomofo/swift-playing-cards-2.git
+cd swift-playing-cards-2
+mise install
+mise run build
+mise run test
+```
+
+### mise tasks
+
+| Task | Description |
+|------|-------------|
+| `mise install` | Install SwiftLint, SwiftFormat, prek, and register git hooks |
+| `mise run build` | `swift build` |
+| `mise run test` | `swift test` |
+| `mise run lint` | Run all hooks via `prek run --all-files` |
 
 ## Quick Start
 
