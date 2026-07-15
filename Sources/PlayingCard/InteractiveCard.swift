@@ -22,6 +22,22 @@
             self.onSelectionChanged = onSelectionChanged
         }
 
+        private var accessibilityLabelString: String {
+            if isShowingBack {
+                return "Hidden card"
+            } else {
+                return "\(card.rank.name) of \(card.suit.rawValue.capitalized)"
+            }
+        }
+
+        private var accessibilityValueString: String {
+            isSelected ? "Held" : "Not held"
+        }
+
+        private var accessibilityHintString: String {
+            "Double tap to toggle holding this card"
+        }
+
         public var body: some View {
             Button(action: toggleSelection) {
                 ZStack {
@@ -29,6 +45,10 @@
                         cardBackView
                     } else {
                         DisplayCard(card: card, displayMode: .large)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.blue, lineWidth: isSelected ? 3 : 0)
+                            )
                             .overlay(
                                 selectionOverlay,
                                 alignment: .topTrailing
@@ -44,6 +64,11 @@
                 .animation(.easeInOut(duration: 0.6), value: rotationDegrees)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityLabelString)
+            .accessibilityValue(accessibilityValueString)
+            .accessibilityHint(accessibilityHintString)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
         }
 
         // MARK: - Card Back View
