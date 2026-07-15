@@ -157,7 +157,6 @@
         @State private var selectedCards: Set<Int> = []
         @State private var currentHand: [PlayingCard] = []
         @State private var deck = Deck()
-        @State private var cardRefs: [InteractiveCard] = []
         @State private var isDealing = false
         @State private var flipDegrees: [Double] = Array(repeating: 0, count: 5)
 
@@ -334,9 +333,11 @@
                             flipDegrees[idx] = 180
                         }
 
-                        // Reset rotation back to 0 (front) after the second half completes
+                        // Animate rotation back to 0 (front) after the second half completes
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.23) {
-                            flipDegrees[idx] = 0
+                            withAnimation(.easeOut(duration: 0.22)) {
+                                flipDegrees[idx] = 0
+                            }
 
                             // Only clear selections and end dealing after the last card is done
                             if order == indices.count - 1 {

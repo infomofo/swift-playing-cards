@@ -8,10 +8,10 @@
 ///
 /// Example (redeal of two cards, ripple order 0 and 1):
 /// ```swift
-/// CardFlipAnimator.isFrontVisible(at: 45)   // true  — still showing front
-/// CardFlipAnimator.isFrontVisible(at: 91)   // false — past midpoint, front hidden
-/// CardFlipAnimator.isBackVisible(at: 91)    // true  — back now visible
-/// CardFlipAnimator.rippleDelay(for: 1)      // 0.1   — second card starts 100 ms later
+/// CardFlipAnimator.isFrontVisible(at: 45)   // true  (still showing front)
+/// CardFlipAnimator.isFrontVisible(at: 91)   // false (past midpoint, front hidden)
+/// CardFlipAnimator.isBackVisible(at: 91)    // true  (back now visible)
+/// CardFlipAnimator.rippleDelay(for: 1)      // 0.1   (second card starts 100 ms later)
 /// ```
 public enum CardFlipAnimator {
     /// Whether the front face should be visible at the given rotation (degrees).
@@ -45,8 +45,10 @@ public enum CardFlipAnimator {
         return 1.0 - (degrees / 90) * 0.1
     }
 
-    /// Scale for the back face at the given rotation: grows from 0.9 to 1.0
-    /// as the card rotates from 90° to 180°.
+    /// Scale for the back face at the given rotation.
+    /// Returns 1.0 for degrees ≤ 90 (safe default; the back face is not visible there).
+    /// For degrees 90°–180°, grows from approximately 0.9 to 1.0 to give a subtle
+    /// perspective feel as the back face comes into view.
     public static func backFaceScale(at degrees: Double) -> Double {
         guard degrees > 90 else { return 1.0 }
         return 0.9 + ((degrees - 90) / 90) * 0.1
