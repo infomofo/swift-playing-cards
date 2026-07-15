@@ -1,0 +1,23 @@
+[tools]
+swiftlint = "0.65.0"
+swiftformat = "0.62.1"
+prek = "0.4.9"
+
+[hooks]
+postinstall = "prek install --install-hooks"
+
+[tasks.install]
+description = "Install all tools and git hooks"
+run = "mise install"
+
+[tasks.lint]
+description = "Run all linters via prek"
+run = "prek run --all-files"
+
+[tasks.test]
+description = "Run the Swift test suite"
+run = "swift test"
+
+[tasks.build]
+description = "Build the Swift package"
+run = "swift build"
