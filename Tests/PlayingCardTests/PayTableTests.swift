@@ -158,7 +158,7 @@ final class PayTableTests: XCTestCase {
         XCTAssertEqual(HandResult.evaluate(cards: cards), .noWin)
     }
 
-    func testIncompletHandIsNoWin() {
+    func testIncompleteHandIsNoWin() {
         let cards = [
             PlayingCard(rank: .ace, suit: .spades),
             PlayingCard(rank: .king, suit: .hearts),
