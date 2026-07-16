@@ -1,13 +1,12 @@
-import XCTest
-@testable import PlayingCard
 import Foundation
+@testable import PlayingCard
+import XCTest
 
 #if canImport(SwiftUI)
-import SwiftUI
+    import SwiftUI
 #endif
 
 final class DisplayCardSnapshotTests: XCTestCase {
-
     func testGenerateSampleCardImages() throws {
         // Create output directory
         let outputURL = URL(fileURLWithPath: "card-images")
@@ -18,7 +17,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
             ("2_of_spades", PlayingCard(rank: .two, suit: .spades)),
             ("ace_of_clubs", PlayingCard(rank: .ace, suit: .clubs)),
             ("king_of_hearts", PlayingCard(rank: .king, suit: .hearts)),
-            ("9_of_diamonds", PlayingCard(rank: .nine, suit: .diamonds))
+            ("9_of_diamonds", PlayingCard(rank: .nine, suit: .diamonds)),
         ]
 
         var generatedFiles: [String] = []

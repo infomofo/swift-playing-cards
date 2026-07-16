@@ -1,8 +1,7 @@
-import XCTest
 @testable import PlayingCard
+import XCTest
 
 final class DeckTests: XCTestCase {
-
     func testDeckCreation() {
         let deck = Deck()
         XCTAssertEqual(deck.count, 52)

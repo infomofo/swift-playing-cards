@@ -40,8 +40,8 @@ extension Rank: CustomStringConvertible {
 // MARK: - Display Extensions
 
 /// Extensions for display purposes, especially for compact views
-extension Rank {
-    public var name: String {
+public extension Rank {
+    var name: String {
         switch self {
         case .ace: return "Ace"
         case .jack: return "Jack"
@@ -52,7 +52,7 @@ extension Rank {
     }
 
     /// Returns the first letter of the rank for compact display
-    public var compactDescription: String {
+    var compactDescription: String {
         switch self {
         case .ace: return "A"
         case .jack: return "J"

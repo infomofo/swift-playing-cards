@@ -23,3 +23,15 @@ Before suggesting `pass_filenames: true` for the SwiftLint pre-commit hook:
 ## mise-managed tools
 
 Tools listed in `.mise.toml` under `[tools]` are installed by `mise install`. Do not suggest installing them separately via Homebrew, apt, or pip unless the README explicitly documents that as an alternative path.
+
+## Swift `public extension` access control
+
+Before flagging a member declared inside a `public extension` as internal:
+
+1. Verify Swift's access control rules. Members declared in a `public extension TypeName { ... }` are public by default -- they inherit the extension's access level.
+2. Only flag a member as internal if it has an explicit narrower modifier (e.g., `internal var`, `private var`) overriding the extension's level.
+3. Do not flag `public extension Foo { var bar: T { ... } }` as a visibility regression from `public struct Foo { public var bar: T { ... } }` -- both expose `bar` as public.
+
+## `precondition` in library types
+
+Do not flag `precondition` usage for input validation in library types that document a valid input range. `precondition` is Swift's standard mechanism for programmer-error contracts and fires in all builds by design. Do not suggest replacing it with `assert` (debug-only, silently passes invalid values in release) or a `guard` returning a default (hides bugs). If the function documents a valid input range and the caller violates it, a crash is the correct behavior.

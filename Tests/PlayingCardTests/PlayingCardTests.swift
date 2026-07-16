@@ -1,8 +1,7 @@
-import XCTest
 @testable import PlayingCard
+import XCTest
 
 final class PlayingCardTests: XCTestCase {
-
     func testCardCreation() {
         let card = PlayingCard(rank: .ace, suit: .spades)
         XCTAssertEqual(card.rank, .ace)
