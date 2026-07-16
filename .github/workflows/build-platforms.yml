@@ -1,0 +1,37 @@
+name: Build Platforms
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-watchos:
+    name: Build (watchOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build for watchOS Simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available | grep "Apple Watch" | head -1 | grep -oE '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}')
+          if [ -z "$DEVICE_ID" ]; then echo "No Apple Watch simulator found" && exit 1; fi
+          echo "Building for simulator: $DEVICE_ID"
+          xcodebuild build \
+            -scheme PlayingCard \
+            -destination "id=$DEVICE_ID"
+
+  build-ios:
+    name: Build (iOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build for iOS Simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone" | grep -v "unavailable" | head -1 | grep -oE '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}')
+          if [ -z "$DEVICE_ID" ]; then echo "No iPhone simulator found" && exit 1; fi
+          echo "Building for simulator: $DEVICE_ID"
+          xcodebuild build \
+            -scheme PlayingCard \
+            -destination "id=$DEVICE_ID"
