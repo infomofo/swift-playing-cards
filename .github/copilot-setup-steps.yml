@@ -1,0 +1,20 @@
+# Pre-installs tools for the Copilot cloud agent environment.
+# Runs once before the agent starts working on a task.
+# See: https://docs.github.com/en/copilot/customizing-copilot/customizing-the-development-environment-for-copilot-coding-agent
+
+steps:
+  - name: Install Swift
+    run: |
+      cd /tmp
+      curl -O https://download.swift.org/swiftly/linux/swiftly-x86_64.tar.gz
+      tar zxf swiftly-x86_64.tar.gz
+      ./swiftly init -y --quiet-shell-followup
+      echo "$HOME/.local/share/swiftly/bin" >> $GITHUB_PATH
+
+  - name: Install mise
+    run: |
+      curl https://mise.run | sh
+      echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+  - name: Install repo tools and git hooks
+    run: mise install
