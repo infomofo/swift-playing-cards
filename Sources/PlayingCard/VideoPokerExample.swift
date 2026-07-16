@@ -24,7 +24,7 @@ public enum VideoPokerExample {
 
         let initialHandType = playerHand.evaluate()
         output.append("\nInitial hand evaluation: \(initialHandType.description)")
-        output.append("Initial payout: \(calculatePayout(handType: initialHandType))x\n")
+        output.append("Initial payout: \(PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: playerHand.handCards)))x\n")
 
         // Simulate player deciding to hold some cards
         let cardsToReplace = simulatePlayerStrategy(hand: playerHand)
@@ -52,7 +52,7 @@ public enum VideoPokerExample {
         output.append("Cards remaining in deck: \(deck.count)")
 
         // Calculate payout
-        let payout = calculatePayout(handType: finalHandType)
+        let payout = PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: playerHand.handCards))
         output.append("Final payout: \(payout)x")
 
         if payout > 0 {
@@ -185,22 +185,6 @@ public enum VideoPokerExample {
         return false
     }
 
-    /// Standard video poker payout table (Jacks or Better)
-    private static func calculatePayout(handType: HandType) -> Int {
-        switch handType {
-        case .royalFlush: return 250
-        case .straightFlush: return 50
-        case .fourOfAKind: return 25
-        case .fullHouse: return 9
-        case .flush: return 6
-        case .straight: return 4
-        case .threeOfAKind: return 3
-        case .twoPair: return 2
-        case .pair: return 1 // Only Jacks or better
-        case .highCard: return 0
-        }
-    }
-
     /// Demonstrates hand comparison functionality
     public static func demonstrateHandComparison() -> String {
         var output: [String] = []
@@ -241,7 +225,7 @@ public enum VideoPokerExample {
         for (name, hand) in hands {
             output.append("\(name): \(hand.handCards.map { $0.description }.joined(separator: " "))")
             output.append("  Evaluation: \(hand.evaluate().description)")
-            output.append("  Payout: \(calculatePayout(handType: hand.evaluate()))x")
+            output.append("  Payout: \(PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: hand.handCards)))x")
             output.append("")
         }
 

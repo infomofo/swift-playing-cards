@@ -101,8 +101,15 @@ public struct PayTable {
     /// Total coins returned for the given bet (bet is not included in the return).
     ///
     /// For example, a two pair with a 5-coin bet returns 10 coins (2x multiplier).
+    ///
+    /// Royal flush is special: the stored multiplier (800) applies only at the 5-coin
+    /// max bet (4000 total). At 1-4 coins, the standard rate is 250-for-1.
     public func payout(for cards: [PlayingCard], bet: Int = 5) -> Int {
-        multiplier(for: handResult(for: cards)) * bet
+        let result = handResult(for: cards)
+        if result == .royalFlush && bet != 5 {
+            return 250 * bet
+        }
+        return multiplier(for: result) * bet
     }
 
     /// Net coins won or lost: `payout - bet`.

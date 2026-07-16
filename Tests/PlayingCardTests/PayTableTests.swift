@@ -230,6 +230,33 @@ final class PayTableTests: XCTestCase {
         XCTAssertEqual(table.netPayout(for: cards, bet: 5), 40) // 9x * 5 - 5 = +40
     }
 
+    func testRoyalFlushPayoutMaxBet() {
+        let table = PayTable.jacksOrBetter96
+        let cards = [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .king, suit: .spades),
+            PlayingCard(rank: .queen, suit: .spades),
+            PlayingCard(rank: .jack, suit: .spades),
+            PlayingCard(rank: .ten, suit: .spades),
+        ]
+        // 5-coin bet: 800 multiplier * 5 = 4000
+        XCTAssertEqual(table.payout(for: cards, bet: 5), 4000)
+    }
+
+    func testRoyalFlushPayoutSubMaxBet() {
+        let table = PayTable.jacksOrBetter96
+        let cards = [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .king, suit: .spades),
+            PlayingCard(rank: .queen, suit: .spades),
+            PlayingCard(rank: .jack, suit: .spades),
+            PlayingCard(rank: .ten, suit: .spades),
+        ]
+        // 1-4 coin bets: 250-for-1 (standard rate, no 5-coin bonus)
+        XCTAssertEqual(table.payout(for: cards, bet: 1), 250)
+        XCTAssertEqual(table.payout(for: cards, bet: 4), 1000)
+    }
+
     // MARK: - HandResult ordering
 
     func testHandResultOrdering() {

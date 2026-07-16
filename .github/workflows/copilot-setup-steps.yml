@@ -1,0 +1,35 @@
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # Must be named exactly `copilot-setup-steps` to be picked up by Copilot cloud agent.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Install Swift
+        run: |
+          cd /tmp
+          curl -O https://download.swift.org/swiftly/linux/swiftly-x86_64.tar.gz
+          tar zxf swiftly-x86_64.tar.gz
+          ./swiftly init -y --quiet-shell-followup
+          echo "$HOME/.local/share/swiftly/bin" >> $GITHUB_PATH
+
+      - name: Install mise
+        run: |
+          curl https://mise.run | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install repo tools and git hooks
+        run: mise install
