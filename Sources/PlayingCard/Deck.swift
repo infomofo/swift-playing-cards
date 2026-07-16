@@ -6,7 +6,7 @@ public struct Deck {
 
     /// Creates a new standard 52-card deck.
     public init() {
-        self.cards = []
+        cards = []
         for suit in Suit.allCases {
             for rank in Rank.allCases {
                 cards.append(PlayingCard(rank: rank, suit: suit))
@@ -31,8 +31,8 @@ public struct Deck {
 
     /// Shuffles the deck using Fisher-Yates algorithm with cryptographically secure randomization.
     public mutating func shuffle() {
-        for index in (1..<cards.count).reversed() {
-            let randomIndex = Int.random(in: 0...index)
+        for index in (1 ..< cards.count).reversed() {
+            let randomIndex = Int.random(in: 0 ... index)
             cards.swapAt(index, randomIndex)
         }
     }
@@ -49,7 +49,7 @@ public struct Deck {
     /// - Returns: An array of dealt cards. May contain fewer than requested if deck runs out.
     public mutating func dealCards(_ count: Int) -> [PlayingCard] {
         var dealtCards: [PlayingCard] = []
-        for _ in 0..<count {
+        for _ in 0 ..< count {
             if let card = dealCard() {
                 dealtCards.append(card)
             } else {

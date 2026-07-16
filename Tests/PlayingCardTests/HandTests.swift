@@ -1,8 +1,7 @@
-import XCTest
 @testable import PlayingCard
+import XCTest
 
 final class HandTests: XCTestCase {
-
     func testHandCreation() {
         let hand = Hand()
         XCTAssertEqual(hand.numberOfCards, 0)
@@ -21,7 +20,7 @@ final class HandTests: XCTestCase {
         var hand = Hand()
         let cards = [
             PlayingCard(rank: .ace, suit: .spades),
-            PlayingCard(rank: .king, suit: .hearts)
+            PlayingCard(rank: .king, suit: .hearts),
         ]
 
         hand.addCards(cards)
@@ -53,7 +52,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .four, suit: .hearts),
             PlayingCard(rank: .six, suit: .diamonds),
             PlayingCard(rank: .eight, suit: .clubs),
-            PlayingCard(rank: .ten, suit: .spades)
+            PlayingCard(rank: .ten, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .highCard)
@@ -65,7 +64,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .ace, suit: .hearts),
             PlayingCard(rank: .three, suit: .diamonds),
             PlayingCard(rank: .five, suit: .clubs),
-            PlayingCard(rank: .seven, suit: .spades)
+            PlayingCard(rank: .seven, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .pair)
@@ -77,7 +76,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .ace, suit: .hearts),
             PlayingCard(rank: .three, suit: .diamonds),
             PlayingCard(rank: .three, suit: .clubs),
-            PlayingCard(rank: .seven, suit: .spades)
+            PlayingCard(rank: .seven, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .twoPair)
@@ -89,7 +88,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .ace, suit: .hearts),
             PlayingCard(rank: .ace, suit: .diamonds),
             PlayingCard(rank: .five, suit: .clubs),
-            PlayingCard(rank: .seven, suit: .spades)
+            PlayingCard(rank: .seven, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .threeOfAKind)
@@ -101,7 +100,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .three, suit: .hearts),
             PlayingCard(rank: .four, suit: .diamonds),
             PlayingCard(rank: .five, suit: .clubs),
-            PlayingCard(rank: .six, suit: .spades)
+            PlayingCard(rank: .six, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .straight)
@@ -113,7 +112,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .two, suit: .hearts),
             PlayingCard(rank: .three, suit: .diamonds),
             PlayingCard(rank: .four, suit: .clubs),
-            PlayingCard(rank: .five, suit: .spades)
+            PlayingCard(rank: .five, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .straight)
@@ -125,7 +124,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .four, suit: .spades),
             PlayingCard(rank: .six, suit: .spades),
             PlayingCard(rank: .eight, suit: .spades),
-            PlayingCard(rank: .ten, suit: .spades)
+            PlayingCard(rank: .ten, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .flush)
@@ -137,7 +136,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .ace, suit: .hearts),
             PlayingCard(rank: .ace, suit: .diamonds),
             PlayingCard(rank: .king, suit: .clubs),
-            PlayingCard(rank: .king, suit: .spades)
+            PlayingCard(rank: .king, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .fullHouse)
@@ -149,7 +148,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .ace, suit: .hearts),
             PlayingCard(rank: .ace, suit: .diamonds),
             PlayingCard(rank: .ace, suit: .clubs),
-            PlayingCard(rank: .king, suit: .spades)
+            PlayingCard(rank: .king, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .fourOfAKind)
@@ -161,7 +160,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .three, suit: .spades),
             PlayingCard(rank: .four, suit: .spades),
             PlayingCard(rank: .five, suit: .spades),
-            PlayingCard(rank: .six, suit: .spades)
+            PlayingCard(rank: .six, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .straightFlush)
@@ -173,7 +172,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .king, suit: .spades),
             PlayingCard(rank: .queen, suit: .spades),
             PlayingCard(rank: .jack, suit: .spades),
-            PlayingCard(rank: .ten, suit: .spades)
+            PlayingCard(rank: .ten, suit: .spades),
         ])
 
         XCTAssertEqual(hand.evaluate(), .royalFlush)
@@ -188,7 +187,7 @@ final class HandTests: XCTestCase {
             PlayingCard(rank: .five, suit: .clubs),
             PlayingCard(rank: .seven, suit: .spades),
             PlayingCard(rank: .nine, suit: .hearts),
-            PlayingCard(rank: .jack, suit: .diamonds)
+            PlayingCard(rank: .jack, suit: .diamonds),
         ])
 
         XCTAssertEqual(hand.evaluate(), .pair)

@@ -1,8 +1,7 @@
-import XCTest
 @testable import PlayingCard
+import XCTest
 
 final class VideoPokerExampleTests: XCTestCase {
-
     func testPlayExampleHand() {
         let output = VideoPokerExample.playExampleHand()
 

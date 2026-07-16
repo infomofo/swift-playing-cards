@@ -1,8 +1,7 @@
 import Foundation
 
 /// Example demonstrating complete video poker game functionality
-public struct VideoPokerExample {
-
+public enum VideoPokerExample {
     /// Simulates a complete video poker hand with detailed output
     public static func playExampleHand() -> String {
         var output: [String] = []
@@ -154,7 +153,7 @@ public struct VideoPokerExample {
             // No high cards, replace lowest 3 cards
             let cardsWithIndices = Array(zip(cards.indices, cards))
             let sortedWithIndices = cardsWithIndices.sorted { $0.1 < $1.1 }
-            for cardIndex in 0..<3 {
+            for cardIndex in 0 ..< 3 {
                 cardsToReplace.append(sortedWithIndices[cardIndex].0)
             }
         }
@@ -167,8 +166,8 @@ public struct VideoPokerExample {
         guard uniqueRanks.count >= 4 else { return false }
 
         // Check for consecutive sequences of 4 cards
-        for startIndex in 0...(uniqueRanks.count - 4) {
-            let isConsecutive = (1..<4).allSatisfy { offset in
+        for startIndex in 0 ... (uniqueRanks.count - 4) {
+            let isConsecutive = (1 ..< 4).allSatisfy { offset in
                 uniqueRanks[startIndex + offset].rawValue == uniqueRanks[startIndex + offset - 1].rawValue + 1
             }
             if isConsecutive {
@@ -178,7 +177,8 @@ public struct VideoPokerExample {
 
         // Check for wheel draw (A, 2, 3, 4)
         if uniqueRanks.contains(.ace) && uniqueRanks.contains(.two) &&
-           uniqueRanks.contains(.three) && uniqueRanks.contains(.four) {
+            uniqueRanks.contains(.three) && uniqueRanks.contains(.four)
+        {
             return true
         }
 
@@ -196,7 +196,7 @@ public struct VideoPokerExample {
         case .straight: return 4
         case .threeOfAKind: return 3
         case .twoPair: return 2
-        case .pair: return 1  // Only Jacks or better
+        case .pair: return 1 // Only Jacks or better
         case .highCard: return 0
         }
     }
@@ -213,29 +213,29 @@ public struct VideoPokerExample {
                 PlayingCard(rank: .king, suit: .spades),
                 PlayingCard(rank: .queen, suit: .spades),
                 PlayingCard(rank: .jack, suit: .spades),
-                PlayingCard(rank: .ten, suit: .spades)
+                PlayingCard(rank: .ten, suit: .spades),
             ])),
             ("Pair of Aces", Hand(cards: [
                 PlayingCard(rank: .ace, suit: .spades),
                 PlayingCard(rank: .ace, suit: .hearts),
                 PlayingCard(rank: .king, suit: .diamonds),
                 PlayingCard(rank: .queen, suit: .clubs),
-                PlayingCard(rank: .jack, suit: .spades)
+                PlayingCard(rank: .jack, suit: .spades),
             ])),
             ("Three Kings", Hand(cards: [
                 PlayingCard(rank: .king, suit: .spades),
                 PlayingCard(rank: .king, suit: .hearts),
                 PlayingCard(rank: .king, suit: .diamonds),
                 PlayingCard(rank: .queen, suit: .clubs),
-                PlayingCard(rank: .jack, suit: .spades)
+                PlayingCard(rank: .jack, suit: .spades),
             ])),
             ("High Card", Hand(cards: [
                 PlayingCard(rank: .king, suit: .spades),
                 PlayingCard(rank: .queen, suit: .hearts),
                 PlayingCard(rank: .jack, suit: .diamonds),
                 PlayingCard(rank: .nine, suit: .clubs),
-                PlayingCard(rank: .seven, suit: .spades)
-            ]))
+                PlayingCard(rank: .seven, suit: .spades),
+            ])),
         ]
 
         for (name, hand) in hands {
@@ -270,7 +270,7 @@ public struct VideoPokerExample {
             ("Straight (dealt)", "1 in 255"),
             ("Three of a Kind (dealt)", "1 in 47"),
             ("Two Pair (dealt)", "1 in 21"),
-            ("Jacks or Better (dealt)", "1 in 6")
+            ("Jacks or Better (dealt)", "1 in 6"),
         ]
 
         output.append("Probability of being dealt various hands:")
@@ -288,7 +288,7 @@ public struct VideoPokerExample {
     public static func runMultipleHands(count: Int = 3) -> String {
         var output: [String] = []
 
-        for handNumber in 1...count {
+        for handNumber in 1 ... count {
             output.append("HAND #\(handNumber)")
             output.append(String(repeating: "=", count: 50))
             output.append(playExampleHand())

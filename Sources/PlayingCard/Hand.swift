@@ -53,7 +53,7 @@ public struct Hand {
 
     /// Creates a new empty hand.
     public init() {
-        self.cards = []
+        cards = []
     }
 
     /// Creates a hand with the specified cards.
@@ -88,7 +88,7 @@ public struct Hand {
         guard indices.count == newCards.count else { return }
 
         for (cardIndex, index) in indices.enumerated() {
-            if index >= 0 && index < cards.count {
+            if index >= 0, index < cards.count {
                 cards[index] = newCards[cardIndex]
             }
         }
@@ -190,7 +190,7 @@ public struct Hand {
 
         // Check for regular straight
         return !uniqueRanks.indices.dropFirst().contains { index in
-            uniqueRanks[index].rawValue != uniqueRanks[index-1].rawValue + 1
+            uniqueRanks[index].rawValue != uniqueRanks[index - 1].rawValue + 1
         }
     }
 
