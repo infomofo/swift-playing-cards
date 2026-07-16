@@ -70,13 +70,6 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
 }
 
 /// A video poker pay table mapping hand results to coin multipliers.
-///
-/// Usage:
-/// ```swift
-/// let table = PayTable.jacksOrBetter96
-/// let result = table.handResult(for: cards)     // HandResult
-/// let net = table.netPayout(for: cards, bet: 5) // e.g. +10 for two pair, -5 for no win
-/// ```
 public struct PayTable {
     /// Human-readable name, e.g. "Jacks or Better (9/6)".
     public let name: String
@@ -98,13 +91,11 @@ public struct PayTable {
         HandResult.evaluate(cards: cards)
     }
 
-    /// Total coins returned for the given bet (bet is not included in the return).
+    /// Total coins returned for the given bet. `bet` must be 1-5.
     ///
-    /// For example, a two pair with a 5-coin bet returns 10 coins (2x multiplier).
-    ///
-    /// Royal flush is special: the stored multiplier (800) applies only at the 5-coin
-    /// max bet (4000 total). At 1-4 coins, the standard rate is 250-for-1.
+    /// Royal flush pays 800x at bet=5 (4000 total) and 250x at bet 1-4.
     public func payout(for cards: [PlayingCard], bet: Int = 5) -> Int {
+        precondition((1 ... 5).contains(bet), "bet must be between 1 and 5")
         let result = handResult(for: cards)
         if result == .royalFlush && bet != 5 {
             return 250 * bet
@@ -112,13 +103,10 @@ public struct PayTable {
         return multiplier(for: result) * bet
     }
 
-    /// Net coins won or lost: `payout - bet`.
-    ///
-    /// - Two pair, bet 5: +5
-    /// - Jacks or Better, bet 5: 0 (push — bet returned)
-    /// - No win, bet 5: -5
+    /// Net coins won or lost: `payout - bet`. `bet` must be 1-5.
     public func netPayout(for cards: [PlayingCard], bet: Int = 5) -> Int {
-        payout(for: cards, bet: bet) - bet
+        precondition((1 ... 5).contains(bet), "bet must be between 1 and 5")
+        return payout(for: cards, bet: bet) - bet
     }
 
     /// Full-pay 9/6 Jacks or Better. Returns 99.54% with optimal play.
