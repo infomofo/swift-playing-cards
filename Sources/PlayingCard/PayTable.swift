@@ -81,7 +81,10 @@ public struct PayTable {
         self.multipliers = multipliers
     }
 
-    /// The payout multiplier for a given hand result (e.g. 9 for full house).
+    /// The payout multiplier for a given hand result.
+    ///
+    /// For royal flush, this returns the max-bet (5-coin) rate of 800. Use `payout(for:bet:)`
+    /// when bet size varies, as it applies the correct 250x rate for bets 1-4.
     public func multiplier(for result: HandResult) -> Int {
         multipliers[result] ?? 0
     }

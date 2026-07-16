@@ -22,8 +22,7 @@ public enum VideoPokerExample {
             output.append("  \(index + 1): \(card.description)")
         }
 
-        let initialHandType = playerHand.evaluate()
-        output.append("\nInitial hand evaluation: \(initialHandType.description)")
+        output.append("\nInitial hand evaluation: \(HandResult.evaluate(cards: playerHand.handCards).description)")
         output.append("Initial payout: \(PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: playerHand.handCards)))x\n")
 
         // Simulate player deciding to hold some cards
@@ -47,8 +46,7 @@ public enum VideoPokerExample {
         }
 
         // Evaluate final hand
-        let finalHandType = playerHand.evaluate()
-        output.append("\nFinal hand evaluation: \(finalHandType.description)")
+        output.append("\nFinal hand evaluation: \(HandResult.evaluate(cards: playerHand.handCards).description)")
         output.append("Cards remaining in deck: \(deck.count)")
 
         // Calculate payout
@@ -224,7 +222,7 @@ public enum VideoPokerExample {
 
         for (name, hand) in hands {
             output.append("\(name): \(hand.handCards.map { $0.description }.joined(separator: " "))")
-            output.append("  Evaluation: \(hand.evaluate().description)")
+            output.append("  Evaluation: \(HandResult.evaluate(cards: hand.handCards).description)")
             output.append("  Payout: \(PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: hand.handCards)))x")
             output.append("")
         }
