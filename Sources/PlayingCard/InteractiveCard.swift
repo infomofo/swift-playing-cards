@@ -339,7 +339,7 @@
             content.background(PlatformPerspectiveApplier(distance: distance))
         }
 
-        #if canImport(UIKit)
+        #if os(iOS) || os(tvOS)
             private struct PlatformPerspectiveApplier: UIViewRepresentable {
                 let distance: CGFloat
 
@@ -353,7 +353,7 @@
                     view.superview?.layer.sublayerTransform = transform
                 }
             }
-        #elseif canImport(AppKit)
+        #elseif os(macOS)
             private struct PlatformPerspectiveApplier: NSViewRepresentable {
                 let distance: CGFloat
 
@@ -365,6 +365,13 @@
                     var transform = CATransform3DIdentity
                     transform.m34 = -1 / max(distance, 0.001)
                     view.superview?.layer?.sublayerTransform = transform
+                }
+            }
+        #else
+            private struct PlatformPerspectiveApplier: View {
+                let distance: CGFloat
+                var body: some View {
+                    EmptyView()
                 }
             }
         #endif
