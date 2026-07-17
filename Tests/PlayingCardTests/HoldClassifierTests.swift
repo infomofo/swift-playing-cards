@@ -168,20 +168,31 @@ struct HoldClassifierTests {
 
     // MARK: - Three to Straight Flush
 
+    /// Consecutive suited cards — type 1 (0 gaps). EV ~0.63.
     @Test func threeToStraightFlushConsecutive() {
         let hand = [
             card(.seven, .hearts), card(.eight, .hearts), card(.nine, .hearts),
             card(.ace, .spades), card(.king, .clubs),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlush)
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType1)
     }
 
+    /// Suited cards with one gap, no high cards — type 2. EV ~0.52.
     @Test func threeToStraightFlushWithGap() {
         let hand = [
             card(.six, .clubs), card(.eight, .clubs), card(.nine, .clubs),
             card(.ace, .spades), card(.king, .hearts),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlush)
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType2)
+    }
+
+    /// Two gaps, no high cards — type 3 (EV 0.44, weaker than one high card).
+    @Test func threeToStraightFlushType3() {
+        let hand = [
+            card(.three, .clubs), card(.five, .clubs), card(.seven, .clubs),
+            card(.king, .hearts), card(.two, .diamonds),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType3)
     }
 
     // MARK: - Three to Flush (regression cases)
@@ -217,6 +228,28 @@ struct HoldClassifierTests {
             card(.six, .clubs), card(.two, .diamonds),
         ]
         #expect(classify(hand: hand, holding: [1, 2, 3]) == .threeToFlush)
+    }
+
+    // MARK: - Three Unsuited High Cards
+
+    /// Three mixed-suit royal-eligible cards (T, J, K) → threeUnsuitedHighCards.
+    /// Regression: previously returned twoUnsuitedHighCards, causing circular coaching
+    /// ("better than two unsuited high cards" when optimal was also twoUnsuitedHighCards).
+    /// Hand: 7d Jd Ts 5s Kh, held Jd Ts Kh (indices 1,2,4).
+    @Test func threeUnsuitedHighCardsTJK() {
+        let hand = [
+            card(.seven, .diamonds), card(.jack, .diamonds), card(.ten, .spades),
+            card(.five, .spades), card(.king, .hearts),
+        ]
+        #expect(classify(hand: hand, holding: [1, 2, 4]) == .threeUnsuitedHighCards)
+    }
+
+    @Test func threeUnsuitedHighCardsJQK() {
+        let hand = [
+            card(.two, .clubs), card(.jack, .spades), card(.queen, .hearts),
+            card(.king, .diamonds), card(.three, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [1, 2, 3]) == .threeUnsuitedHighCards)
     }
 
     // MARK: - Three of a Kind (3-card hold)
@@ -532,13 +565,13 @@ struct HoldClassifierPriorityTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToStraightFlush)
     }
 
-    /// A-2-5 suited (3 cards) is a valid wheel SF draw.
+    /// A-2-5 suited: ace-low wheel draw, always type 2 per WoO.
     @Test func threeToStraightFlushWheelWithGap() {
         let hand = [
             card(.ace, .spades), card(.two, .spades), card(.five, .spades),
             card(.king, .hearts), card(.nine, .clubs),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlush)
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType2)
     }
 
     // MARK: - classifyFour duplicate-ranks fix (Thread 3)
@@ -601,5 +634,76 @@ struct HoldClassifierPriorityTests {
             card(.king, .clubs), card(.two, .spades),
         ]
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .oneHighCard)
+    }
+
+    // MARK: - SF type 1 variants
+
+    /// 9-T-J suited: span 2, 0 gaps, 1 high card (J). 1 ≥ 0 → type 1.
+    @Test func threeToStraightFlushType1NineTenJack() {
+        let hand = [
+            card(.nine, .clubs), card(.ten, .clubs), card(.jack, .clubs),
+            card(.two, .hearts), card(.five, .diamonds),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType1)
+    }
+
+    /// 8-J-Q suited: span 4, 2 gaps, 2 high cards (J, Q). 2 ≥ 2 → type 1.
+    @Test func threeToStraightFlushType1EightJackQueen() {
+        let hand = [
+            card(.eight, .diamonds), card(.jack, .diamonds), card(.queen, .diamonds),
+            card(.three, .clubs), card(.six, .hearts),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType1)
+    }
+
+    // MARK: - SF type 2 variants
+
+    /// A-2-4 suited: ace-low, nonAce=[2,4] all ≤5 → type 2.
+    @Test func threeToStraightFlushType2AceLow() {
+        let hand = [
+            card(.ace, .spades), card(.two, .spades), card(.four, .spades),
+            card(.king, .hearts), card(.seven, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType2)
+    }
+
+    /// 2-3-4 suited: explicitly type 2 per WoO (limited completion paths).
+    @Test func threeToStraightFlushType2TwoThreeFour() {
+        let hand = [
+            card(.two, .hearts), card(.three, .hearts), card(.four, .hearts),
+            card(.jack, .spades), card(.nine, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType2)
+    }
+
+    // MARK: - SF type 3 variants
+
+    /// 4-6-8 suited: span 4, 2 gaps, 0 high cards → type 3.
+    @Test func threeToStraightFlushType3FourSixEight() {
+        let hand = [
+            card(.four, .diamonds), card(.six, .diamonds), card(.eight, .diamonds),
+            card(.ace, .clubs), card(.three, .hearts),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlushType3)
+    }
+
+    // MARK: - Unsuited TJQK
+
+    /// T-J-Q-K mixed suits: outside straight with 3 high cards (EV 0.87, above low pair).
+    @Test func unsuitedTJQKAllDifferentSuits() {
+        let hand = [
+            card(.ten, .diamonds), card(.jack, .clubs), card(.queen, .spades),
+            card(.king, .hearts), card(.two, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .unsuitedTJQK)
+    }
+
+    /// T-J-Q-K with 3 of one suit: still unsuitedTJQK (not all same suit).
+    @Test func unsuitedTJQKThreeSameSuit() {
+        let hand = [
+            card(.ten, .spades), card(.jack, .spades), card(.queen, .spades),
+            card(.king, .hearts), card(.two, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .unsuitedTJQK)
     }
 }

@@ -35,16 +35,36 @@ public enum StrategyPattern: String, Equatable, CaseIterable, Sendable {
     case fourToStraightFlush = "Four to a straight flush"
     /// Four suited cards that are not all royal-eligible.
     case fourToFlush = "Four to a flush"
+    /// Mixed-suit T-J-Q-K: the only 4-card outside straight with 3 high cards.
+    ///
+    /// EV 0.87 — ranks above a low pair (EV 0.82). WoO optimal entry #14.
+    case unsuitedTJQK = "Unsuited T-J-Q-K"
     /// A pair of twos through tens.
     case lowPair = "Low pair"
-    /// Four consecutive cards that can be completed on either end.
+    /// Four consecutive cards that can be completed on either end (0–2 high cards).
+    ///
+    /// EV ~0.68 — ranks below a low pair. For T-J-Q-K specifically, see ``unsuitedTJQK``.
     case fourToOutsideStraight = "Four to an outside straight"
     /// Four cards to a straight with one internal gap.
     case fourToInsideStraight = "Four to an inside straight"
-    /// Three suited cards that can complete to a straight flush.
-    case threeToStraightFlush = "Three to a straight flush"
+    /// Three suited cards forming a straight flush draw, type 1: high cards (J+) ≥ gaps.
+    ///
+    /// Examples: 9-T-J suited (0 gaps, 1 high), 8-J-Q suited (2 gaps, 2 high). EV ~0.63.
+    /// Ranks above suited QJ on the WoO optimal list.
+    case threeToStraightFlushType1 = "Three to a straight flush (type 1)"
+    /// Three suited cards forming a straight flush draw, type 2.
+    ///
+    /// Covers: 1 gap + 0 high cards; 2 gaps + 1 high card; ace-low suited; 2-3-4 suited.
+    /// Examples: 6-8-9 suited, A-2-4 suited, 2-3-4 suited. EV ~0.52.
+    case threeToStraightFlushType2 = "Three to a straight flush (type 2)"
+    /// Three suited cards forming a straight flush draw, type 3: 2 gaps, no high cards.
+    ///
+    /// Examples: 3-5-7 suited, 4-6-8 suited. EV 0.44 — weaker than holding a single high card.
+    case threeToStraightFlushType3 = "Three to a straight flush (type 3)"
     /// Three suited cards not forming a royal or straight flush draw.
     case threeToFlush = "Three to a flush"
+    /// Three mixed-suit cards all within {T, J, Q, K, A}, no pair.
+    case threeUnsuitedHighCards = "Three unsuited high cards"
     /// Two suited cards both ranking jack or higher.
     case twoSuitedHighCards = "Two suited high cards"
     /// Two unsuited cards both ranking jack or higher.
@@ -175,6 +195,11 @@ public struct HoldClassifier {
 
         // Open-ended: 4 consecutive ranks completable on both ends (span == 3, ace not high).
         if isOutsideStraightDraw(sorted) {
+            // TJQK is the only outside straight with 3 high cards (EV 0.87, above low pair).
+            // All other outside straights have 0–2 high cards (EV ~0.68, below low pair).
+            if sorted == [10, 11, 12, 13] {
+                return .unsuitedTJQK
+            }
             return .fourToOutsideStraight
         }
         // Inside: span == 4 with exactly one internal gap.
@@ -210,9 +235,9 @@ public struct HoldClassifier {
             if ranks.allSatisfy({ $0 >= 10 }) {
                 return .threeToRoyalFlush
             }
-            // Straight flush draw: span <= 4 (or wheel)?
+            // Straight flush draw: classify into WoO type (determines EV tier).
             if canFormStraightFlush(ranks) {
-                return .threeToStraightFlush
+                return classifyThreeToSFType(ranks: ranks)
             }
             // Three suited cards that don't qualify as royal or SF draw.
             return .threeToFlush
@@ -226,6 +251,10 @@ public struct HoldClassifier {
 
         // Three different ranks, mixed suits: look for high cards.
         let highRanks = ranks.filter { $0 >= 11 }
+        // All three in royal set {T, J, Q, K, A}: three unsuited high cards.
+        if ranks.allSatisfy({ $0 >= 10 }) {
+            return .threeUnsuitedHighCards
+        }
         switch highRanks.count {
         case 2: return .twoUnsuitedHighCards
         case 1: return .oneHighCard
@@ -276,6 +305,43 @@ public struct HoldClassifier {
     }
 
     // MARK: - Helpers
+
+    /// Classifies a 3-card suited straight flush draw into WoO types 1, 2, or 3.
+    ///
+    /// Called only when `canFormStraightFlush` already returned true.
+    ///
+    /// - Type 1: high cards (J+) ≥ gaps. EV ~0.63. Ranks above suited QJ.
+    /// - Type 2: 1 gap + 0 high; 2 gaps + 1 high; ace-low; 2-3-4. EV ~0.52.
+    /// - Type 3: 2 gaps + 0 high cards. EV 0.44 — weaker than holding a lone high card.
+    private static func classifyThreeToSFType(ranks: [Int]) -> StrategyPattern {
+        let sorted = ranks.sorted()
+        let highCards = sorted.filter { $0 >= 11 }.count
+
+        // Ace-low: ace + two low cards (all ≤ 5) — wheel-direction draw, always type 2.
+        if sorted.contains(14) {
+            let nonAce = sorted.filter { $0 != 14 }
+            if nonAce.allSatisfy({ $0 <= 5 }) {
+                return .threeToStraightFlushType2
+            }
+        }
+
+        // 2-3-4: explicitly type 2 per WoO (limited completion paths, similar to ace-low).
+        if sorted == [2, 3, 4] {
+            return .threeToStraightFlushType2
+        }
+
+        // Number of interior gaps: for 3 cards, gapCount = span - 2.
+        let span = sorted.last! - sorted.first!
+        let gapCount = span - 2
+
+        if highCards >= gapCount {
+            return .threeToStraightFlushType1
+        }
+        if gapCount == 2 && highCards == 0 {
+            return .threeToStraightFlushType3
+        }
+        return .threeToStraightFlushType2
+    }
 
     /// Returns true when 3 or 4 ranks (as rawValues) can form a straight flush.
     ///
