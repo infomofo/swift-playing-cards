@@ -168,7 +168,7 @@ public struct HoldClassifier {
             if !pairRanks.isEmpty {
                 return pairRanks.max()! >= 11 ? .highPair : .lowPair
             }
-            return .lowPair
+            preconditionFailure("4-card hold has duplicates but no pair, trips, or quads: impossible rank distribution")
         }
 
         // Open-ended: 4 consecutive ranks completable on both ends (span == 3, ace not high).
@@ -179,7 +179,7 @@ public struct HoldClassifier {
         if isInsideStraightDraw(sorted) {
             return .fourToInsideStraight
         }
-        // Two high cards with two non-matching lower cards: treat as high pair fallback
+        // Mixed suits with no straight draw: classify by high card count.
         let highCount = ranks.filter { $0 >= 11 }.count
         if highCount >= 2 {
             return .twoUnsuitedHighCards
