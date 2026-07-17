@@ -56,10 +56,9 @@ public struct OptimalPlayResult {
 /// iterates every possible draw completion from the remaining 47 cards to compute the
 /// exact expected payout multiplier. The hold set with the highest EV is returned.
 ///
-/// Performance: cards are encoded as integers before the inner loop so no
-/// `PlayingCard` objects are accessed during draw enumeration. Temporary arrays
-/// are still allocated per hand evaluation inside the inner loop. Typical call
-/// time on Apple Watch hardware is well under 1 second in a release build.
+/// Performance: all 32 hold combinations are evaluated concurrently via `withTaskGroup`,
+/// distributing work across available cores. Cards are encoded as integers before the
+/// inner loop so no `PlayingCard` objects are accessed during draw enumeration.
 ///
 /// Tie-breaking: when multiple hold sets have identical EV, the one holding more
 /// cards wins (conventional: do not draw from a pat hand unless strictly better).
@@ -88,7 +87,7 @@ public struct OptimalPlay {
     ///   - playerHeld: Optional indices the player chose to hold, for EV comparison.
     /// - Returns: `OptimalPlayResult` with the optimal hold and, if playerHeld was
     ///   provided, the player's EV for comparison.
-    public func evaluate(hand: [PlayingCard], playerHeld: Set<Int>? = nil) -> OptimalPlayResult {
+    public func evaluate(hand: [PlayingCard], playerHeld: Set<Int>? = nil) async -> OptimalPlayResult {
         precondition(hand.count == 5, "OptimalPlay requires exactly 5 dealt cards")
         if let playerHeld {
             precondition(
@@ -116,18 +115,35 @@ public struct OptimalPlay {
             }
         }
 
+        // Evaluate all 32 hold combinations concurrently across available cores.
+        let evByMask: [(mask: Int, ev: Double)] = await withTaskGroup(
+            of: (mask: Int, ev: Double).self
+        ) { group in
+            for mask in 0 ..< 32 {
+                let heldCodes = (0 ..< 5)
+                    .filter { mask & (1 << $0) != 0 }
+                    .map { handCodes[$0] }
+                group.addTask {
+                    (mask: mask, ev: self.fastEV(held: heldCodes, remaining: remaining))
+                }
+            }
+            var collected: [(mask: Int, ev: Double)] = []
+            collected.reserveCapacity(32)
+            for await result in group {
+                collected.append(result)
+            }
+            return collected
+        }
+
         var bestEV = -Double.infinity
         var bestHeld = Set<Int>()
         var bestHeldCount = -1
-
-        for mask in 0 ..< 32 {
+        for (mask, ev) in evByMask.sorted(by: { $0.mask < $1.mask }) {
             let heldIndices = (0 ..< 5).filter { mask & (1 << $0) != 0 }
-            let heldCodes = heldIndices.map { handCodes[$0] }
-            let expectedValue = fastEV(held: heldCodes, remaining: remaining)
             let count = heldIndices.count
             // Prefer strictly higher EV; break ties by holding more cards.
-            if expectedValue > bestEV || (expectedValue == bestEV && count > bestHeldCount) {
-                bestEV = expectedValue
+            if ev > bestEV || (ev == bestEV && count > bestHeldCount) {
+                bestEV = ev
                 bestHeld = Set(heldIndices)
                 bestHeldCount = count
             }
