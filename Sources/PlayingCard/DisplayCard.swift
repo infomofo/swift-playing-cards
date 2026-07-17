@@ -43,7 +43,7 @@
             .cornerRadius(4)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color.black, lineWidth: 1),
+                    .stroke(Color.black, lineWidth: 1)
             )
         }
 
@@ -55,7 +55,7 @@
                     .fill(Color.white)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.black, lineWidth: 2),
+                            .stroke(Color.black, lineWidth: 2)
                     )
 
                 VStack {

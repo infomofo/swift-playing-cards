@@ -102,7 +102,7 @@ public struct HoldClassifier {
         precondition(hand.count == 5, "HoldClassifier requires exactly 5 dealt cards")
         precondition(
             holding.allSatisfy { (0 ..< 5).contains($0) },
-            "holding indices must be in 0...4",
+            "holding indices must be in 0...4"
         )
 
         let held = holding.sorted().map { hand[$0] }
