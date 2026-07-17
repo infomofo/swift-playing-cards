@@ -17,8 +17,8 @@ final class OptimalPlayTests: XCTestCase {
         expectedHeld: Set<Int>,
         file: StaticString = #file,
         line: UInt = #line
-    ) {
-        let result = engine.evaluate(hand: hand)
+    ) async {
+        let result = await engine.evaluate(hand: hand)
         XCTAssertEqual(
             result.optimalHeld, expectedHeld,
             "Expected to hold \(expectedHeld) but got \(result.optimalHeld)",
@@ -28,8 +28,8 @@ final class OptimalPlayTests: XCTestCase {
 
     // MARK: - Pat Hands (hold all 5)
 
-    func testPatRoyalFlushHoldsAll() {
-        assertOptimal(
+    func testPatRoyalFlushHoldsAll() async {
+        await assertOptimal(
             hand: [
                 PlayingCard(rank: .ace, suit: .spades),
                 PlayingCard(rank: .king, suit: .spades),
@@ -41,8 +41,8 @@ final class OptimalPlayTests: XCTestCase {
         )
     }
 
-    func testPatStraightFlushHoldsAll() {
-        assertOptimal(
+    func testPatStraightFlushHoldsAll() async {
+        await assertOptimal(
             hand: [
                 PlayingCard(rank: .nine, suit: .hearts),
                 PlayingCard(rank: .eight, suit: .hearts),
@@ -54,8 +54,8 @@ final class OptimalPlayTests: XCTestCase {
         )
     }
 
-    func testPatFourOfAKindHoldsAll() {
-        assertOptimal(
+    func testPatFourOfAKindHoldsAll() async {
+        await assertOptimal(
             hand: [
                 PlayingCard(rank: .ace, suit: .spades),
                 PlayingCard(rank: .ace, suit: .hearts),
@@ -67,8 +67,8 @@ final class OptimalPlayTests: XCTestCase {
         )
     }
 
-    func testPatFullHouseHoldsAll() {
-        assertOptimal(
+    func testPatFullHouseHoldsAll() async {
+        await assertOptimal(
             hand: [
                 PlayingCard(rank: .king, suit: .spades),
                 PlayingCard(rank: .king, suit: .hearts),
@@ -80,8 +80,8 @@ final class OptimalPlayTests: XCTestCase {
         )
     }
 
-    func testPatFlushHoldsAll() {
-        assertOptimal(
+    func testPatFlushHoldsAll() async {
+        await assertOptimal(
             hand: [
                 PlayingCard(rank: .ace, suit: .hearts),
                 PlayingCard(rank: .jack, suit: .hearts),
@@ -95,8 +95,8 @@ final class OptimalPlayTests: XCTestCase {
 
     /// Wheel straight flush (A-2-3-4-5 suited) is a pat hand; hold all 5.
     /// This exercises the isWheel branch in checkStraight.
-    func testPatWheelStraightFlushHoldsAll() {
-        assertOptimal(
+    func testPatWheelStraightFlushHoldsAll() async {
+        await assertOptimal(
             hand: [
                 PlayingCard(rank: .ace, suit: .clubs),
                 PlayingCard(rank: .two, suit: .clubs),
@@ -111,7 +111,7 @@ final class OptimalPlayTests: XCTestCase {
     // MARK: - Four to a Royal Flush
 
     /// 4-to-royal beats a made straight.
-    func testFourToRoyalBeatsStraight() {
+    func testFourToRoyalBeatsStraight() async {
         // A-K-Q-J of spades + 10 of hearts = made straight, but hold 4 royals.
         let hand = [
             PlayingCard(rank: .ace, suit: .spades),
@@ -120,13 +120,13 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .jack, suit: .spades),
             PlayingCard(rank: .ten, suit: .hearts),
         ]
-        let result = engine.evaluate(hand: hand)
+        let result = await engine.evaluate(hand: hand)
         // Should hold the 4 suited royals (indices 0-3), not the full straight.
         XCTAssertEqual(result.optimalHeld, [0, 1, 2, 3])
     }
 
     /// 4-to-royal beats a made flush.
-    func testFourToRoyalBeatsFlush() {
+    func testFourToRoyalBeatsFlush() async {
         // A-K-Q-J of spades + 3 of spades = made flush, but hold 4 royals.
         let hand = [
             PlayingCard(rank: .ace, suit: .spades),
@@ -135,14 +135,14 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .jack, suit: .spades),
             PlayingCard(rank: .three, suit: .spades),
         ]
-        let result = engine.evaluate(hand: hand)
+        let result = await engine.evaluate(hand: hand)
         XCTAssertEqual(result.optimalHeld, [0, 1, 2, 3])
     }
 
     // MARK: - High Pair vs. Four to a Flush
 
     /// A high pair (jacks or better) beats four to a flush.
-    func testHighPairBeatsFourToFlush() {
+    func testHighPairBeatsFourToFlush() async {
         // J-J (high pair) + Q-9-7 of hearts = four to a flush.
         let hand = [
             PlayingCard(rank: .jack, suit: .spades),
@@ -151,7 +151,7 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .nine, suit: .hearts),
             PlayingCard(rank: .seven, suit: .hearts),
         ]
-        let result = engine.evaluate(hand: hand)
+        let result = await engine.evaluate(hand: hand)
         // High pair EV ~1.54; flush draw EV ~1.22. Hold the pair.
         XCTAssertEqual(result.optimalHeld, [0, 1])
     }
@@ -159,7 +159,7 @@ final class OptimalPlayTests: XCTestCase {
     // MARK: - Low Pair vs. Four to an Outside Straight
 
     /// A low pair beats four to an outside straight.
-    func testLowPairBeatsFourToOutsideStraight() {
+    func testLowPairBeatsFourToOutsideStraight() async {
         // 7-7 (low pair) + 8-9-10 = four to an outside straight (7-8-9-10, needs 6 or J).
         let hand = [
             PlayingCard(rank: .seven, suit: .spades),
@@ -168,7 +168,7 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .nine, suit: .diamonds),
             PlayingCard(rank: .ten, suit: .spades),
         ]
-        let result = engine.evaluate(hand: hand)
+        let result = await engine.evaluate(hand: hand)
         // Low pair EV ~0.82; outside straight draw EV ~0.68. Hold the pair.
         XCTAssertEqual(result.optimalHeld, [0, 1])
     }
@@ -176,7 +176,7 @@ final class OptimalPlayTests: XCTestCase {
     // MARK: - Single High Card vs. Discard All
 
     /// A single jack (high card) beats discarding everything.
-    func testSingleHighCardBeatsDiscardAll() {
+    func testSingleHighCardBeatsDiscardAll() async {
         // J-high with no draws to anything: hold the jack.
         let hand = [
             PlayingCard(rank: .jack, suit: .spades),
@@ -185,13 +185,13 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .three, suit: .diamonds),
             PlayingCard(rank: .two, suit: .hearts),
         ]
-        let result = engine.evaluate(hand: hand)
+        let result = await engine.evaluate(hand: hand)
         // Holding J alone gives slightly better EV than discarding all.
         XCTAssertEqual(result.optimalHeld, [0])
     }
 
     /// King alone beats discarding all when no other draw exists.
-    func testKingHighBeatsDiscardAll() {
+    func testKingHighBeatsDiscardAll() async {
         let hand = [
             PlayingCard(rank: .king, suit: .spades),
             PlayingCard(rank: .seven, suit: .hearts),
@@ -199,13 +199,13 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .three, suit: .diamonds),
             PlayingCard(rank: .two, suit: .hearts),
         ]
-        let result = engine.evaluate(hand: hand)
+        let result = await engine.evaluate(hand: hand)
         XCTAssertEqual(result.optimalHeld, [0])
     }
 
     // MARK: - EV Comparison (playerHeld)
 
-    func testPlayerEVMatchesOptimalWhenCorrect() {
+    func testPlayerEVMatchesOptimalWhenCorrect() async {
         // Royal flush: holding all 5 is optimal. Player also holds all.
         let hand = [
             PlayingCard(rank: .ace, suit: .spades),
@@ -214,12 +214,12 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .jack, suit: .spades),
             PlayingCard(rank: .ten, suit: .spades),
         ]
-        let result = engine.evaluate(hand: hand, playerHeld: [0, 1, 2, 3, 4])
+        let result = await engine.evaluate(hand: hand, playerHeld: [0, 1, 2, 3, 4])
         XCTAssertEqual(result.wasOptimal, true)
         XCTAssertEqual(result.evDifference ?? -1, 0.0, accuracy: 0.001)
     }
 
-    func testEVDifferencePositiveWhenSuboptimal() {
+    func testEVDifferencePositiveWhenSuboptimal() async {
         // High pair exists but player discards everything.
         let hand = [
             PlayingCard(rank: .ace, suit: .spades),
@@ -228,12 +228,12 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .four, suit: .diamonds),
             PlayingCard(rank: .two, suit: .hearts),
         ]
-        let result = engine.evaluate(hand: hand, playerHeld: [])
+        let result = await engine.evaluate(hand: hand, playerHeld: [])
         XCTAssertEqual(result.wasOptimal, false)
         XCTAssertGreaterThan(result.evDifference ?? 0, 0)
     }
 
-    func testWasOptimalFalseWhenPlayerSuboptimal() {
+    func testWasOptimalFalseWhenPlayerSuboptimal() async {
         // 4-to-royal hand but player holds the full straight instead.
         let hand = [
             PlayingCard(rank: .ace, suit: .spades),
@@ -243,12 +243,12 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .ten, suit: .hearts),
         ]
         // Player holds all 5 (keeping the straight), optimal is to hold 0-3 (4-to-royal).
-        let result = engine.evaluate(hand: hand, playerHeld: [0, 1, 2, 3, 4])
+        let result = await engine.evaluate(hand: hand, playerHeld: [0, 1, 2, 3, 4])
         XCTAssertEqual(result.wasOptimal, false)
         XCTAssertGreaterThan(result.evDifference ?? 0, 0)
     }
 
-    func testOptimalEVIsNonNegative() {
+    func testOptimalEVIsNonNegative() async {
         // Worst possible hand should still have non-negative EV (discard all = chance at quads).
         let hand = [
             PlayingCard(rank: .two, suit: .spades),
@@ -257,11 +257,11 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .eight, suit: .diamonds),
             PlayingCard(rank: .ten, suit: .hearts),
         ]
-        let result = engine.evaluate(hand: hand)
+        let result = await engine.evaluate(hand: hand)
         XCTAssertGreaterThanOrEqual(result.optimalEV, 0)
     }
 
-    func testOptimalEVRoyalFlushIs800() {
+    func testOptimalEVRoyalFlushIs800() async {
         // Holding a made royal flush should return exactly 800x.
         let hand = [
             PlayingCard(rank: .ace, suit: .clubs),
@@ -270,7 +270,7 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .jack, suit: .clubs),
             PlayingCard(rank: .ten, suit: .clubs),
         ]
-        let result = engine.evaluate(hand: hand)
+        let result = await engine.evaluate(hand: hand)
         XCTAssertEqual(result.optimalEV, 800.0, accuracy: 0.001)
     }
 
@@ -278,7 +278,7 @@ final class OptimalPlayTests: XCTestCase {
 
     /// When all hand results pay 0, every hold combination has EV 0.
     /// The tie-break rule (prefer holding more cards) must return all 5 cards held.
-    func testTieBreakPrefersHoldingMoreCards() {
+    func testTieBreakPrefersHoldingMoreCards() async {
         let zeroPayTable = PayTable(
             name: "Zero Pay",
             multipliers: [HandResult: Int](
@@ -293,7 +293,7 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .eight, suit: .diamonds),
             PlayingCard(rank: .ten, suit: .hearts),
         ]
-        let result = zeroEngine.evaluate(hand: hand)
+        let result = await zeroEngine.evaluate(hand: hand)
         XCTAssertEqual(result.optimalHeld, [0, 1, 2, 3, 4])
         XCTAssertEqual(result.optimalEV, 0.0, accuracy: 0.001)
     }
@@ -301,7 +301,7 @@ final class OptimalPlayTests: XCTestCase {
     // MARK: - expectedValue(for:holding:)
 
     /// `expectedValue` must match `evaluate`'s `playerEV` for a pat royal flush (hold all 5).
-    func testExpectedValueMatchesEvaluatePatRoyal() throws {
+    func testExpectedValueMatchesEvaluatePatRoyal() async throws {
         let hand = [
             PlayingCard(rank: .ace, suit: .spades),
             PlayingCard(rank: .king, suit: .spades),
@@ -311,13 +311,14 @@ final class OptimalPlayTests: XCTestCase {
         ]
         let holding = Set([0, 1, 2, 3, 4])
         let ev = engine.expectedValue(for: hand, holding: holding)
-        let playerEV = try XCTUnwrap(engine.evaluate(hand: hand, playerHeld: holding).playerEV)
+        let evalResult = await engine.evaluate(hand: hand, playerHeld: holding)
+        let playerEV = try XCTUnwrap(evalResult.playerEV)
         XCTAssertEqual(ev, playerEV, accuracy: 0.001)
         XCTAssertEqual(ev, 800.0, accuracy: 0.001)
     }
 
     /// `expectedValue` must match `evaluate`'s `playerEV` for a 4-to-royal hold.
-    func testExpectedValueMatchesEvaluateFourToRoyal() throws {
+    func testExpectedValueMatchesEvaluateFourToRoyal() async throws {
         let hand = [
             PlayingCard(rank: .ace, suit: .spades),
             PlayingCard(rank: .king, suit: .spades),
@@ -327,12 +328,13 @@ final class OptimalPlayTests: XCTestCase {
         ]
         let holding = Set([0, 1, 2, 3])
         let ev = engine.expectedValue(for: hand, holding: holding)
-        let playerEV = try XCTUnwrap(engine.evaluate(hand: hand, playerHeld: holding).playerEV)
+        let evalResult4Royal = await engine.evaluate(hand: hand, playerHeld: holding)
+        let playerEV = try XCTUnwrap(evalResult4Royal.playerEV)
         XCTAssertEqual(ev, playerEV, accuracy: 0.001)
     }
 
     /// `expectedValue` must match `evaluate`'s `playerEV` when holding nothing (draw 5).
-    func testExpectedValueMatchesEvaluateHoldingNothing() throws {
+    func testExpectedValueMatchesEvaluateHoldingNothing() async throws {
         let hand = [
             PlayingCard(rank: .two, suit: .spades),
             PlayingCard(rank: .four, suit: .hearts),
@@ -342,7 +344,8 @@ final class OptimalPlayTests: XCTestCase {
         ]
         let holding = Set<Int>([])
         let ev = engine.expectedValue(for: hand, holding: holding)
-        let playerEV = try XCTUnwrap(engine.evaluate(hand: hand, playerHeld: holding).playerEV)
+        let evalResultNothing = await engine.evaluate(hand: hand, playerHeld: holding)
+        let playerEV = try XCTUnwrap(evalResultNothing.playerEV)
         XCTAssertEqual(ev, playerEV, accuracy: 0.001)
     }
 }
