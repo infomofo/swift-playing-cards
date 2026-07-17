@@ -23,7 +23,7 @@ public struct OptimalPlayResult {
         optimalHeld: Set<Int>,
         optimalEV: Double,
         playerHeld: Set<Int>? = nil,
-        playerEV: Double? = nil,
+        playerEV: Double? = nil
     ) {
         self.optimalHeld = optimalHeld
         self.optimalEV = optimalEV
@@ -93,7 +93,7 @@ public struct OptimalPlay {
         if let playerHeld {
             precondition(
                 playerHeld.allSatisfy { (0 ..< 5).contains($0) },
-                "playerHeld indices must be in 0...4",
+                "playerHeld indices must be in 0...4"
             )
         }
 
@@ -142,7 +142,7 @@ public struct OptimalPlay {
             optimalHeld: bestHeld,
             optimalEV: bestEV,
             playerHeld: playerHeld,
-            playerEV: playerEV,
+            playerEV: playerEV
         )
     }
 
@@ -160,7 +160,7 @@ public struct OptimalPlay {
         precondition(hand.count == 5, "OptimalPlay requires exactly 5 dealt cards")
         precondition(
             holding.allSatisfy { (0 ..< 5).contains($0) },
-            "holding indices must be in 0..<5",
+            "holding indices must be in 0..<5"
         )
         let suitOrder: [Suit: Int] = [.spades: 0, .hearts: 1, .diamonds: 2, .clubs: 3]
         let handCodes = hand.map { (($0.rank.rawValue - 2) << 2) | suitOrder[$0.suit]! }
@@ -266,7 +266,7 @@ public struct OptimalPlay {
             return Double(total) / Double(comboCount)
 
         default:
-            return 0.0
+            preconditionFailure("drawCount must be 0–5, got \(drawCount)")
         }
     }
 

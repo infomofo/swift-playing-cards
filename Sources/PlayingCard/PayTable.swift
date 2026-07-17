@@ -126,6 +126,6 @@ public struct PayTable {
             .twoPair: 2,
             .jacksOrBetter: 1,
             .noWin: 0,
-        ],
+        ]
     )
 }

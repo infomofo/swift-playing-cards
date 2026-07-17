@@ -98,18 +98,18 @@
                     LinearGradient(
                         colors: [Color.blue.opacity(0.85), Color.indigo.opacity(0.75)],
                         startPoint: .topLeading,
-                        endPoint: .bottomTrailing,
-                    ),
+                        endPoint: .bottomTrailing
+                    )
                 )
                 .frame(width: 28, height: 36)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
                         .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
-                        .padding(3),
+                        .padding(3)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.white.opacity(0.4), lineWidth: 1),
+                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
                 )
         }
     }
