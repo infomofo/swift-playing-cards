@@ -56,9 +56,10 @@ public struct OptimalPlayResult {
 /// iterates every possible draw completion from the remaining 47 cards to compute the
 /// exact expected payout multiplier. The hold set with the highest EV is returned.
 ///
-/// Performance: cards are encoded as integers before the inner loop to eliminate Swift
-/// object allocation in the tight path. Typical call time on Apple Watch hardware
-/// is well under 1 second in a release build.
+/// Performance: cards are encoded as integers before the inner loop so no
+/// `PlayingCard` objects are accessed during draw enumeration. Temporary arrays
+/// are still allocated per hand evaluation inside the inner loop. Typical call
+/// time on Apple Watch hardware is well under 1 second in a release build.
 ///
 /// Tie-breaking: when multiple hold sets have identical EV, the one holding more
 /// cards wins (conventional: do not draw from a pat hand unless strictly better).
