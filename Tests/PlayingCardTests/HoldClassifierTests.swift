@@ -208,6 +208,17 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 2, 4]) == .threeToFlush)
     }
 
+    /// Three suited cards with one jack and two low cards.
+    /// Regression: previously fell through and returned oneHighCard (saw J, ignored suit).
+    /// Hand: 9h Jc 3c 6c Xd, held Jc 3c 6c.
+    @Test func threeToFlushJackWithLowCards() {
+        let hand = [
+            card(.nine, .hearts), card(.jack, .clubs), card(.three, .clubs),
+            card(.six, .clubs), card(.two, .diamonds),
+        ]
+        #expect(classify(hand: hand, holding: [1, 2, 3]) == .threeToFlush)
+    }
+
     // MARK: - Three of a Kind (3-card hold)
 
     @Test func threeOfAKindHeld() {
