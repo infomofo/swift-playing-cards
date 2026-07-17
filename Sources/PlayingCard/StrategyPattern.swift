@@ -161,7 +161,7 @@ public struct HoldClassifier {
 
     private static func classifyFour(_ cards: [PlayingCard]) -> StrategyPattern {
         let suits = cards.map(\.suit)
-        let ranks = cards.map { $0.rank.rawValue }
+        let ranks = cards.map(\.rank.rawValue)
         let allSameSuit = Set(suits).count == 1
 
         if allSameSuit {
@@ -186,7 +186,7 @@ public struct HoldClassifier {
             if rankCounts.values.contains(3) {
                 return .threeOfAKind
             }
-            let pairRanks = rankCounts.filter { $0.value == 2 }.map { $0.key }
+            let pairRanks = rankCounts.filter { $0.value == 2 }.map(\.key)
             if !pairRanks.isEmpty {
                 return pairRanks.max()! >= 11 ? .highPair : .lowPair
             }
@@ -220,7 +220,7 @@ public struct HoldClassifier {
     // MARK: - Three cards
 
     private static func classifyThree(_ cards: [PlayingCard]) -> StrategyPattern {
-        let ranks = cards.map { $0.rank.rawValue }
+        let ranks = cards.map(\.rank.rawValue)
         let suits = cards.map(\.suit)
 
         // Three of a kind?
@@ -286,7 +286,7 @@ public struct HoldClassifier {
                 return .suitedTenHighCard
             }
         } else {
-            if firstHigh && secondHigh {
+            if firstHigh, secondHigh {
                 return .twoUnsuitedHighCards
             }
         }
@@ -301,7 +301,7 @@ public struct HoldClassifier {
     // MARK: - One card
 
     private static func classifyOne(_ card: PlayingCard) -> StrategyPattern {
-        return card.rank.rawValue >= 11 ? .oneHighCard : .discardAll
+        card.rank.rawValue >= 11 ? .oneHighCard : .discardAll
     }
 
     // MARK: - Helpers
@@ -337,7 +337,7 @@ public struct HoldClassifier {
         if highCards >= gapCount {
             return .threeToStraightFlushType1
         }
-        if gapCount == 2 && highCards == 0 {
+        if gapCount == 2, highCards == 0 {
             return .threeToStraightFlushType3
         }
         return .threeToStraightFlushType2
@@ -356,7 +356,7 @@ public struct HoldClassifier {
         // Wheel: ace (14) + two/three/four/five
         let hasAce = sorted.contains(14)
         let lowRanks = sorted.filter { $0 != 14 }
-        if hasAce && lowRanks.allSatisfy({ $0 <= 5 }) {
+        if hasAce, lowRanks.allSatisfy({ $0 <= 5 }) {
             return true
         }
         return false
@@ -369,7 +369,7 @@ public struct HoldClassifier {
     private static func isOutsideStraightDraw(_ sorted: [Int]) -> Bool {
         guard sorted.count == 4, Set(sorted).count == 4 else { return false }
         // Standard consecutive, excluding ace-high (J-Q-K-A can only complete with 10).
-        if sorted[3] - sorted[0] == 3 && sorted[3] != 14 {
+        if sorted[3] - sorted[0] == 3, sorted[3] != 14 {
             return true
         }
         return false

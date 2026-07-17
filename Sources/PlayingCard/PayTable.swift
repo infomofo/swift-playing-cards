@@ -22,16 +22,16 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .noWin: return "No Win"
-        case .jacksOrBetter: return "Jacks or Better"
-        case .twoPair: return "Two Pair"
-        case .threeOfAKind: return "Three of a Kind"
-        case .straight: return "Straight"
-        case .flush: return "Flush"
-        case .fullHouse: return "Full House"
-        case .fourOfAKind: return "Four of a Kind"
-        case .straightFlush: return "Straight Flush"
-        case .royalFlush: return "Royal Flush"
+        case .noWin: "No Win"
+        case .jacksOrBetter: "Jacks or Better"
+        case .twoPair: "Two Pair"
+        case .threeOfAKind: "Three of a Kind"
+        case .straight: "Straight"
+        case .flush: "Flush"
+        case .fullHouse: "Full House"
+        case .fourOfAKind: "Four of a Kind"
+        case .straightFlush: "Straight Flush"
+        case .royalFlush: "Royal Flush"
         }
     }
 
@@ -55,7 +55,7 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
         case .threeOfAKind: return .threeOfAKind
         case .twoPair: return .twoPair
         case .pair:
-            let rankCounts = Dictionary(grouping: cards.map { $0.rank }, by: { $0 })
+            let rankCounts = Dictionary(grouping: cards.map(\.rank), by: { $0 })
                 .mapValues { $0.count }
             if let pairRank = rankCounts.first(where: { $0.value == 2 })?.key,
                pairRank >= .jack
@@ -100,7 +100,7 @@ public struct PayTable {
     public func payout(for cards: [PlayingCard], bet: Int = 5) -> Int {
         precondition((1 ... 5).contains(bet), "bet must be between 1 and 5")
         let result = handResult(for: cards)
-        if result == .royalFlush && bet != 5 {
+        if result == .royalFlush, bet != 5 {
             return 250 * bet
         }
         return multiplier(for: result) * bet

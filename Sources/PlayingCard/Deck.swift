@@ -21,12 +21,12 @@ public struct Deck {
 
     /// The number of cards remaining in the deck.
     public var count: Int {
-        return cards.count
+        cards.count
     }
 
     /// Returns true if the deck is empty.
     public var isEmpty: Bool {
-        return cards.isEmpty
+        cards.isEmpty
     }
 
     /// Shuffles the deck using Fisher-Yates algorithm with cryptographically secure randomization.
@@ -66,6 +66,6 @@ public struct Deck {
 
     /// Returns the remaining cards in the deck without removing them.
     public var remainingCards: [PlayingCard] {
-        return cards
+        cards
     }
 }

@@ -94,7 +94,7 @@
 
         /// Returns whether the card is currently selected
         public var isCardSelected: Bool {
-            return isSelected
+            isSelected
         }
 
         /// Replace this card with a new card (with animation)
@@ -120,7 +120,7 @@
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     extension InteractiveCard: Hashable, Equatable {
         public static func == (lhs: InteractiveCard, rhs: InteractiveCard) -> Bool {
-            return lhs.card == rhs.card
+            lhs.card == rhs.card
         }
 
         public func hash(into hasher: inout Hasher) {

@@ -127,7 +127,7 @@ public enum VideoPokerExample {
         let suitCounts = Dictionary(grouping: cards, by: { $0.suit }).mapValues { $0.count }
         let flushSuit = suitCounts.first { $0.value == 4 }?.key
 
-        if let flushSuit = flushSuit {
+        if let flushSuit {
             // Hold the 4 cards of the flush suit
             for (index, card) in cards.enumerated() where card.suit != flushSuit {
                 cardsToReplace.append(index)
@@ -136,7 +136,7 @@ public enum VideoPokerExample {
         }
 
         // Check for straight draw
-        let sortedRanks = cards.map { $0.rank }.sorted()
+        let sortedRanks = cards.map(\.rank).sorted()
         if isOpenEndedStraightDraw(ranks: sortedRanks) {
             // Hold all cards for straight draw
             return []
@@ -174,8 +174,8 @@ public enum VideoPokerExample {
         }
 
         // Check for wheel draw (A, 2, 3, 4)
-        if uniqueRanks.contains(.ace) && uniqueRanks.contains(.two) &&
-            uniqueRanks.contains(.three) && uniqueRanks.contains(.four)
+        if uniqueRanks.contains(.ace), uniqueRanks.contains(.two),
+           uniqueRanks.contains(.three), uniqueRanks.contains(.four)
         {
             return true
         }
@@ -221,7 +221,7 @@ public enum VideoPokerExample {
         ]
 
         for (name, hand) in hands {
-            output.append("\(name): \(hand.handCards.map { $0.description }.joined(separator: " "))")
+            output.append("\(name): \(hand.handCards.map(\.description).joined(separator: " "))")
             output.append("  Evaluation: \(HandResult.evaluate(cards: hand.handCards).description)")
             output.append("  Payout: \(PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: hand.handCards)))x")
             output.append("")

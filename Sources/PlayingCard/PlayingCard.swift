@@ -22,12 +22,12 @@ public struct PlayingCard: Equatable, Hashable {
 extension PlayingCard: Comparable {
     /// Returns a Boolean value indicating whether the left playing card is less than the right playing card.
     public static func < (lhs: PlayingCard, rhs: PlayingCard) -> Bool {
-        return lhs.rank == rhs.rank ? lhs.suit < rhs.suit : lhs.rank < rhs.rank
+        lhs.rank == rhs.rank ? lhs.suit < rhs.suit : lhs.rank < rhs.rank
     }
 
     /// Returns a Boolean value indicating whether the left playing card is greater than the right playing card.
     public static func > (lhs: PlayingCard, rhs: PlayingCard) -> Bool {
-        return lhs.rank == rhs.rank ? lhs.suit > rhs.suit : lhs.rank > rhs.rank
+        lhs.rank == rhs.rank ? lhs.suit > rhs.suit : lhs.rank > rhs.rank
     }
 }
 
@@ -37,6 +37,6 @@ extension PlayingCard: Comparable {
 extension PlayingCard: CustomStringConvertible {
     /// The playing card's description.
     public var description: String {
-        return "\(suit) \(rank)"
+        "\(suit) \(rank)"
     }
 }
