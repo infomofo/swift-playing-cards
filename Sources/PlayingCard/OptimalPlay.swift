@@ -5,8 +5,8 @@
 /// ```swift
 /// let engine = OptimalPlay(payTable: .jacksOrBetter96)
 /// let result = engine.evaluate(hand: dealtCards, playerHeld: [0, 1])
-/// if !result.wasOptimal {
-///     print("Suboptimal by \(result.evDifference!) EV")
+/// if let diff = result.evDifference, diff > 0 {
+///     print("Suboptimal by \(diff) EV")
 /// }
 /// ```
 public struct OptimalPlayResult {
@@ -38,9 +38,15 @@ public struct OptimalPlayResult {
         return optimalEV - playerEV
     }
 
-    /// True when the player's hold set matches optimal strategy.
-    public var wasOptimal: Bool {
-        playerHeld == optimalHeld
+    /// True when the player's hold set matches the optimal hold set.
+    /// Nil when no player hold was provided.
+    ///
+    /// Compares hold sets, not EVs. Returns nil (not false) when `playerHeld` is nil,
+    /// consistent with `playerEV`. Can be false even when `evDifference == 0` if the
+    /// player held a different set with equal EV.
+    public var wasOptimal: Bool? {
+        guard let playerHeld else { return nil }
+        return playerHeld == optimalHeld
     }
 }
 
@@ -83,6 +89,12 @@ public struct OptimalPlay {
     ///   provided, the player's EV for comparison.
     public func evaluate(hand: [PlayingCard], playerHeld: Set<Int>? = nil) -> OptimalPlayResult {
         precondition(hand.count == 5, "OptimalPlay requires exactly 5 dealt cards")
+        if let playerHeld {
+            precondition(
+                playerHeld.allSatisfy { (0 ..< 5).contains($0) },
+                "playerHeld indices must be in 0...4"
+            )
+        }
 
         // Encode hand and remaining deck as integers for the tight inner loop.
         // Encoding: rank_index * 4 + suit_index
@@ -215,9 +227,9 @@ public struct OptimalPlay {
         return (maxFreq, secondFreq, pairHighRank)
     }
 
-    /// Returns (isStraight, isAceHighStraight) for five rank indices.
+    /// Returns (isStraight, isRoyal) for five rank indices.
     ///
-    /// isAceHighStraight is true when the hand is a straight with sorted ranks [8,9,10,11,12]
+    /// isRoyal is true when the hand is a straight with sorted ranks [8,9,10,11,12]
     /// (T-J-Q-K-A), which combined with flush gives a royal flush.
     private func checkStraight(
         _ rank0: Int, _ rank1: Int, _ rank2: Int, _ rank3: Int, _ rank4: Int, maxFreq: Int

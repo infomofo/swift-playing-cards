@@ -96,7 +96,7 @@ final class OptimalPlayTests: XCTestCase {
     // MARK: - Four to a Royal Flush
 
     /// 4-to-royal beats a made straight.
-    func testFourToRoyalBeatsStright() {
+    func testFourToRoyalBeatsStraight() {
         // A-K-Q-J of spades + 10 of hearts = made straight, but hold 4 royals.
         let hand = [
             PlayingCard(rank: .ace, suit: .spades),
@@ -200,7 +200,7 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .ten, suit: .spades),
         ]
         let result = engine.evaluate(hand: hand, playerHeld: [0, 1, 2, 3, 4])
-        XCTAssertTrue(result.wasOptimal)
+        XCTAssertEqual(result.wasOptimal, true)
         XCTAssertEqual(result.evDifference ?? -1, 0.0, accuracy: 0.001)
     }
 
@@ -214,7 +214,7 @@ final class OptimalPlayTests: XCTestCase {
             PlayingCard(rank: .two, suit: .hearts),
         ]
         let result = engine.evaluate(hand: hand, playerHeld: [])
-        XCTAssertFalse(result.wasOptimal)
+        XCTAssertEqual(result.wasOptimal, false)
         XCTAssertGreaterThan(result.evDifference ?? 0, 0)
     }
 
@@ -229,7 +229,7 @@ final class OptimalPlayTests: XCTestCase {
         ]
         // Player holds all 5 (keeping the straight), optimal is to hold 0-3 (4-to-royal).
         let result = engine.evaluate(hand: hand, playerHeld: [0, 1, 2, 3, 4])
-        XCTAssertFalse(result.wasOptimal)
+        XCTAssertEqual(result.wasOptimal, false)
         XCTAssertGreaterThan(result.evDifference ?? 0, 0)
     }
 
