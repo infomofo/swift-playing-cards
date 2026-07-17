@@ -121,78 +121,104 @@ public struct Hand {
         return bestHandType
     }
 
+    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length
     private func evaluateFiveCards(_ fiveCards: [PlayingCard]) -> HandType {
-        let sortedCards = fiveCards.sorted()
-        let ranks = sortedCards.map(\.rank)
-        let suits = sortedCards.map(\.suit)
+        // Direct, allocation-free flush check
+        let isFlush = fiveCards[0].suit == fiveCards[1].suit &&
+            fiveCards[1].suit == fiveCards[2].suit &&
+            fiveCards[2].suit == fiveCards[3].suit &&
+            fiveCards[3].suit == fiveCards[4].suit
 
-        let isFlush = Set(suits).count == 1
-        let isStraight = checkStraight(ranks)
-        let rankCounts = Dictionary(grouping: ranks, by: { $0 }).mapValues { $0.count }
-        let counts = Array(rankCounts.values).sorted(by: >)
+        // Inline insertion sort of the 5 ranks using stack-allocated registers
+        var s0 = fiveCards[0].rank.rawValue
+        var s1 = fiveCards[1].rank.rawValue
+        var s2 = fiveCards[2].rank.rawValue
+        var s3 = fiveCards[3].rank.rawValue
+        var s4 = fiveCards[4].rank.rawValue
+        var t = 0
 
-        // Check for royal flush
-        if isFlush, isStraight, ranks.contains(.ace), ranks.contains(.king) {
-            return .royalFlush
+        if s0 > s1 {
+            t = s0; s0 = s1; s1 = t
+        }
+        if s1 > s2 {
+            t = s1; s1 = s2; s2 = t
+            if s0 > s1 {
+                t = s0; s0 = s1; s1 = t
+            }
+        }
+        if s2 > s3 {
+            t = s2; s2 = s3; s3 = t
+            if s1 > s2 {
+                t = s1; s1 = s2; s2 = t
+                if s0 > s1 {
+                    t = s0; s0 = s1; s1 = t
+                }
+            }
+        }
+        if s3 > s4 {
+            t = s3; s3 = s4; s4 = t
+            if s2 > s3 {
+                t = s2; s2 = s3; s3 = t
+                if s1 > s2 {
+                    t = s1; s1 = s2; s2 = t
+                    if s0 > s1 {
+                        t = s0; s0 = s1; s1 = t
+                    }
+                }
+            }
         }
 
-        // Check for straight flush
-        if isFlush, isStraight {
+        // Inline straight check (including ace-low wheel straight: 2, 3, 4, 5, 14)
+        let isStraight = (s1 == s0 + 1 && s2 == s1 + 1 && s3 == s2 + 1 && s4 == s3 + 1) ||
+            (s0 == 2 && s1 == 3 && s2 == 4 && s3 == 5 && s4 == 14)
+
+        // Evaluate Hand Result in precedence order
+        if isFlush && isStraight {
+            if s4 == 14, s3 == 13 {
+                return .royalFlush
+            }
             return .straightFlush
         }
 
-        // Check for four of a kind
-        if counts == [4, 1] {
+        // Four of a kind
+        if s0 == s3 || s1 == s4 {
             return .fourOfAKind
         }
 
-        // Check for full house
-        if counts == [3, 2] {
+        // Full house
+        if (s0 == s2 && s3 == s4) || (s0 == s1 && s2 == s4) {
             return .fullHouse
         }
 
-        // Check for flush
+        // Flush
         if isFlush {
             return .flush
         }
 
-        // Check for straight
+        // Straight
         if isStraight {
             return .straight
         }
 
-        // Check for three of a kind
-        if counts == [3, 1, 1] {
+        // Three of a kind
+        if s0 == s2 || s1 == s3 || s2 == s4 {
             return .threeOfAKind
         }
 
-        // Check for two pair
-        if counts == [2, 2, 1] {
+        // Two pair
+        if (s0 == s1 && s2 == s3) || (s0 == s1 && s3 == s4) || (s1 == s2 && s3 == s4) {
             return .twoPair
         }
 
-        // Check for pair
-        if counts == [2, 1, 1, 1] {
+        // Pair
+        if s0 == s1 || s1 == s2 || s2 == s3 || s3 == s4 {
             return .pair
         }
 
         return .highCard
     }
 
-    private func checkStraight(_ ranks: [Rank]) -> Bool {
-        let uniqueRanks = Array(Set(ranks)).sorted()
-        guard uniqueRanks.count == 5 else { return false }
-
-        // Check for wheel (A-2-3-4-5) special case first
-        if uniqueRanks == [.two, .three, .four, .five, .ace] {
-            return true
-        }
-
-        // Check for regular straight
-        return !uniqueRanks.indices.dropFirst().contains { index in
-            uniqueRanks[index].rawValue != uniqueRanks[index - 1].rawValue + 1
-        }
-    }
+    // swiftlint:enable identifier_name cyclomatic_complexity function_body_length
 
     private func generateCombinations<T>(from array: [T], taking count: Int) -> [[T]] {
         guard count <= array.count else { return [] }

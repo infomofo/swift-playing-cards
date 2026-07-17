@@ -192,4 +192,32 @@ final class HandTests: XCTestCase {
 
         XCTAssertEqual(hand.evaluate(), .pair)
     }
+
+    func testHandEvaluatePerformance() {
+        let hand5 = Hand(cards: [
+            PlayingCard(rank: .two, suit: .spades),
+            PlayingCard(rank: .four, suit: .hearts),
+            PlayingCard(rank: .six, suit: .diamonds),
+            PlayingCard(rank: .eight, suit: .clubs),
+            PlayingCard(rank: .ten, suit: .spades),
+        ])
+        let hand7 = Hand(cards: [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .ace, suit: .hearts),
+            PlayingCard(rank: .three, suit: .diamonds),
+            PlayingCard(rank: .five, suit: .clubs),
+            PlayingCard(rank: .seven, suit: .spades),
+            PlayingCard(rank: .nine, suit: .hearts),
+            PlayingCard(rank: .jack, suit: .diamonds),
+        ])
+
+        measure {
+            for _ in 0 ..< 10000 {
+                _ = hand5.evaluate()
+            }
+            for _ in 0 ..< 1000 {
+                _ = hand7.evaluate()
+            }
+        }
+    }
 }

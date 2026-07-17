@@ -14,3 +14,7 @@ Before flagging heap allocation (e.g., `[T](repeating:count:)`, array literals, 
 3. If you cannot produce a measurement, propose a benchmark test instead of a code change comment.
 
 Do not flag small fixed-size array allocations in Swift as defects based on speculation alone. The Swift compiler and allocator optimize many short-lived small arrays; actual impact must be demonstrated before requesting a rewrite.
+
+## Explicit `self.` in Closures
+
+Before flagging a missing `self.` qualifier in a closure, verify that the enclosing type is a class or actor. Swift does not require explicit `self` capture for value types (structs and enums); the requirement is specific to reference types to surface potential retain cycles. If the type is a struct or enum, do not comment on the absence of `self.`.
