@@ -14,7 +14,7 @@ public enum HandType: Int, CaseIterable, Comparable {
     case royalFlush = 10
 
     public static func < (lhs: HandType, rhs: HandType) -> Bool {
-        return lhs.rawValue < rhs.rawValue
+        lhs.rawValue < rhs.rawValue
     }
 }
 
@@ -23,16 +23,16 @@ public enum HandType: Int, CaseIterable, Comparable {
 extension HandType: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .highCard: return "High Card"
-        case .pair: return "Pair"
-        case .twoPair: return "Two Pair"
-        case .threeOfAKind: return "Three of a Kind"
-        case .straight: return "Straight"
-        case .flush: return "Flush"
-        case .fullHouse: return "Full House"
-        case .fourOfAKind: return "Four of a Kind"
-        case .straightFlush: return "Straight Flush"
-        case .royalFlush: return "Royal Flush"
+        case .highCard: "High Card"
+        case .pair: "Pair"
+        case .twoPair: "Two Pair"
+        case .threeOfAKind: "Three of a Kind"
+        case .straight: "Straight"
+        case .flush: "Flush"
+        case .fullHouse: "Full House"
+        case .fourOfAKind: "Four of a Kind"
+        case .straightFlush: "Straight Flush"
+        case .royalFlush: "Royal Flush"
         }
     }
 }
@@ -43,12 +43,12 @@ public struct Hand {
 
     /// The number of cards in the hand.
     public var numberOfCards: Int {
-        return cards.count
+        cards.count
     }
 
     /// The cards in the hand.
     public var handCards: [PlayingCard] {
-        return cards
+        cards
     }
 
     /// Creates a new empty hand.
@@ -123,8 +123,8 @@ public struct Hand {
 
     private func evaluateFiveCards(_ fiveCards: [PlayingCard]) -> HandType {
         let sortedCards = fiveCards.sorted()
-        let ranks = sortedCards.map { $0.rank }
-        let suits = sortedCards.map { $0.suit }
+        let ranks = sortedCards.map(\.rank)
+        let suits = sortedCards.map(\.suit)
 
         let isFlush = Set(suits).count == 1
         let isStraight = checkStraight(ranks)
@@ -132,12 +132,12 @@ public struct Hand {
         let counts = Array(rankCounts.values).sorted(by: >)
 
         // Check for royal flush
-        if isFlush && isStraight && ranks.contains(.ace) && ranks.contains(.king) {
+        if isFlush, isStraight, ranks.contains(.ace), ranks.contains(.king) {
             return .royalFlush
         }
 
         // Check for straight flush
-        if isFlush && isStraight {
+        if isFlush, isStraight {
             return .straightFlush
         }
 

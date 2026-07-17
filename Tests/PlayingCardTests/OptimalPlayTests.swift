@@ -16,13 +16,13 @@ final class OptimalPlayTests: XCTestCase {
         hand: [PlayingCard],
         expectedHeld: Set<Int>,
         file: StaticString = #file,
-        line: UInt = #line
+        line: UInt = #line,
     ) {
         let result = engine.evaluate(hand: hand)
         XCTAssertEqual(
             result.optimalHeld, expectedHeld,
             "Expected to hold \(expectedHeld) but got \(result.optimalHeld)",
-            file: file, line: line
+            file: file, line: line,
         )
     }
 
@@ -37,7 +37,7 @@ final class OptimalPlayTests: XCTestCase {
                 PlayingCard(rank: .jack, suit: .spades),
                 PlayingCard(rank: .ten, suit: .spades),
             ],
-            expectedHeld: [0, 1, 2, 3, 4]
+            expectedHeld: [0, 1, 2, 3, 4],
         )
     }
 
@@ -50,7 +50,7 @@ final class OptimalPlayTests: XCTestCase {
                 PlayingCard(rank: .six, suit: .hearts),
                 PlayingCard(rank: .five, suit: .hearts),
             ],
-            expectedHeld: [0, 1, 2, 3, 4]
+            expectedHeld: [0, 1, 2, 3, 4],
         )
     }
 
@@ -63,7 +63,7 @@ final class OptimalPlayTests: XCTestCase {
                 PlayingCard(rank: .ace, suit: .clubs),
                 PlayingCard(rank: .king, suit: .spades),
             ],
-            expectedHeld: [0, 1, 2, 3, 4]
+            expectedHeld: [0, 1, 2, 3, 4],
         )
     }
 
@@ -76,7 +76,7 @@ final class OptimalPlayTests: XCTestCase {
                 PlayingCard(rank: .queen, suit: .clubs),
                 PlayingCard(rank: .queen, suit: .spades),
             ],
-            expectedHeld: [0, 1, 2, 3, 4]
+            expectedHeld: [0, 1, 2, 3, 4],
         )
     }
 
@@ -89,7 +89,7 @@ final class OptimalPlayTests: XCTestCase {
                 PlayingCard(rank: .five, suit: .hearts),
                 PlayingCard(rank: .two, suit: .hearts),
             ],
-            expectedHeld: [0, 1, 2, 3, 4]
+            expectedHeld: [0, 1, 2, 3, 4],
         )
     }
 
@@ -104,7 +104,7 @@ final class OptimalPlayTests: XCTestCase {
                 PlayingCard(rank: .four, suit: .clubs),
                 PlayingCard(rank: .five, suit: .clubs),
             ],
-            expectedHeld: [0, 1, 2, 3, 4]
+            expectedHeld: [0, 1, 2, 3, 4],
         )
     }
 
@@ -282,8 +282,8 @@ final class OptimalPlayTests: XCTestCase {
         let zeroPayTable = PayTable(
             name: "Zero Pay",
             multipliers: [HandResult: Int](
-                uniqueKeysWithValues: HandResult.allCases.map { ($0, 0) }
-            )
+                uniqueKeysWithValues: HandResult.allCases.map { ($0, 0) },
+            ),
         )
         let zeroEngine = OptimalPlay(payTable: zeroPayTable)
         let hand = [
