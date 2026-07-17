@@ -182,128 +182,170 @@ public struct OptimalPlay {
 
     // MARK: - Fast Inner Loop
 
+    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length
+
     /// Computes expected payout by iterating all C(remaining.count, drawCount) completions.
     ///
     /// All arithmetic operates on plain integers; no `PlayingCard` objects are accessed
     /// during the combination loop.
     private func fastEV(held: [Int], remaining: [Int]) -> Double {
         let drawCount = 5 - held.count
-        if drawCount == 0 {
-            return Double(multiplierTable[handResultCode(held)])
-        }
-
-        let deckSize = remaining.count
-        var indices = Array(0 ..< drawCount)
+        let count = remaining.count
         var total = 0
-        var comboCount = 0
-        var buf = held + Array(repeating: 0, count: drawCount)
 
-        while true {
-            for idx in 0 ..< drawCount {
-                buf[held.count + idx] = remaining[indices[idx]]
-            }
-            total += multiplierTable[handResultCode(buf)]
-            comboCount += 1
+        switch drawCount {
+        case 0:
+            return Double(multiplierTable[handResultCode(held[0], held[1], held[2], held[3], held[4])])
 
-            var pos = drawCount - 1
-            while pos >= 0, indices[pos] == deckSize - drawCount + pos {
-                pos -= 1
+        case 1:
+            let h0 = held[0], h1 = held[1], h2 = held[2], h3 = held[3]
+            for i in 0 ..< count {
+                total += multiplierTable[handResultCode(h0, h1, h2, h3, remaining[i])]
             }
-            guard pos >= 0 else { break }
-            indices[pos] += 1
-            for jdx in (pos + 1) ..< drawCount {
-                indices[jdx] = indices[jdx - 1] + 1
+            return Double(total) / Double(count)
+
+        case 2:
+            let h0 = held[0], h1 = held[1], h2 = held[2]
+            for i in 0 ..< count - 1 {
+                let card0 = remaining[i]
+                for j in i + 1 ..< count {
+                    total += multiplierTable[handResultCode(h0, h1, h2, card0, remaining[j])]
+                }
             }
+            let comboCount = (count * (count - 1)) / 2
+            return Double(total) / Double(comboCount)
+
+        case 3:
+            let h0 = held[0], h1 = held[1]
+            for i in 0 ..< count - 2 {
+                let card0 = remaining[i]
+                for j in i + 1 ..< count - 1 {
+                    let card1 = remaining[j]
+                    for k in j + 1 ..< count {
+                        total += multiplierTable[handResultCode(h0, h1, card0, card1, remaining[k])]
+                    }
+                }
+            }
+            let comboCount = (count * (count - 1) * (count - 2)) / 6
+            return Double(total) / Double(comboCount)
+
+        case 4:
+            let h0 = held[0]
+            for i in 0 ..< count - 3 {
+                let card0 = remaining[i]
+                for j in i + 1 ..< count - 2 {
+                    let card1 = remaining[j]
+                    for k in j + 1 ..< count - 1 {
+                        let card2 = remaining[k]
+                        for l in k + 1 ..< count {
+                            total += multiplierTable[handResultCode(h0, card0, card1, card2, remaining[l])]
+                        }
+                    }
+                }
+            }
+            let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
+            return Double(total) / Double(comboCount)
+
+        case 5:
+            for i in 0 ..< count - 4 {
+                let card0 = remaining[i]
+                for j in i + 1 ..< count - 3 {
+                    let card1 = remaining[j]
+                    for k in j + 1 ..< count - 2 {
+                        let card2 = remaining[k]
+                        for l in k + 1 ..< count - 1 {
+                            let card3 = remaining[l]
+                            for m in l + 1 ..< count {
+                                total += multiplierTable[handResultCode(card0, card1, card2, card3, remaining[m])]
+                            }
+                        }
+                    }
+                }
+            }
+            let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
+            return Double(total) / Double(comboCount)
+
+        default:
+            preconditionFailure("drawCount must be 0–5, got \(drawCount)")
         }
-
-        return Double(total) / Double(comboCount)
     }
 
     /// Evaluates a 5-card hand encoded as integers and returns the `HandResult.rawValue`.
     ///
     /// Encoding per card: `(rank_index << 2) | suit_index`
     /// where rank_index is 0 (two) through 12 (ace) and suit_index is 0–3.
-    private func handResultCode(_ codes: [Int]) -> Int {
-        let rank0 = codes[0] >> 2, rank1 = codes[1] >> 2, rank2 = codes[2] >> 2,
-            rank3 = codes[3] >> 2, rank4 = codes[4] >> 2
-        let suit0 = codes[0] & 3, suit1 = codes[1] & 3, suit2 = codes[2] & 3,
-            suit3 = codes[3] & 3, suit4 = codes[4] & 3
+    @inline(__always)
+    private func handResultCode(_ c0: Int, _ c1: Int, _ c2: Int, _ c3: Int, _ c4: Int) -> Int {
+        let rank0 = c0 >> 2, rank1 = c1 >> 2, rank2 = c2 >> 2, rank3 = c3 >> 2, rank4 = c4 >> 2
+        let suit0 = c0 & 3, suit1 = c1 & 3, suit2 = c2 & 3, suit3 = c3 & 3, suit4 = c4 & 3
 
         let flush = suit0 == suit1 && suit1 == suit2 && suit2 == suit3 && suit3 == suit4
-        let (maxFreq, secondFreq, pairHighRank) = rankFrequencies(
-            rank0, rank1, rank2, rank3, rank4
-        )
-        let (isStraight, isRoyal) = checkStraight(
-            rank0, rank1, rank2, rank3, rank4, maxFreq: maxFreq
-        )
-        return resultCode(
-            flush: flush, isStraight: isStraight, isRoyal: isRoyal,
-            maxFreq: maxFreq, secondFreq: secondFreq, pairHighRank: pairHighRank
-        )
-    }
 
-    /// Returns (maxFreq, secondFreq, highestPairRank) from five rank indices.
-    private func rankFrequencies(
-        _ rank0: Int, _ rank1: Int, _ rank2: Int, _ rank3: Int, _ rank4: Int
-    ) -> (Int, Int, Int) {
-        var freq = [Int](repeating: 0, count: 13)
-        freq[rank0] += 1; freq[rank1] += 1; freq[rank2] += 1
-        freq[rank3] += 1; freq[rank4] += 1
-        var maxFreq = 0, secondFreq = 0, pairHighRank = -1
-        for rank in 0 ..< 13 {
-            let cnt = freq[rank]
-            if cnt > maxFreq {
-                secondFreq = maxFreq; maxFreq = cnt
-            } else if cnt > secondFreq {
-                secondFreq = cnt
-            }
-            if cnt == 2 {
-                pairHighRank = rank
+        // Inline insertion sort of the 5 ranks using stack-allocated registers
+        var s0 = rank0, s1 = rank1, s2 = rank2, s3 = rank3, s4 = rank4
+        var t = 0
+
+        if s0 > s1 {
+            t = s0; s0 = s1; s1 = t
+        }
+
+        if s1 > s2 {
+            t = s1; s1 = s2; s2 = t
+            if s0 > s1 {
+                t = s0; s0 = s1; s1 = t
             }
         }
-        return (maxFreq, secondFreq, pairHighRank)
-    }
 
-    /// Returns (isStraight, isRoyal) for five rank indices.
-    ///
-    /// isRoyal is true when the hand is a straight with sorted ranks [8,9,10,11,12]
-    /// (T-J-Q-K-A), which combined with flush gives a royal flush.
-    private func checkStraight(
-        _ rank0: Int, _ rank1: Int, _ rank2: Int, _ rank3: Int, _ rank4: Int, maxFreq: Int
-    ) -> (Bool, Bool) {
-        guard maxFreq == 1 else { return (false, false) }
-        var sorted = [rank0, rank1, rank2, rank3, rank4]
-        for idx in 1 ..< 5 {
-            let key = sorted[idx]; var jdx = idx - 1
-            while jdx >= 0, sorted[jdx] > key {
-                sorted[jdx + 1] = sorted[jdx]; jdx -= 1
+        if s2 > s3 {
+            t = s2; s2 = s3; s3 = t
+            if s1 > s2 {
+                t = s1; s1 = s2; s2 = t
+                if s0 > s1 {
+                    t = s0; s0 = s1; s1 = t
+                }
             }
-            sorted[jdx + 1] = key
         }
-        let isContiguous = sorted[4] - sorted[0] == 4
-        let isWheel = sorted[0] == 0 && sorted[1] == 1 && sorted[2] == 2
-            && sorted[3] == 3 && sorted[4] == 12
-        let isStraight = isContiguous || isWheel
-        // Royal: A-K-Q-J-T; sorted ranks 8,9,10,11,12.
-        let isRoyal = isContiguous && sorted[3] == 11 && sorted[4] == 12
-        return (isStraight, isRoyal)
-    }
 
-    /// Maps hand attributes to a `HandResult.rawValue` index.
-    private func resultCode(
-        flush: Bool, isStraight: Bool, isRoyal: Bool,
-        maxFreq: Int, secondFreq: Int, pairHighRank: Int
-    ) -> Int {
-        if flush && isRoyal {
+        if s3 > s4 {
+            t = s3; s3 = s4; s4 = t
+            if s2 > s3 {
+                t = s2; s2 = s3; s3 = t
+                if s1 > s2 {
+                    t = s1; s1 = s2; s2 = t
+                    if s0 > s1 {
+                        t = s0; s0 = s1; s1 = t
+                    }
+                }
+            }
+        }
+
+        // Distinct check for straight detection
+        let isDistinct = s0 != s1 && s1 != s2 && s2 != s3 && s3 != s4
+        var isStraight = false
+        var isRoyal = false
+
+        if isDistinct {
+            if s4 - s0 == 4 {
+                isStraight = true
+                if s3 == 11, s4 == 12 {
+                    isRoyal = true
+                }
+            } else if s0 == 0, s1 == 1, s2 == 2, s3 == 3, s4 == 12 {
+                isStraight = true
+            }
+        }
+
+        // Evaluate Hand Result in precedence order
+        if flush && isStraight && isRoyal {
             return HandResult.royalFlush.rawValue
         }
         if flush && isStraight {
             return HandResult.straightFlush.rawValue
         }
-        if maxFreq == 4 {
+        if s0 == s3 || s1 == s4 {
             return HandResult.fourOfAKind.rawValue
         }
-        if maxFreq == 3 && secondFreq == 2 {
+        if (s0 == s2 && s3 == s4) || (s0 == s1 && s2 == s4) {
             return HandResult.fullHouse.rawValue
         }
         if flush {
@@ -312,16 +354,27 @@ public struct OptimalPlay {
         if isStraight {
             return HandResult.straight.rawValue
         }
-        if maxFreq == 3 {
+        if s0 == s2 || s1 == s3 || s2 == s4 {
             return HandResult.threeOfAKind.rawValue
         }
-        if maxFreq == 2 && secondFreq == 2 {
+        if (s0 == s1 && s2 == s3) || (s0 == s1 && s3 == s4) || (s1 == s2 && s3 == s4) {
             return HandResult.twoPair.rawValue
         }
-        if maxFreq == 2 {
-            // Jacks or better: pair rank_index >= 9 (J=9, Q=10, K=11, A=12).
-            return pairHighRank >= 9 ? HandResult.jacksOrBetter.rawValue : HandResult.noWin.rawValue
+        if s0 == s1 {
+            return s1 >= 9 ? HandResult.jacksOrBetter.rawValue : HandResult.noWin.rawValue
         }
+        if s1 == s2 {
+            return s2 >= 9 ? HandResult.jacksOrBetter.rawValue : HandResult.noWin.rawValue
+        }
+        if s2 == s3 {
+            return s3 >= 9 ? HandResult.jacksOrBetter.rawValue : HandResult.noWin.rawValue
+        }
+        if s3 == s4 {
+            return s4 >= 9 ? HandResult.jacksOrBetter.rawValue : HandResult.noWin.rawValue
+        }
+
         return HandResult.noWin.rawValue
     }
+
+    // swiftlint:enable identifier_name cyclomatic_complexity function_body_length
 }

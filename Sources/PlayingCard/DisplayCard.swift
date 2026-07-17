@@ -179,11 +179,11 @@
 
         private func gridColumnCount(for suitCount: Int) -> Int {
             switch suitCount {
-            case 2, 3: return 1
-            case 4, 5, 6: return 2
-            case 7, 8, 9: return 3
-            case 10: return 2
-            default: return 1
+            case 2, 3: 1
+            case 4, 5, 6: 2
+            case 7, 8, 9: 3
+            case 10: 2
+            default: 1
             }
         }
 
@@ -192,36 +192,36 @@
         private var isNumberCard: Bool {
             switch card.rank {
             case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
-                return true
+                true
             case .ace, .jack, .queen, .king:
-                return false
+                false
             }
         }
 
         private var suitColor: Color {
             switch card.suit {
             case .hearts, .diamonds:
-                return .red
+                .red
             case .spades, .clubs:
-                return .black
+                .black
             }
         }
 
         private var queenEmoji: String {
             switch card.suit {
-            case .hearts: return "👸🏼"
-            case .spades: return "👸🏻"
-            case .clubs: return "👸🏽"
-            case .diamonds: return "👸🏾"
+            case .hearts: "👸🏼"
+            case .spades: "👸🏻"
+            case .clubs: "👸🏽"
+            case .diamonds: "👸🏾"
             }
         }
 
         private var kingEmoji: String {
             switch card.suit {
-            case .hearts: return "🤴🏼"
-            case .spades: return "🤴🏻"
-            case .clubs: return "🤴🏽"
-            case .diamonds: return "🤴🏾"
+            case .hearts: "🤴🏼"
+            case .spades: "🤴🏻"
+            case .clubs: "🤴🏽"
+            case .diamonds: "🤴🏾"
             }
         }
     }

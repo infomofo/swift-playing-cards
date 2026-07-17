@@ -17,7 +17,7 @@ extension HoldClassifierTests {
 struct HoldClassifierTests {
     // MARK: - Discard All / One Card
 
-    @Test func testDiscardAll() {
+    @Test func `discard all`() {
         let hand = [
             card(.two, .hearts), card(.five, .clubs), card(.seven, .diamonds),
             card(.nine, .spades), card(.jack, .hearts),
@@ -25,7 +25,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: []) == .discardAll)
     }
 
-    @Test func oneHighCardJack() {
+    @Test func `one high card jack`() {
         let hand = [
             card(.jack, .spades), card(.three, .hearts), card(.six, .clubs),
             card(.eight, .diamonds), card(.two, .spades),
@@ -33,7 +33,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0]) == .oneHighCard)
     }
 
-    @Test func oneHighCardAce() {
+    @Test func `one high card ace`() {
         let hand = [
             card(.ace, .hearts), card(.four, .clubs), card(.seven, .spades),
             card(.nine, .diamonds), card(.two, .hearts),
@@ -41,7 +41,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0]) == .oneHighCard)
     }
 
-    @Test func oneLowCardIsDiscardAll() {
+    @Test func `one low card is discard all`() {
         let hand = [
             card(.two, .hearts), card(.five, .clubs), card(.seven, .diamonds),
             card(.nine, .spades), card(.jack, .hearts),
@@ -51,7 +51,7 @@ struct HoldClassifierTests {
 
     // MARK: - High Pair
 
-    @Test func highPairJacks() {
+    @Test func `high pair jacks`() {
         let hand = [
             card(.jack, .spades), card(.jack, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .spades),
@@ -59,7 +59,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1]) == .highPair)
     }
 
-    @Test func highPairAces() {
+    @Test func `high pair aces`() {
         let hand = [
             card(.ace, .spades), card(.ace, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .spades),
@@ -69,7 +69,7 @@ struct HoldClassifierTests {
 
     // MARK: - Low Pair
 
-    @Test func lowPairTens() {
+    @Test func `low pair tens`() {
         let hand = [
             card(.ten, .spades), card(.ten, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .spades),
@@ -77,7 +77,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1]) == .lowPair)
     }
 
-    @Test func lowPairTwos() {
+    @Test func `low pair twos`() {
         let hand = [
             card(.two, .spades), card(.two, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.jack, .spades),
@@ -87,7 +87,7 @@ struct HoldClassifierTests {
 
     // MARK: - Two Suited High Cards
 
-    @Test func twoSuitedHighCardsAceKing() {
+    @Test func `two suited high cards ace king`() {
         let hand = [
             card(.ace, .spades), card(.king, .spades), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .hearts),
@@ -95,7 +95,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1]) == .twoSuitedHighCards)
     }
 
-    @Test func twoSuitedHighCardsQueenJack() {
+    @Test func `two suited high cards queen jack`() {
         let hand = [
             card(.queen, .hearts), card(.jack, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .spades),
@@ -105,7 +105,7 @@ struct HoldClassifierTests {
 
     // MARK: - Two Unsuited High Cards
 
-    @Test func twoUnsuitedHighCardsKingQueen() {
+    @Test func `two unsuited high cards king queen`() {
         let hand = [
             card(.king, .spades), card(.queen, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .spades),
@@ -113,7 +113,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1]) == .twoUnsuitedHighCards)
     }
 
-    @Test func twoUnsuitedHighCardsAceJack() {
+    @Test func `two unsuited high cards ace jack`() {
         let hand = [
             card(.ace, .clubs), card(.jack, .diamonds), card(.three, .hearts),
             card(.seven, .spades), card(.two, .clubs),
@@ -123,7 +123,7 @@ struct HoldClassifierTests {
 
     // MARK: - Suited Ten + High Card
 
-    @Test func suitedTenKing() {
+    @Test func `suited ten king`() {
         let hand = [
             card(.ten, .spades), card(.king, .spades), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .hearts),
@@ -131,7 +131,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1]) == .suitedTenHighCard)
     }
 
-    @Test func suitedTenAce() {
+    @Test func `suited ten ace`() {
         let hand = [
             card(.ten, .hearts), card(.ace, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .spades),
@@ -141,7 +141,7 @@ struct HoldClassifierTests {
 
     // MARK: - Three to Royal Flush
 
-    @Test func threeToRoyalFlushUserExample() {
+    @Test func `three to royal flush user example`() {
         // K♠ T♠ Q♠: optimal in the user's K♠ T♠ 3♣ Q♠ 8♠ hand
         let hand = [
             card(.king, .spades), card(.ten, .spades), card(.three, .clubs),
@@ -150,7 +150,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 3]) == .threeToRoyalFlush)
     }
 
-    @Test func threeToRoyalFlushAceKingJack() {
+    @Test func `three to royal flush ace king jack`() {
         let hand = [
             card(.ace, .diamonds), card(.king, .diamonds), card(.jack, .diamonds),
             card(.three, .clubs), card(.seven, .hearts),
@@ -158,7 +158,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToRoyalFlush)
     }
 
-    @Test func threeToRoyalFlushQueenJackTen() {
+    @Test func `three to royal flush queen jack ten`() {
         let hand = [
             card(.queen, .clubs), card(.jack, .clubs), card(.ten, .clubs),
             card(.two, .hearts), card(.nine, .spades),
@@ -169,7 +169,7 @@ struct HoldClassifierTests {
     // MARK: - Three to Straight Flush
 
     /// Consecutive suited cards — type 1 (0 gaps). EV ~0.63.
-    @Test func threeToStraightFlushConsecutive() {
+    @Test func `three to straight flush consecutive`() {
         let hand = [
             card(.seven, .hearts), card(.eight, .hearts), card(.nine, .hearts),
             card(.ace, .spades), card(.king, .clubs),
@@ -178,7 +178,7 @@ struct HoldClassifierTests {
     }
 
     /// Suited cards with one gap, no high cards — type 2. EV ~0.52.
-    @Test func threeToStraightFlushWithGap() {
+    @Test func `three to straight flush with gap`() {
         let hand = [
             card(.six, .clubs), card(.eight, .clubs), card(.nine, .clubs),
             card(.ace, .spades), card(.king, .hearts),
@@ -187,7 +187,7 @@ struct HoldClassifierTests {
     }
 
     /// Two gaps, no high cards — type 3 (EV 0.44, weaker than one high card).
-    @Test func threeToStraightFlushType3() {
+    @Test func `three to straight flush type 3`() {
         let hand = [
             card(.three, .clubs), card(.five, .clubs), card(.seven, .clubs),
             card(.king, .hearts), card(.two, .diamonds),
@@ -200,7 +200,7 @@ struct HoldClassifierTests {
     /// Three suited cards with high-card spread too large for SF draw.
     /// Regression: previously fell through allSameSuit block and returned twoUnsuitedHighCards.
     /// Hand: 4d 6c Kc 9h Ac, held 6c Kc Ac (indices 1,2,4).
-    @Test func threeToFlushHighLowMixed() {
+    @Test func `three to flush high low mixed`() {
         let hand = [
             card(.four, .diamonds), card(.six, .clubs), card(.king, .clubs),
             card(.nine, .hearts), card(.ace, .clubs),
@@ -211,7 +211,7 @@ struct HoldClassifierTests {
     /// Three low suited cards not forming any straight flush draw.
     /// Regression: previously fell through allSameSuit block and returned discardAll.
     /// Hand: 4c 9h Tc 2d 6c, held 4c Tc 6c (indices 0,2,4).
-    @Test func threeToFlushAllLow() {
+    @Test func `three to flush all low`() {
         let hand = [
             card(.four, .clubs), card(.nine, .hearts), card(.ten, .clubs),
             card(.two, .diamonds), card(.six, .clubs),
@@ -222,7 +222,7 @@ struct HoldClassifierTests {
     /// Three suited cards with one jack and two low cards.
     /// Regression: previously fell through and returned oneHighCard (saw J, ignored suit).
     /// Hand: 9h Jc 3c 6c Xd, held Jc 3c 6c.
-    @Test func threeToFlushJackWithLowCards() {
+    @Test func `three to flush jack with low cards`() {
         let hand = [
             card(.nine, .hearts), card(.jack, .clubs), card(.three, .clubs),
             card(.six, .clubs), card(.two, .diamonds),
@@ -236,7 +236,7 @@ struct HoldClassifierTests {
     /// Regression: previously returned twoUnsuitedHighCards, causing circular coaching
     /// ("better than two unsuited high cards" when optimal was also twoUnsuitedHighCards).
     /// Hand: 7d Jd Ts 5s Kh, held Jd Ts Kh (indices 1,2,4).
-    @Test func threeUnsuitedHighCardsTJK() {
+    @Test func `three unsuited high cards TJK`() {
         let hand = [
             card(.seven, .diamonds), card(.jack, .diamonds), card(.ten, .spades),
             card(.five, .spades), card(.king, .hearts),
@@ -244,7 +244,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [1, 2, 4]) == .threeUnsuitedHighCards)
     }
 
-    @Test func threeUnsuitedHighCardsJQK() {
+    @Test func `three unsuited high cards JQK`() {
         let hand = [
             card(.two, .clubs), card(.jack, .spades), card(.queen, .hearts),
             card(.king, .diamonds), card(.three, .clubs),
@@ -254,7 +254,7 @@ struct HoldClassifierTests {
 
     // MARK: - Three of a Kind (3-card hold)
 
-    @Test func threeOfAKindHeld() {
+    @Test func `three of A kind held`() {
         let hand = [
             card(.seven, .spades), card(.seven, .hearts), card(.seven, .diamonds),
             card(.ace, .clubs), card(.king, .clubs),
@@ -264,7 +264,7 @@ struct HoldClassifierTests {
 
     // MARK: - Four to Royal Flush
 
-    @Test func fourToRoyalFlushThroughKing() {
+    @Test func `four to royal flush through king`() {
         let hand = [
             card(.ten, .spades), card(.jack, .spades), card(.queen, .spades),
             card(.king, .spades), card(.two, .hearts),
@@ -272,7 +272,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToRoyalFlush)
     }
 
-    @Test func fourToRoyalFlushAceHigh() {
+    @Test func `four to royal flush ace high`() {
         let hand = [
             card(.ace, .hearts), card(.king, .hearts), card(.queen, .hearts),
             card(.jack, .hearts), card(.three, .clubs),
@@ -282,7 +282,7 @@ struct HoldClassifierTests {
 
     // MARK: - Four to Straight Flush
 
-    @Test func fourToStraightFlushConsecutive() {
+    @Test func `four to straight flush consecutive`() {
         let hand = [
             card(.five, .clubs), card(.six, .clubs), card(.seven, .clubs),
             card(.eight, .clubs), card(.ace, .spades),
@@ -290,7 +290,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToStraightFlush)
     }
 
-    @Test func fourToStraightFlushNotFlush() {
+    @Test func `four to straight flush not flush`() {
         let hand = [
             card(.three, .hearts), card(.four, .hearts), card(.five, .hearts),
             card(.six, .hearts), card(.ace, .clubs),
@@ -300,7 +300,7 @@ struct HoldClassifierTests {
 
     // MARK: - Four to Flush
 
-    @Test func fourToFlushNonConsecutive() {
+    @Test func `four to flush non consecutive`() {
         let hand = [
             card(.two, .spades), card(.five, .spades), card(.nine, .spades),
             card(.king, .spades), card(.ace, .hearts),
@@ -308,7 +308,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToFlush)
     }
 
-    @Test func fourToFlushUserExample() {
+    @Test func `four to flush user example`() {
         // K♠ T♠ Q♠ 8♠: player's suboptimal hold (8 breaks royal set)
         let hand = [
             card(.king, .spades), card(.ten, .spades), card(.three, .clubs),
@@ -319,7 +319,7 @@ struct HoldClassifierTests {
 
     // MARK: - Four to Outside Straight
 
-    @Test func fourToOutsideStraightConsecutive() {
+    @Test func `four to outside straight consecutive`() {
         let hand = [
             card(.five, .spades), card(.six, .hearts), card(.seven, .diamonds),
             card(.eight, .clubs), card(.ace, .spades),
@@ -327,7 +327,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToOutsideStraight)
     }
 
-    @Test func fourToInsideStraightBroadway() {
+    @Test func `four to inside straight broadway`() {
         // J-Q-K-A: only a 10 completes, so one-ended (inside).
         let hand = [
             card(.jack, .spades), card(.queen, .hearts), card(.king, .diamonds),
@@ -336,7 +336,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToInsideStraight)
     }
 
-    @Test func fourToInsideStraightWheel() {
+    @Test func `four to inside straight wheel`() {
         // A-2-3-4: only a 5 completes (ace-low wheel), so one-ended (inside).
         let hand = [
             card(.ace, .spades), card(.two, .hearts), card(.three, .diamonds),
@@ -347,7 +347,7 @@ struct HoldClassifierTests {
 
     // MARK: - Four to Inside Straight
 
-    @Test func testFourToInsideStraight() {
+    @Test func `four to inside straight`() {
         let hand = [
             card(.five, .spades), card(.six, .hearts), card(.eight, .diamonds),
             card(.nine, .clubs), card(.ace, .spades),
@@ -355,7 +355,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToInsideStraight)
     }
 
-    @Test func fourToInsideStraightHighCards() {
+    @Test func `four to inside straight high cards`() {
         let hand = [
             card(.ten, .spades), card(.jack, .hearts), card(.queen, .diamonds),
             card(.ace, .clubs), card(.two, .spades),
@@ -365,7 +365,7 @@ struct HoldClassifierTests {
 
     // MARK: - Pat hands (five cards held)
 
-    @Test func patRoyalFlush() {
+    @Test func `pat royal flush`() {
         let hand = [
             card(.ace, .spades), card(.king, .spades), card(.queen, .spades),
             card(.jack, .spades), card(.ten, .spades),
@@ -373,7 +373,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .royalFlush)
     }
 
-    @Test func patStraightFlush() {
+    @Test func `pat straight flush`() {
         let hand = [
             card(.nine, .hearts), card(.eight, .hearts), card(.seven, .hearts),
             card(.six, .hearts), card(.five, .hearts),
@@ -381,7 +381,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .straightFlush)
     }
 
-    @Test func patFourOfAKind() {
+    @Test func `pat four of A kind`() {
         let hand = [
             card(.king, .spades), card(.king, .hearts), card(.king, .diamonds),
             card(.king, .clubs), card(.two, .spades),
@@ -389,7 +389,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .fourOfAKind)
     }
 
-    @Test func patFullHouse() {
+    @Test func `pat full house`() {
         let hand = [
             card(.ace, .spades), card(.ace, .hearts), card(.ace, .diamonds),
             card(.king, .clubs), card(.king, .spades),
@@ -397,7 +397,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .fullHouse)
     }
 
-    @Test func patFlush() {
+    @Test func `pat flush`() {
         let hand = [
             card(.ace, .clubs), card(.nine, .clubs), card(.seven, .clubs),
             card(.five, .clubs), card(.two, .clubs),
@@ -405,7 +405,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .flush)
     }
 
-    @Test func patStraight() {
+    @Test func `pat straight`() {
         let hand = [
             card(.nine, .spades), card(.eight, .hearts), card(.seven, .clubs),
             card(.six, .diamonds), card(.five, .spades),
@@ -413,7 +413,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .straight)
     }
 
-    @Test func patThreeOfAKind() {
+    @Test func `pat three of A kind`() {
         let hand = [
             card(.eight, .spades), card(.eight, .hearts), card(.eight, .clubs),
             card(.king, .diamonds), card(.two, .spades),
@@ -421,7 +421,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .threeOfAKind)
     }
 
-    @Test func patTwoPair() {
+    @Test func `pat two pair`() {
         let hand = [
             card(.ace, .spades), card(.ace, .hearts), card(.king, .clubs),
             card(.king, .diamonds), card(.two, .spades),
@@ -429,7 +429,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .twoPair)
     }
 
-    @Test func patHighPair() {
+    @Test func `pat high pair`() {
         let hand = [
             card(.king, .spades), card(.king, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .hearts),
@@ -437,7 +437,7 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3, 4]) == .highPair)
     }
 
-    @Test func patLowPair() {
+    @Test func `pat low pair`() {
         let hand = [
             card(.nine, .spades), card(.nine, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .hearts),
@@ -457,7 +457,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Four suited high cards → four to royal (not four-to-flush or four-to-SF)
-    @Test func fourHighSuitedBeatsFlush() {
+    @Test func `four high suited beats flush`() {
         let hand = [
             card(.ace, .clubs), card(.king, .clubs), card(.queen, .clubs),
             card(.ten, .clubs), card(.two, .spades),
@@ -466,7 +466,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Four suited consecutive non-high → four to SF (not four to flush)
-    @Test func fourConsecutiveSuitedBeatsBareFlush() {
+    @Test func `four consecutive suited beats bare flush`() {
         let hand = [
             card(.four, .diamonds), card(.five, .diamonds), card(.six, .diamonds),
             card(.seven, .diamonds), card(.ace, .clubs),
@@ -475,7 +475,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Three suited high cards → three to royal (not three to SF)
-    @Test func threeHighSuitedBeatsThreeToSF() {
+    @Test func `three high suited beats three to SF`() {
         let hand = [
             card(.ace, .hearts), card(.queen, .hearts), card(.ten, .hearts),
             card(.three, .clubs), card(.seven, .spades),
@@ -484,7 +484,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Two suited high cards preferred over unsuited when same suit
-    @Test func suitedHighCardsBeatUnsuited() {
+    @Test func `suited high cards beat unsuited`() {
         let suited = [
             card(.ace, .spades), card(.king, .spades), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .hearts),
@@ -498,7 +498,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Suited T + high card: ten is not high (< J) but pattern takes priority
-    @Test func suitedTenHighCardOverUnsuitedHigh() {
+    @Test func `suited ten high card over unsuited high`() {
         let hand = [
             card(.ten, .clubs), card(.king, .clubs), card(.three, .spades),
             card(.seven, .hearts), card(.two, .diamonds),
@@ -507,7 +507,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Three-card hold with embedded pair: pair pattern wins
-    @Test func threeCardHoldPairWins() {
+    @Test func `three card hold pair wins`() {
         let hand = [
             card(.jack, .spades), card(.jack, .hearts), card(.three, .clubs),
             card(.seven, .diamonds), card(.two, .spades),
@@ -515,7 +515,7 @@ struct HoldClassifierPriorityTests {
         #expect(classify(hand: hand, holding: [0, 1, 2]) == .highPair)
     }
 
-    @Test func threeCardHoldLowPairWins() {
+    @Test func `three card hold low pair wins`() {
         let hand = [
             card(.five, .spades), card(.five, .hearts), card(.king, .clubs),
             card(.seven, .diamonds), card(.two, .spades),
@@ -524,7 +524,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Four-to-royal beats four-to-straight-flush when all high suited
-    @Test func fourToRoyalBeats4ToSF() {
+    @Test func `four to royal beats 4 to SF`() {
         let hand = [
             card(.ten, .diamonds), card(.jack, .diamonds), card(.queen, .diamonds),
             card(.king, .diamonds), card(.nine, .hearts),
@@ -536,7 +536,7 @@ struct HoldClassifierPriorityTests {
 
     /// Three suited cards spanning > 4 with one high card → threeToFlush.
     /// Previously mislabeled as oneHighCard due to suit info being discarded.
-    @Test func threeSuitedNonSFDrawWithHighCard() {
+    @Test func `three suited non SF draw with high card`() {
         // 2♣ 9♣ K♣: span 11, not a SF draw; all clubs → threeToFlush
         let hand = [
             card(.two, .clubs), card(.nine, .clubs), card(.king, .clubs),
@@ -545,7 +545,7 @@ struct HoldClassifierPriorityTests {
         #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToFlush)
     }
 
-    @Test func threeSuitedNonSFDrawNoHighCard() {
+    @Test func `three suited non SF draw no high card`() {
         // 2♣ 5♣ 9♣: span 7, not a SF draw, no high cards → threeToFlush
         let hand = [
             card(.two, .clubs), card(.five, .clubs), card(.nine, .clubs),
@@ -557,7 +557,7 @@ struct HoldClassifierPriorityTests {
     // MARK: - canFormStraightFlush wheel fix (Thread 2)
 
     /// A-2-4-5 suited is a valid wheel SF draw (can complete to A-2-3-4-5).
-    @Test func fourToStraightFlushWheelWithGap() {
+    @Test func `four to straight flush wheel with gap`() {
         let hand = [
             card(.ace, .hearts), card(.two, .hearts), card(.four, .hearts),
             card(.five, .hearts), card(.king, .clubs),
@@ -566,7 +566,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// A-2-5 suited: ace-low wheel draw, always type 2 per WoO.
-    @Test func threeToStraightFlushWheelWithGap() {
+    @Test func `three to straight flush wheel with gap`() {
         let hand = [
             card(.ace, .spades), card(.two, .spades), card(.five, .spades),
             card(.king, .hearts), card(.nine, .clubs),
@@ -577,7 +577,7 @@ struct HoldClassifierPriorityTests {
     // MARK: - classifyFour duplicate-ranks fix (Thread 3)
 
     /// Holding 4 cards that include a high pair must return .highPair, not .lowPair.
-    @Test func fourCardHoldHighPair() {
+    @Test func `four card hold high pair`() {
         // J♠ J♥ 3♣ 7♦ held as 4 cards
         let hand = [
             card(.jack, .spades), card(.jack, .hearts), card(.three, .clubs),
@@ -587,7 +587,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Holding 4 cards with trips must return .threeOfAKind, not .lowPair.
-    @Test func fourCardHoldTrips() {
+    @Test func `four card hold trips`() {
         // 7♠ 7♥ 7♣ K♦ held as 4 cards
         let hand = [
             card(.seven, .spades), card(.seven, .hearts), card(.seven, .clubs),
@@ -597,7 +597,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Two-pair 4-card hold: J-J-3-3 must deterministically return .highPair.
-    @Test func fourCardHoldTwoPairHighWins() {
+    @Test func `four card hold two pair high wins`() {
         let hand = [
             card(.jack, .spades), card(.jack, .hearts), card(.three, .clubs),
             card(.three, .diamonds), card(.two, .spades),
@@ -606,7 +606,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Two-pair 4-card hold with both low pairs returns .lowPair.
-    @Test func fourCardHoldTwoPairBothLow() {
+    @Test func `four card hold two pair both low`() {
         let hand = [
             card(.five, .spades), card(.five, .hearts), card(.three, .clubs),
             card(.three, .diamonds), card(.two, .spades),
@@ -617,7 +617,7 @@ struct HoldClassifierPriorityTests {
     // MARK: - classifyFour zero-high-cards fix (Thread 4)
 
     /// Four mixed-suit low cards with no straight draw should be .discardAll.
-    @Test func fourMixedLowNoDrawIsDiscardAll() {
+    @Test func `four mixed low no draw is discard all`() {
         // 2♠ 4♥ 8♦ 9♣: span 7, no straight draw, no high cards
         let hand = [
             card(.two, .spades), card(.four, .hearts), card(.eight, .diamonds),
@@ -627,7 +627,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// Four mixed-suit cards with exactly one high card returns .oneHighCard.
-    @Test func fourMixedOneHighCardReturnsOneHighCard() {
+    @Test func `four mixed one high card returns one high card`() {
         // 5♠ 6♥ 9♦ K♣: no straight draw, one high card
         let hand = [
             card(.five, .spades), card(.six, .hearts), card(.nine, .diamonds),
@@ -639,7 +639,7 @@ struct HoldClassifierPriorityTests {
     // MARK: - SF type 1 variants
 
     /// 9-T-J suited: span 2, 0 gaps, 1 high card (J). 1 ≥ 0 → type 1.
-    @Test func threeToStraightFlushType1NineTenJack() {
+    @Test func `three to straight flush type 1 nine ten jack`() {
         let hand = [
             card(.nine, .clubs), card(.ten, .clubs), card(.jack, .clubs),
             card(.two, .hearts), card(.five, .diamonds),
@@ -648,7 +648,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// 8-J-Q suited: span 4, 2 gaps, 2 high cards (J, Q). 2 ≥ 2 → type 1.
-    @Test func threeToStraightFlushType1EightJackQueen() {
+    @Test func `three to straight flush type 1 eight jack queen`() {
         let hand = [
             card(.eight, .diamonds), card(.jack, .diamonds), card(.queen, .diamonds),
             card(.three, .clubs), card(.six, .hearts),
@@ -659,7 +659,7 @@ struct HoldClassifierPriorityTests {
     // MARK: - SF type 2 variants
 
     /// A-2-4 suited: ace-low, nonAce=[2,4] all ≤5 → type 2.
-    @Test func threeToStraightFlushType2AceLow() {
+    @Test func `three to straight flush type 2 ace low`() {
         let hand = [
             card(.ace, .spades), card(.two, .spades), card(.four, .spades),
             card(.king, .hearts), card(.seven, .clubs),
@@ -668,7 +668,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// 2-3-4 suited: explicitly type 2 per WoO (limited completion paths).
-    @Test func threeToStraightFlushType2TwoThreeFour() {
+    @Test func `three to straight flush type 2 two three four`() {
         let hand = [
             card(.two, .hearts), card(.three, .hearts), card(.four, .hearts),
             card(.jack, .spades), card(.nine, .clubs),
@@ -679,7 +679,7 @@ struct HoldClassifierPriorityTests {
     // MARK: - SF type 3 variants
 
     /// 4-6-8 suited: span 4, 2 gaps, 0 high cards → type 3.
-    @Test func threeToStraightFlushType3FourSixEight() {
+    @Test func `three to straight flush type 3 four six eight`() {
         let hand = [
             card(.four, .diamonds), card(.six, .diamonds), card(.eight, .diamonds),
             card(.ace, .clubs), card(.three, .hearts),
@@ -690,7 +690,7 @@ struct HoldClassifierPriorityTests {
     // MARK: - Unsuited TJQK
 
     /// T-J-Q-K mixed suits: outside straight with 3 high cards (EV 0.87, above low pair).
-    @Test func unsuitedTJQKAllDifferentSuits() {
+    @Test func `unsuited TJQK all different suits`() {
         let hand = [
             card(.ten, .diamonds), card(.jack, .clubs), card(.queen, .spades),
             card(.king, .hearts), card(.two, .clubs),
@@ -699,7 +699,7 @@ struct HoldClassifierPriorityTests {
     }
 
     /// T-J-Q-K with 3 of one suit: still unsuitedTJQK (not all same suit).
-    @Test func unsuitedTJQKThreeSameSuit() {
+    @Test func `unsuited TJQK three same suit`() {
         let hand = [
             card(.ten, .spades), card(.jack, .spades), card(.queen, .spades),
             card(.king, .hearts), card(.two, .clubs),
