@@ -297,4 +297,52 @@ final class OptimalPlayTests: XCTestCase {
         XCTAssertEqual(result.optimalHeld, [0, 1, 2, 3, 4])
         XCTAssertEqual(result.optimalEV, 0.0, accuracy: 0.001)
     }
+
+    // MARK: - expectedValue(for:holding:)
+
+    /// `expectedValue` must match `evaluate`'s `playerEV` for a pat royal flush (hold all 5).
+    func testExpectedValueMatchesEvaluatePatRoyal() throws {
+        let hand = [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .king, suit: .spades),
+            PlayingCard(rank: .queen, suit: .spades),
+            PlayingCard(rank: .jack, suit: .spades),
+            PlayingCard(rank: .ten, suit: .spades),
+        ]
+        let holding = Set([0, 1, 2, 3, 4])
+        let ev = engine.expectedValue(for: hand, holding: holding)
+        let playerEV = try XCTUnwrap(engine.evaluate(hand: hand, playerHeld: holding).playerEV)
+        XCTAssertEqual(ev, playerEV, accuracy: 0.001)
+        XCTAssertEqual(ev, 800.0, accuracy: 0.001)
+    }
+
+    /// `expectedValue` must match `evaluate`'s `playerEV` for a 4-to-royal hold.
+    func testExpectedValueMatchesEvaluateFourToRoyal() throws {
+        let hand = [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .king, suit: .spades),
+            PlayingCard(rank: .queen, suit: .spades),
+            PlayingCard(rank: .jack, suit: .spades),
+            PlayingCard(rank: .ten, suit: .hearts),
+        ]
+        let holding = Set([0, 1, 2, 3])
+        let ev = engine.expectedValue(for: hand, holding: holding)
+        let playerEV = try XCTUnwrap(engine.evaluate(hand: hand, playerHeld: holding).playerEV)
+        XCTAssertEqual(ev, playerEV, accuracy: 0.001)
+    }
+
+    /// `expectedValue` must match `evaluate`'s `playerEV` when holding nothing (draw 5).
+    func testExpectedValueMatchesEvaluateHoldingNothing() throws {
+        let hand = [
+            PlayingCard(rank: .two, suit: .spades),
+            PlayingCard(rank: .four, suit: .hearts),
+            PlayingCard(rank: .six, suit: .clubs),
+            PlayingCard(rank: .eight, suit: .diamonds),
+            PlayingCard(rank: .ten, suit: .hearts),
+        ]
+        let holding = Set<Int>([])
+        let ev = engine.expectedValue(for: hand, holding: holding)
+        let playerEV = try XCTUnwrap(engine.evaluate(hand: hand, playerHeld: holding).playerEV)
+        XCTAssertEqual(ev, playerEV, accuracy: 0.001)
+    }
 }

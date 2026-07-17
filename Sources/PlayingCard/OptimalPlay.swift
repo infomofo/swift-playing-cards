@@ -158,9 +158,14 @@ public struct OptimalPlay {
     /// - Returns: Expected payout multiplier averaged over all possible draw completions.
     public func expectedValue(for hand: [PlayingCard], holding: Set<Int>) -> Double {
         precondition(hand.count == 5, "OptimalPlay requires exactly 5 dealt cards")
+        precondition(
+            holding.allSatisfy { (0 ..< 5).contains($0) },
+            "holding indices must be in 0..<5"
+        )
         let suitOrder: [Suit: Int] = [.spades: 0, .hearts: 1, .diamonds: 2, .clubs: 3]
         let handCodes = hand.map { (($0.rank.rawValue - 2) << 2) | suitOrder[$0.suit]! }
         let handSet = Set(handCodes)
+        precondition(handSet.count == 5, "hand must contain 5 unique cards")
         var remaining: [Int] = []
         remaining.reserveCapacity(47)
         for suitIdx in 0 ..< 4 {
