@@ -138,7 +138,7 @@ public struct OptimalPlay {
         var bestEV = -Double.infinity
         var bestHeld = Set<Int>()
         var bestHeldCount = -1
-        for (mask, ev) in evByMask {
+        for (mask, ev) in evByMask.sorted(by: { $0.mask < $1.mask }) {
             let heldIndices = (0 ..< 5).filter { mask & (1 << $0) != 0 }
             let count = heldIndices.count
             // Prefer strictly higher EV; break ties by holding more cards.
