@@ -146,6 +146,35 @@ public struct OptimalPlay {
         )
     }
 
+    /// Returns the expected payout multiplier for one specific hold set, without
+    /// evaluating all 32 combinations.
+    ///
+    /// Use this when the optimal hold is already known (e.g. precomputed during the
+    /// deal phase) and you only need the player's EV for a specific set of held indices.
+    ///
+    /// - Parameters:
+    ///   - hand: Exactly 5 dealt cards.
+    ///   - holding: Indices (0–4) to hold; empty set means draw all 5.
+    /// - Returns: Expected payout multiplier averaged over all possible draw completions.
+    public func expectedValue(for hand: [PlayingCard], holding: Set<Int>) -> Double {
+        precondition(hand.count == 5, "OptimalPlay requires exactly 5 dealt cards")
+        let suitOrder: [Suit: Int] = [.spades: 0, .hearts: 1, .diamonds: 2, .clubs: 3]
+        let handCodes = hand.map { (($0.rank.rawValue - 2) << 2) | suitOrder[$0.suit]! }
+        let handSet = Set(handCodes)
+        var remaining: [Int] = []
+        remaining.reserveCapacity(47)
+        for suitIdx in 0 ..< 4 {
+            for rankIdx in 0 ..< 13 {
+                let code = (rankIdx << 2) | suitIdx
+                if !handSet.contains(code) {
+                    remaining.append(code)
+                }
+            }
+        }
+        let heldCodes = holding.sorted().map { handCodes[$0] }
+        return fastEV(held: heldCodes, remaining: remaining)
+    }
+
     // MARK: - Fast Inner Loop
 
     /// Computes expected payout by iterating all C(remaining.count, drawCount) completions.
