@@ -15,7 +15,7 @@ repos:
       - id: swiftformat
         name: SwiftFormat
         language: system
-        entry: mise exec -- swiftformat --lint
+        entry: mise exec -- swiftformat --lint --swift-version 6.3
         types: [swift]
         pass_filenames: true
 

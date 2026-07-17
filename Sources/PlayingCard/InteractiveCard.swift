@@ -31,13 +31,13 @@
                         DisplayCard(card: card, displayMode: .large)
                             .overlay(
                                 selectionOverlay,
-                                alignment: .topTrailing
+                                alignment: .topTrailing,
                             )
                     }
                 }
                 .rotation3DEffect(
                     .degrees(rotationDegrees),
-                    axis: (x: 0, y: 1, z: 0)
+                    axis: (x: 0, y: 1, z: 0),
                 )
                 .scaleEffect(isSelected ? 1.05 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isSelected)
@@ -54,12 +54,12 @@
                     LinearGradient(
                         gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
                         startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                        endPoint: .bottomTrailing,
+                    ),
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.black, lineWidth: 2)
+                        .stroke(Color.black, lineWidth: 2),
                 )
                 .frame(width: 120, height: 168)
         }
@@ -94,7 +94,7 @@
 
         /// Returns whether the card is currently selected
         public var isCardSelected: Bool {
-            return isSelected
+            isSelected
         }
 
         /// Replace this card with a new card (with animation)
@@ -120,7 +120,7 @@
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     extension InteractiveCard: Hashable, Equatable {
         public static func == (lhs: InteractiveCard, rhs: InteractiveCard) -> Bool {
-            return lhs.card == rhs.card
+            lhs.card == rhs.card
         }
 
         public func hash(into hasher: inout Hasher) {
@@ -199,18 +199,18 @@
                                     LinearGradient(
                                         gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
                                         startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
+                                        endPoint: .bottomTrailing,
+                                    ),
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.black, lineWidth: 2)
+                                        .stroke(Color.black, lineWidth: 2),
                                 )
                                 .frame(width: 120, height: 168)
                                 .opacity(CardFlipAnimator.isBackVisible(at: flipDegrees[index]) ? 1 : 0)
                                 .rotation3DEffect(
                                     .degrees(CardFlipAnimator.backFaceRotation(at: flipDegrees[index])),
-                                    axis: (x: 0, y: 1, z: 0)
+                                    axis: (x: 0, y: 1, z: 0),
                                 )
                                 .scaleEffect(CardFlipAnimator.backFaceScale(at: flipDegrees[index]))
                         }
