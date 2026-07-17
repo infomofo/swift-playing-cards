@@ -164,14 +164,14 @@ public struct HoldClassifier {
             if rankCounts.values.contains(3) {
                 return .threeOfAKind
             }
-            if let pairRank = rankCounts.first(where: { $0.value == 2 })?.key {
-                return pairRank >= 11 ? .highPair : .lowPair
+            let pairRanks = rankCounts.filter { $0.value == 2 }.map { $0.key }
+            if !pairRanks.isEmpty {
+                return pairRanks.max()! >= 11 ? .highPair : .lowPair
             }
             return .lowPair
         }
 
-        // Open-ended: 4 consecutive ranks (span == 3), excludable from royal
-        // (A-2-3-4 wheel and A-K-Q-J broadway both count as outside).
+        // Open-ended: 4 consecutive ranks completable on both ends (span == 3, ace not high).
         if isOutsideStraightDraw(sorted) {
             return .fourToOutsideStraight
         }
@@ -293,28 +293,34 @@ public struct HoldClassifier {
         return false
     }
 
-    /// Open-ended straight draw: 4 unique consecutive ranks (span == 3).
+    /// Open-ended straight draw: 4 unique consecutive ranks completable on both ends.
     ///
-    /// Also handles A-2-3-4 (wheel open-ender) and J-Q-K-A (broadway open-ender).
+    /// Excludes ace-high sequences (J-Q-K-A) and ace-low wheel sequences (A-2-3-4)
+    /// because both are one-ended and are classified as inside draws instead.
     private static func isOutsideStraightDraw(_ sorted: [Int]) -> Bool {
         guard sorted.count == 4, Set(sorted).count == 4 else { return false }
-        // Standard consecutive
-        if sorted[3] - sorted[0] == 3 {
-            return true
-        }
-        // A-2-3-4: ace(14) + 2+3+4 = [2,3,4,14] after sorting
-        if sorted == [2, 3, 4, 14] {
+        // Standard consecutive, excluding ace-high (J-Q-K-A can only complete with 10).
+        if sorted[3] - sorted[0] == 3 && sorted[3] != 14 {
             return true
         }
         return false
     }
 
-    /// Inside (gutshot) straight draw: 4 unique ranks spanning 4 with exactly one gap.
+    /// Inside (gutshot) straight draw: 4 unique ranks spanning 4 with exactly one gap,
+    /// plus one-ended boundary draws (A-2-3-4 and J-Q-K-A).
     private static func isInsideStraightDraw(_ sorted: [Int]) -> Bool {
         guard sorted.count == 4, Set(sorted).count == 4 else { return false }
+        // A-2-3-4: wheel one-ender (only 5 completes).
+        if sorted == [2, 3, 4, 14] {
+            return true
+        }
+        // J-Q-K-A: broadway one-ender (only 10 completes).
+        if sorted == [11, 12, 13, 14] {
+            return true
+        }
         let span = sorted[3] - sorted[0]
         guard span == 4 else { return false }
-        // Exactly 3 consecutive pairs means one gap exists
+        // Exactly 2 consecutive pairs means one gap exists.
         var consecutivePairs = 0
         for idx in 0 ..< 3 where sorted[idx + 1] - sorted[idx] == 1 {
             consecutivePairs += 1

@@ -259,20 +259,22 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToOutsideStraight)
     }
 
-    @Test func fourToOutsideStraightBroadway() {
+    @Test func fourToInsideStraightBroadway() {
+        // J-Q-K-A: only a 10 completes, so one-ended (inside).
         let hand = [
             card(.jack, .spades), card(.queen, .hearts), card(.king, .diamonds),
             card(.ace, .clubs), card(.two, .spades),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToOutsideStraight)
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToInsideStraight)
     }
 
-    @Test func fourToOutsideStraightWheel() {
+    @Test func fourToInsideStraightWheel() {
+        // A-2-3-4: only a 5 completes (ace-low wheel), so one-ended (inside).
         let hand = [
             card(.ace, .spades), card(.two, .hearts), card(.three, .diamonds),
             card(.four, .clubs), card(.king, .spades),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToOutsideStraight)
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToInsideStraight)
     }
 
     // MARK: - Four to Inside Straight
@@ -524,6 +526,24 @@ struct HoldClassifierPriorityTests {
             card(.king, .diamonds), card(.two, .spades),
         ]
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .threeOfAKind)
+    }
+
+    /// Two-pair 4-card hold: J-J-3-3 must deterministically return .highPair.
+    @Test func fourCardHoldTwoPairHighWins() {
+        let hand = [
+            card(.jack, .spades), card(.jack, .hearts), card(.three, .clubs),
+            card(.three, .diamonds), card(.two, .spades),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .highPair)
+    }
+
+    /// Two-pair 4-card hold with both low pairs returns .lowPair.
+    @Test func fourCardHoldTwoPairBothLow() {
+        let hand = [
+            card(.five, .spades), card(.five, .hearts), card(.three, .clubs),
+            card(.three, .diamonds), card(.two, .spades),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .lowPair)
     }
 
     // MARK: - classifyFour zero-high-cards fix (Thread 4)
