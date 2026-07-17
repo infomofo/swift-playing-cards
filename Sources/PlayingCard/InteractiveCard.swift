@@ -31,13 +31,13 @@
                         DisplayCard(card: card, displayMode: .large)
                             .overlay(
                                 selectionOverlay,
-                                alignment: .topTrailing
+                                alignment: .topTrailing,
                             )
                     }
                 }
                 .rotation3DEffect(
                     .degrees(rotationDegrees),
-                    axis: (x: 0, y: 1, z: 0)
+                    axis: (x: 0, y: 1, z: 0),
                 )
                 .scaleEffect(isSelected ? 1.05 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isSelected)
@@ -54,12 +54,12 @@
                     LinearGradient(
                         gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
                         startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                        endPoint: .bottomTrailing,
+                    ),
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.black, lineWidth: 2)
+                        .stroke(Color.black, lineWidth: 2),
                 )
                 .frame(width: 120, height: 168)
         }
@@ -199,18 +199,18 @@
                                     LinearGradient(
                                         gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
                                         startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
+                                        endPoint: .bottomTrailing,
+                                    ),
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.black, lineWidth: 2)
+                                        .stroke(Color.black, lineWidth: 2),
                                 )
                                 .frame(width: 120, height: 168)
                                 .opacity(CardFlipAnimator.isBackVisible(at: flipDegrees[index]) ? 1 : 0)
                                 .rotation3DEffect(
                                     .degrees(CardFlipAnimator.backFaceRotation(at: flipDegrees[index])),
-                                    axis: (x: 0, y: 1, z: 0)
+                                    axis: (x: 0, y: 1, z: 0),
                                 )
                                 .scaleEffect(CardFlipAnimator.backFaceScale(at: flipDegrees[index]))
                         }
