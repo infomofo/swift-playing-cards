@@ -93,6 +93,21 @@ final class OptimalPlayTests: XCTestCase {
         )
     }
 
+    /// Wheel straight flush (A-2-3-4-5 suited) is a pat hand; hold all 5.
+    /// This exercises the isWheel branch in checkStraight.
+    func testPatWheelStraightFlushHoldsAll() {
+        assertOptimal(
+            hand: [
+                PlayingCard(rank: .ace, suit: .clubs),
+                PlayingCard(rank: .two, suit: .clubs),
+                PlayingCard(rank: .three, suit: .clubs),
+                PlayingCard(rank: .four, suit: .clubs),
+                PlayingCard(rank: .five, suit: .clubs),
+            ],
+            expectedHeld: [0, 1, 2, 3, 4]
+        )
+    }
+
     // MARK: - Four to a Royal Flush
 
     /// 4-to-royal beats a made straight.
@@ -257,5 +272,29 @@ final class OptimalPlayTests: XCTestCase {
         ]
         let result = engine.evaluate(hand: hand)
         XCTAssertEqual(result.optimalEV, 800.0, accuracy: 0.001)
+    }
+
+    // MARK: - Tie-breaking
+
+    /// When all hand results pay 0, every hold combination has EV 0.
+    /// The tie-break rule (prefer holding more cards) must return all 5 cards held.
+    func testTieBreakPrefersHoldingMoreCards() {
+        let zeroPayTable = PayTable(
+            name: "Zero Pay",
+            multipliers: [HandResult: Int](
+                uniqueKeysWithValues: HandResult.allCases.map { ($0, 0) }
+            )
+        )
+        let zeroEngine = OptimalPlay(payTable: zeroPayTable)
+        let hand = [
+            PlayingCard(rank: .two, suit: .spades),
+            PlayingCard(rank: .four, suit: .hearts),
+            PlayingCard(rank: .six, suit: .clubs),
+            PlayingCard(rank: .eight, suit: .diamonds),
+            PlayingCard(rank: .ten, suit: .hearts),
+        ]
+        let result = zeroEngine.evaluate(hand: hand)
+        XCTAssertEqual(result.optimalHeld, [0, 1, 2, 3, 4])
+        XCTAssertEqual(result.optimalEV, 0.0, accuracy: 0.001)
     }
 }

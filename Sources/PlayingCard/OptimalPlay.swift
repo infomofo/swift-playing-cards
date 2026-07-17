@@ -103,6 +103,7 @@ public struct OptimalPlay {
         let suitOrder: [Suit: Int] = [.spades: 0, .hearts: 1, .diamonds: 2, .clubs: 3]
         let handCodes = hand.map { (($0.rank.rawValue - 2) << 2) | suitOrder[$0.suit]! }
         let handSet = Set(handCodes)
+        precondition(handSet.count == 5, "hand must contain 5 unique cards")
         var remaining: [Int] = []
         remaining.reserveCapacity(47)
         for suitIdx in 0 ..< 4 {
@@ -148,7 +149,8 @@ public struct OptimalPlay {
 
     /// Computes expected payout by iterating all C(remaining.count, drawCount) completions.
     ///
-    /// All arithmetic is on plain integers; no Swift objects are created per iteration.
+    /// All arithmetic operates on plain integers; no `PlayingCard` objects are accessed
+    /// during the combination loop.
     private func fastEV(held: [Int], remaining: [Int]) -> Double {
         let drawCount = 5 - held.count
         if drawCount == 0 {
