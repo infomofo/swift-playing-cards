@@ -184,6 +184,30 @@ struct HoldClassifierTests {
         #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlush)
     }
 
+    // MARK: - Three to Flush (regression cases)
+
+    /// Three suited cards with high-card spread too large for SF draw.
+    /// Regression: previously fell through allSameSuit block and returned twoUnsuitedHighCards.
+    /// Hand: 4d 6c Kc 9h Ac, held 6c Kc Ac (indices 1,2,4).
+    @Test func threeToFlushHighLowMixed() {
+        let hand = [
+            card(.four, .diamonds), card(.six, .clubs), card(.king, .clubs),
+            card(.nine, .hearts), card(.ace, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [1, 2, 4]) == .threeToFlush)
+    }
+
+    /// Three low suited cards not forming any straight flush draw.
+    /// Regression: previously fell through allSameSuit block and returned discardAll.
+    /// Hand: 4c 9h Tc 2d 6c, held 4c Tc 6c (indices 0,2,4).
+    @Test func threeToFlushAllLow() {
+        let hand = [
+            card(.four, .clubs), card(.nine, .hearts), card(.ten, .clubs),
+            card(.two, .diamonds), card(.six, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [0, 2, 4]) == .threeToFlush)
+    }
+
     // MARK: - Three of a Kind (3-card hold)
 
     @Test func threeOfAKindHeld() {
@@ -464,26 +488,26 @@ struct HoldClassifierPriorityTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToRoyalFlush)
     }
 
-    // MARK: - classifyThree suited fallback fix (Thread 1)
+    // MARK: - Three to flush (three suited, non-royal, non-SF)
 
-    /// Three suited cards that span > 4 and aren't royal-eligible should fall
-    /// through to high-card logic, not be mislabeled as a straight-flush draw.
-    @Test func threeSuitedNonSFDrawFallsToHighCard() {
-        // 2♣ 9♣ K♣: span 11, not a SF draw; K is a high card
+    /// Three suited cards spanning > 4 with one high card → threeToFlush.
+    /// Previously mislabeled as oneHighCard due to suit info being discarded.
+    @Test func threeSuitedNonSFDrawWithHighCard() {
+        // 2♣ 9♣ K♣: span 11, not a SF draw; all clubs → threeToFlush
         let hand = [
             card(.two, .clubs), card(.nine, .clubs), card(.king, .clubs),
             card(.three, .hearts), card(.seven, .spades),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2]) == .oneHighCard)
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToFlush)
     }
 
     @Test func threeSuitedNonSFDrawNoHighCard() {
-        // 2♣ 5♣ 9♣: span 7, not a SF draw, no high cards
+        // 2♣ 5♣ 9♣: span 7, not a SF draw, no high cards → threeToFlush
         let hand = [
             card(.two, .clubs), card(.five, .clubs), card(.nine, .clubs),
             card(.king, .hearts), card(.seven, .spades),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2]) == .discardAll)
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToFlush)
     }
 
     // MARK: - canFormStraightFlush wheel fix (Thread 2)

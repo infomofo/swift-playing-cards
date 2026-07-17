@@ -43,6 +43,8 @@ public enum StrategyPattern: String, Equatable, CaseIterable, Sendable {
     case fourToInsideStraight = "Four to an inside straight"
     /// Three suited cards that can complete to a straight flush.
     case threeToStraightFlush = "Three to a straight flush"
+    /// Three suited cards not forming a royal or straight flush draw.
+    case threeToFlush = "Three to a flush"
     /// Two suited cards both ranking jack or higher.
     case twoSuitedHighCards = "Two suited high cards"
     /// Two unsuited cards both ranking jack or higher.
@@ -212,7 +214,8 @@ public struct HoldClassifier {
             if canFormStraightFlush(ranks) {
                 return .threeToStraightFlush
             }
-            // Falls through to high-card logic below.
+            // Three suited cards that don't qualify as royal or SF draw.
+            return .threeToFlush
         }
 
         // Mixed suits: check for pairs (two cards of same rank with a third).
