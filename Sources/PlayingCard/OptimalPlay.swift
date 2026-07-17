@@ -19,6 +19,18 @@ public struct OptimalPlayResult {
     /// Expected payout multiplier for the player's hold. Nil when playerHeld is nil.
     public let playerEV: Double?
 
+    public init(
+        optimalHeld: Set<Int>,
+        optimalEV: Double,
+        playerHeld: Set<Int>? = nil,
+        playerEV: Double? = nil
+    ) {
+        self.optimalHeld = optimalHeld
+        self.optimalEV = optimalEV
+        self.playerHeld = playerHeld
+        self.playerEV = playerEV
+    }
+
     /// How much EV the player left on the table. Positive = player was suboptimal.
     /// Nil when no player hold was provided.
     public var evDifference: Double? {
