@@ -13,7 +13,7 @@ extension HoldClassifierTests {
     }
 }
 
-@Suite("HoldClassifier — basic patterns")
+@Suite("HoldClassifier: basic patterns")
 struct HoldClassifierTests {
     // MARK: - Discard All / One Card
 
@@ -142,7 +142,7 @@ struct HoldClassifierTests {
     // MARK: - Three to Royal Flush
 
     @Test func threeToRoyalFlushUserExample() {
-        // K♠ T♠ Q♠ — optimal in the user's K♠ T♠ 3♣ Q♠ 8♠ hand
+        // K♠ T♠ Q♠: optimal in the user's K♠ T♠ 3♣ Q♠ 8♠ hand
         let hand = [
             card(.king, .spades), card(.ten, .spades), card(.three, .clubs),
             card(.queen, .spades), card(.eight, .spades),
@@ -241,7 +241,7 @@ struct HoldClassifierTests {
     }
 
     @Test func fourToFlushUserExample() {
-        // K♠ T♠ Q♠ 8♠ — player's suboptimal hold (8 breaks royal set)
+        // K♠ T♠ Q♠ 8♠: player's suboptimal hold (8 breaks royal set)
         let hand = [
             card(.king, .spades), card(.ten, .spades), card(.three, .clubs),
             card(.queen, .spades), card(.eight, .spades),
@@ -376,7 +376,7 @@ struct HoldClassifierTests {
     }
 }
 
-@Suite("HoldClassifier — priority edge cases")
+@Suite("HoldClassifier: priority edge cases")
 struct HoldClassifierPriorityTests {
     private func card(_ rank: Rank, _ suit: Suit) -> PlayingCard {
         PlayingCard(rank: rank, suit: suit)
@@ -460,5 +460,91 @@ struct HoldClassifierPriorityTests {
             card(.king, .diamonds), card(.nine, .hearts),
         ]
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToRoyalFlush)
+    }
+
+    // MARK: - classifyThree suited fallback fix (Thread 1)
+
+    /// Three suited cards that span > 4 and aren't royal-eligible should fall
+    /// through to high-card logic, not be mislabeled as a straight-flush draw.
+    @Test func threeSuitedNonSFDrawFallsToHighCard() {
+        // 2♣ 9♣ K♣: span 11, not a SF draw; K is a high card
+        let hand = [
+            card(.two, .clubs), card(.nine, .clubs), card(.king, .clubs),
+            card(.three, .hearts), card(.seven, .spades),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .oneHighCard)
+    }
+
+    @Test func threeSuitedNonSFDrawNoHighCard() {
+        // 2♣ 5♣ 9♣: span 7, not a SF draw, no high cards
+        let hand = [
+            card(.two, .clubs), card(.five, .clubs), card(.nine, .clubs),
+            card(.king, .hearts), card(.seven, .spades),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .discardAll)
+    }
+
+    // MARK: - canFormStraightFlush wheel fix (Thread 2)
+
+    /// A-2-4-5 suited is a valid wheel SF draw (can complete to A-2-3-4-5).
+    @Test func fourToStraightFlushWheelWithGap() {
+        let hand = [
+            card(.ace, .hearts), card(.two, .hearts), card(.four, .hearts),
+            card(.five, .hearts), card(.king, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .fourToStraightFlush)
+    }
+
+    /// A-2-5 suited (3 cards) is a valid wheel SF draw.
+    @Test func threeToStraightFlushWheelWithGap() {
+        let hand = [
+            card(.ace, .spades), card(.two, .spades), card(.five, .spades),
+            card(.king, .hearts), card(.nine, .clubs),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2]) == .threeToStraightFlush)
+    }
+
+    // MARK: - classifyFour duplicate-ranks fix (Thread 3)
+
+    /// Holding 4 cards that include a high pair must return .highPair, not .lowPair.
+    @Test func fourCardHoldHighPair() {
+        // J♠ J♥ 3♣ 7♦ held as 4 cards
+        let hand = [
+            card(.jack, .spades), card(.jack, .hearts), card(.three, .clubs),
+            card(.seven, .diamonds), card(.two, .spades),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .highPair)
+    }
+
+    /// Holding 4 cards with trips must return .threeOfAKind, not .lowPair.
+    @Test func fourCardHoldTrips() {
+        // 7♠ 7♥ 7♣ K♦ held as 4 cards
+        let hand = [
+            card(.seven, .spades), card(.seven, .hearts), card(.seven, .clubs),
+            card(.king, .diamonds), card(.two, .spades),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .threeOfAKind)
+    }
+
+    // MARK: - classifyFour zero-high-cards fix (Thread 4)
+
+    /// Four mixed-suit low cards with no straight draw should be .discardAll.
+    @Test func fourMixedLowNoDrawIsDiscardAll() {
+        // 2♠ 4♥ 8♦ 9♣: span 7, no straight draw, no high cards
+        let hand = [
+            card(.two, .spades), card(.four, .hearts), card(.eight, .diamonds),
+            card(.nine, .clubs), card(.king, .spades),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .discardAll)
+    }
+
+    /// Four mixed-suit cards with exactly one high card returns .oneHighCard.
+    @Test func fourMixedOneHighCardReturnsOneHighCard() {
+        // 5♠ 6♥ 9♦ K♣: no straight draw, one high card
+        let hand = [
+            card(.five, .spades), card(.six, .hearts), card(.nine, .diamonds),
+            card(.king, .clubs), card(.two, .spades),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .oneHighCard)
     }
 }

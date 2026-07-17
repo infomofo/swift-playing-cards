@@ -31,10 +31,10 @@ public enum StrategyPattern: String, Equatable, CaseIterable, Sendable {
     case highPair = "High pair"
     /// Three suited cards all within {T, J, Q, K, A}.
     case threeToRoyalFlush = "Three to a royal flush"
-    /// Four suited cards that are not all royal-eligible.
-    case fourToFlush = "Four to a flush"
     /// Four suited cards that can complete to a straight flush.
     case fourToStraightFlush = "Four to a straight flush"
+    /// Four suited cards that are not all royal-eligible.
+    case fourToFlush = "Four to a flush"
     /// A pair of twos through tens.
     case lowPair = "Low pair"
     /// Four consecutive cards that can be completed on either end.
@@ -154,11 +154,19 @@ public struct HoldClassifier {
             return .fourToFlush
         }
 
-        // Mixed suits — look for straight draws.
+        // Mixed suits: look for straight draws.
         let sorted = ranks.sorted()
         guard Set(ranks).count == 4 else {
-            // Duplicate ranks: this is a pat three/four of a kind dealt situation,
-            // but with 4 held and duplicates, check for pair content.
+            let rankCounts = Dictionary(grouping: ranks, by: { $0 }).mapValues { $0.count }
+            if rankCounts.values.contains(4) {
+                return .fourOfAKind
+            }
+            if rankCounts.values.contains(3) {
+                return .threeOfAKind
+            }
+            if let pairRank = rankCounts.first(where: { $0.value == 2 })?.key {
+                return pairRank >= 11 ? .highPair : .lowPair
+            }
             return .lowPair
         }
 
@@ -171,12 +179,15 @@ public struct HoldClassifier {
         if isInsideStraightDraw(sorted) {
             return .fourToInsideStraight
         }
-        // Two high cards with two non-matching lower cards — treat as high pair fallback
+        // Two high cards with two non-matching lower cards: treat as high pair fallback
         let highCount = ranks.filter { $0 >= 11 }.count
         if highCount >= 2 {
             return .twoUnsuitedHighCards
         }
-        return .oneHighCard
+        if highCount == 1 {
+            return .oneHighCard
+        }
+        return .discardAll
     }
 
     // MARK: - Three cards
@@ -201,9 +212,7 @@ public struct HoldClassifier {
             if canFormStraightFlush(ranks) {
                 return .threeToStraightFlush
             }
-            // Three suited cards outside straight-flush range — still a SF draw candidate
-            // if they span <= 4 with a gap. Use flush-draw label.
-            return .threeToStraightFlush
+            // Falls through to high-card logic below.
         }
 
         // Mixed suits: check for pairs (two cards of same rank with a third).
@@ -212,7 +221,7 @@ public struct HoldClassifier {
             return pairRank >= 11 ? .highPair : .lowPair
         }
 
-        // Three different ranks, mixed suits — look for high cards.
+        // Three different ranks, mixed suits: look for high cards.
         let highRanks = ranks.filter { $0 >= 11 }
         switch highRanks.count {
         case 2: return .twoUnsuitedHighCards
@@ -278,7 +287,7 @@ public struct HoldClassifier {
         // Wheel: ace (14) + two/three/four/five
         let hasAce = sorted.contains(14)
         let lowRanks = sorted.filter { $0 != 14 }
-        if hasAce && lowRanks.allSatisfy({ $0 <= 5 }) && (lowRanks.last! - lowRanks.first!) <= (ranks.count - 2) {
+        if hasAce && lowRanks.allSatisfy({ $0 <= 5 }) {
             return true
         }
         return false
