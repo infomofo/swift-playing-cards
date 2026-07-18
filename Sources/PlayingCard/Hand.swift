@@ -108,33 +108,60 @@ public struct Hand {
     }
 
     private func findBestFiveCardHand() -> HandType {
-        let combinations = generateCombinations(from: cards, taking: 5)
+        let count = cards.count
+        guard count >= 5 else { return .highCard }
+
         var bestHandType: HandType = .highCard
 
-        for combination in combinations {
-            let handType = evaluateFiveCards(combination)
-            if handType > bestHandType {
-                bestHandType = handType
+        for i0 in 0 ..< count - 4 {
+            let c0 = cards[i0]
+            for i1 in i0 + 1 ..< count - 3 {
+                let c1 = cards[i1]
+                for i2 in i1 + 1 ..< count - 2 {
+                    let c2 = cards[i2]
+                    for i3 in i2 + 1 ..< count - 1 {
+                        let c3 = cards[i3]
+                        for i4 in i3 + 1 ..< count {
+                            let handType = evaluateFiveCards(c0, c1, c2, c3, cards[i4])
+                            if handType > bestHandType {
+                                bestHandType = handType
+                                if bestHandType == .royalFlush {
+                                    return .royalFlush
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
         return bestHandType
     }
 
-    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length
     private func evaluateFiveCards(_ fiveCards: [PlayingCard]) -> HandType {
+        evaluateFiveCards(fiveCards[0], fiveCards[1], fiveCards[2], fiveCards[3], fiveCards[4])
+    }
+
+    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length
+    private func evaluateFiveCards(
+        _ c0: PlayingCard,
+        _ c1: PlayingCard,
+        _ c2: PlayingCard,
+        _ c3: PlayingCard,
+        _ c4: PlayingCard,
+    ) -> HandType {
         // Direct, allocation-free flush check
-        let isFlush = fiveCards[0].suit == fiveCards[1].suit &&
-            fiveCards[1].suit == fiveCards[2].suit &&
-            fiveCards[2].suit == fiveCards[3].suit &&
-            fiveCards[3].suit == fiveCards[4].suit
+        let isFlush = c0.suit == c1.suit &&
+            c1.suit == c2.suit &&
+            c2.suit == c3.suit &&
+            c3.suit == c4.suit
 
         // Inline insertion sort of the 5 ranks using stack-allocated registers
-        var s0 = fiveCards[0].rank.rawValue
-        var s1 = fiveCards[1].rank.rawValue
-        var s2 = fiveCards[2].rank.rawValue
-        var s3 = fiveCards[3].rank.rawValue
-        var s4 = fiveCards[4].rank.rawValue
+        var s0 = c0.rank.rawValue
+        var s1 = c1.rank.rawValue
+        var s2 = c2.rank.rawValue
+        var s3 = c3.rank.rawValue
+        var s4 = c4.rank.rawValue
         var t = 0
 
         if s0 > s1 {
@@ -217,25 +244,7 @@ public struct Hand {
 
         return .highCard
     }
-
     // swiftlint:enable identifier_name cyclomatic_complexity function_body_length
-
-    private func generateCombinations<T>(from array: [T], taking count: Int) -> [[T]] {
-        guard count <= array.count else { return [] }
-        guard count > 0 else { return [[]] }
-
-        if count == array.count {
-            return [array]
-        }
-
-        let first = array[0]
-        let rest = Array(array[1...])
-
-        let withFirst = generateCombinations(from: rest, taking: count - 1).map { [first] + $0 }
-        let withoutFirst = generateCombinations(from: rest, taking: count)
-
-        return withFirst + withoutFirst
-    }
 }
 
 // MARK: - Comparable

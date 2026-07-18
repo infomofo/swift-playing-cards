@@ -193,6 +193,92 @@ final class HandTests: XCTestCase {
         XCTAssertEqual(hand.evaluate(), .pair)
     }
 
+    func testSevenCardStraight() {
+        let hand = Hand(cards: [
+            PlayingCard(rank: .two, suit: .spades),
+            PlayingCard(rank: .three, suit: .hearts),
+            PlayingCard(rank: .four, suit: .diamonds),
+            PlayingCard(rank: .five, suit: .clubs),
+            PlayingCard(rank: .six, suit: .spades),
+            PlayingCard(rank: .king, suit: .hearts),
+            PlayingCard(rank: .ace, suit: .diamonds),
+        ])
+
+        XCTAssertEqual(hand.evaluate(), .straight)
+    }
+
+    func testSevenCardFlush() {
+        let hand = Hand(cards: [
+            PlayingCard(rank: .two, suit: .spades),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .six, suit: .spades),
+            PlayingCard(rank: .eight, suit: .spades),
+            PlayingCard(rank: .ten, suit: .spades),
+            PlayingCard(rank: .three, suit: .hearts),
+            PlayingCard(rank: .five, suit: .diamonds),
+        ])
+
+        XCTAssertEqual(hand.evaluate(), .flush)
+    }
+
+    func testSevenCardFullHouse() {
+        let hand = Hand(cards: [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .ace, suit: .hearts),
+            PlayingCard(rank: .ace, suit: .diamonds),
+            PlayingCard(rank: .king, suit: .clubs),
+            PlayingCard(rank: .king, suit: .spades),
+            PlayingCard(rank: .two, suit: .hearts),
+            PlayingCard(rank: .seven, suit: .diamonds),
+        ])
+
+        XCTAssertEqual(hand.evaluate(), .fullHouse)
+    }
+
+    func testSevenCardStraightFlush() {
+        let hand = Hand(cards: [
+            PlayingCard(rank: .two, suit: .spades),
+            PlayingCard(rank: .three, suit: .spades),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .five, suit: .spades),
+            PlayingCard(rank: .six, suit: .spades),
+            PlayingCard(rank: .ace, suit: .hearts),
+            PlayingCard(rank: .king, suit: .diamonds),
+        ])
+
+        XCTAssertEqual(hand.evaluate(), .straightFlush)
+    }
+
+    func testSevenCardRoyalFlush() {
+        let hand = Hand(cards: [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .king, suit: .spades),
+            PlayingCard(rank: .queen, suit: .spades),
+            PlayingCard(rank: .jack, suit: .spades),
+            PlayingCard(rank: .ten, suit: .spades),
+            PlayingCard(rank: .two, suit: .hearts),
+            PlayingCard(rank: .seven, suit: .diamonds),
+        ])
+
+        XCTAssertEqual(hand.evaluate(), .royalFlush)
+    }
+
+    func testSevenCardBestHandIgnoresHighestRankedCards() {
+        // Best 5-card hand is a straight flush (2-3-4-5-6 of spades),
+        // not using the two highest-ranked cards (A♥, K♣).
+        let hand = Hand(cards: [
+            PlayingCard(rank: .two, suit: .spades),
+            PlayingCard(rank: .three, suit: .spades),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .five, suit: .spades),
+            PlayingCard(rank: .six, suit: .spades),
+            PlayingCard(rank: .ace, suit: .hearts),
+            PlayingCard(rank: .king, suit: .clubs),
+        ])
+
+        XCTAssertEqual(hand.evaluate(), .straightFlush)
+    }
+
     func testHandEvaluatePerformance() {
         let hand5 = Hand(cards: [
             PlayingCard(rank: .two, suit: .spades),
