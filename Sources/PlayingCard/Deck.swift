@@ -69,6 +69,6 @@ public struct Deck {
 
     /// Returns the remaining cards in the deck without removing them.
     public var remainingCards: [PlayingCard] {
-        Array(cards[nextCardIndex...])
+        nextCardIndex == 0 ? cards : Array(cards[nextCardIndex...])
     }
 }
