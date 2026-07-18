@@ -146,7 +146,23 @@ public struct HoldClassifier {
         case .twoPair:
             return .twoPair
         case .pair:
-            let pairRank = cards.first(where: { card in cards.filter { $0.rank == card.rank }.count == 2 })!.rank
+            // Zero-allocation search for the pair rank to avoid O(N^2) filter in loop.
+            var pairRank = Rank.two
+            let cardCount = cards.count
+            for index1 in 0 ..< cardCount - 1 {
+                let rank1 = cards[index1].rank
+                var found = false
+                for index2 in (index1 + 1) ..< cardCount {
+                    if rank1 == cards[index2].rank {
+                        pairRank = rank1
+                        found = true
+                        break
+                    }
+                }
+                if found {
+                    break
+                }
+            }
             return pairRank.rawValue >= 11 ? .highPair : .lowPair
         case .highCard:
             // Unusual to hold all 5 with no pair; return best single-card pattern.

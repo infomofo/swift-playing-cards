@@ -9,3 +9,7 @@
 ## 2026-07-17 - Swift Allocation-Free Hand Evaluation
 **Learning:** Standard high-level collections like Arrays, Sets, and Dictionary groupings inside core evaluation loops incur massive heap allocation and reference-counting overheads. Bypassing them completely via inline register sorting networks (such as 5-item sorting networks) and direct, zero-allocation comparisons yields a ~5.5x speedup in release builds.
 **Action:** Always replace map, Set, and Dictionary grouping in high-frequency evaluation functions with fixed-size inline variables and optimized sorting/conditional logic.
+
+## 2026-07-18 - Safe O(1) Deck Dealing and Dynamic Loop Bounds
+**Learning:** When optimizing card deck dealing, modifying array size or dealing from the end of the array (reversing the order) can cause functional regressions if down-stream tests expect specific cards in sequential order. Utilizing an index pointer tracks the deal state in O(1) time while perfectly preserving the original card sequence. Additionally, hardcoding loop boundaries for hand evaluation introduces index out-of-bounds risks; dynamic loop boundaries using `cards.count` guarantee safety.
+**Action:** Prefer tracking state with index pointers over modifying array sizes in performance critical code, and always use dynamic collection counts for safety.
