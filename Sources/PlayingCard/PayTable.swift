@@ -55,11 +55,23 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
         case .threeOfAKind: return .threeOfAKind
         case .twoPair: return .twoPair
         case .pair:
-            let rankCounts = Dictionary(grouping: cards.map(\.rank), by: { $0 })
-                .mapValues { $0.count }
-            if let pairRank = rankCounts.first(where: { $0.value == 2 })?.key,
-               pairRank >= .jack
-            {
+            // Zero-allocation search for the pair rank. Since we know the hand contains
+            // exactly one pair, we can find the pair rank using simple loops over the cards.
+            var pairRank: Rank?
+            let cardCount = cards.count
+            for index1 in 0 ..< cardCount - 1 {
+                let rank1 = cards[index1].rank
+                for index2 in (index1 + 1) ..< cardCount {
+                    if rank1 == cards[index2].rank {
+                        pairRank = rank1
+                        break
+                    }
+                }
+                if pairRank != nil {
+                    break
+                }
+            }
+            if let pairRank, pairRank >= .jack {
                 return .jacksOrBetter
             }
             return .noWin
