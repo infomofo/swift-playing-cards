@@ -1,0 +1,28 @@
+---
+applyTo: "**/*.swift"
+excludeAgent: "coding-agent"
+---
+
+# Swift Code Review Instructions
+
+## Heap Allocation in Hot Loops
+
+Before flagging heap allocation (e.g., `[T](repeating:count:)`, array literals, `Array(...)`) inside a hot loop as a performance defect:
+
+1. Run the profiler or a dedicated benchmark and capture output showing the allocation site causes a measurable regression (wall-clock time, allocations/s, or memory pressure).
+2. Include the measurement in your comment. "Will likely dominate runtime" or "adds significant overhead" without data is not sufficient evidence.
+3. If you cannot produce a measurement, propose a benchmark test instead of a code change comment.
+
+Do not flag small fixed-size array allocations in Swift as defects based on speculation alone. The Swift compiler and allocator optimize many short-lived small arrays; actual impact must be demonstrated before requesting a rewrite.
+
+## Explicit `self.` in Closures
+
+Before flagging a missing `self.` qualifier in a closure, verify that the enclosing type is a class or actor. Swift does not require explicit `self` capture for value types (structs and enums); the requirement is specific to reference types to surface potential retain cycles. If the type is a struct or enum, do not comment on the absence of `self.`.
+
+## Swift Switch Expression Implicit Return
+
+Before flagging a `switch` statement as "missing return" or a compile error, check whether it uses Swift 5.9+ implicit switch-expression syntax: the switch is the sole statement in the function body and each case is a bare expression without an explicit `return` keyword. This is valid Swift and compiles correctly when all enum cases are covered. Only flag missing returns if the switch is not exhaustive (a default case is absent and not all cases are listed) or if explicit `return` statements are mixed inconsistently.
+
+
+
+Before claiming that a function accepting a parameter is "specific to" one game variant or hard-coded to one value, read the full function body and verify that every decision point uses the parameter — not a hard-coded constant. A function is only game-specific if you can cite a specific line where the parameter is ignored and a constant is used in its place. If the implementation uses the parameter throughout, the function is general-purpose regardless of how its return type is named.

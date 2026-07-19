@@ -14,7 +14,7 @@ public enum HandType: Int, CaseIterable, Comparable {
     case royalFlush = 10
 
     public static func < (lhs: HandType, rhs: HandType) -> Bool {
-        return lhs.rawValue < rhs.rawValue
+        lhs.rawValue < rhs.rawValue
     }
 }
 
@@ -23,16 +23,16 @@ public enum HandType: Int, CaseIterable, Comparable {
 extension HandType: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .highCard: return "High Card"
-        case .pair: return "Pair"
-        case .twoPair: return "Two Pair"
-        case .threeOfAKind: return "Three of a Kind"
-        case .straight: return "Straight"
-        case .flush: return "Flush"
-        case .fullHouse: return "Full House"
-        case .fourOfAKind: return "Four of a Kind"
-        case .straightFlush: return "Straight Flush"
-        case .royalFlush: return "Royal Flush"
+        case .highCard: "High Card"
+        case .pair: "Pair"
+        case .twoPair: "Two Pair"
+        case .threeOfAKind: "Three of a Kind"
+        case .straight: "Straight"
+        case .flush: "Flush"
+        case .fullHouse: "Full House"
+        case .fourOfAKind: "Four of a Kind"
+        case .straightFlush: "Straight Flush"
+        case .royalFlush: "Royal Flush"
         }
     }
 }
@@ -43,17 +43,17 @@ public struct Hand {
 
     /// The number of cards in the hand.
     public var numberOfCards: Int {
-        return cards.count
+        cards.count
     }
 
     /// The cards in the hand.
     public var handCards: [PlayingCard] {
-        return cards
+        cards
     }
 
     /// Creates a new empty hand.
     public init() {
-        self.cards = []
+        cards = []
     }
 
     /// Creates a hand with the specified cards.
@@ -88,7 +88,7 @@ public struct Hand {
         guard indices.count == newCards.count else { return }
 
         for (cardIndex, index) in indices.enumerated() {
-            if index >= 0 && index < cards.count {
+            if index >= 0, index < cards.count {
                 cards[index] = newCards[cardIndex]
             }
         }
@@ -103,18 +103,74 @@ public struct Hand {
         if cards.count == 5 {
             return evaluateFiveCards(cards)
         } else {
-            return findBestFiveCardHand()
+            return findBestFiveCardHand(evaluator: evaluateFiveCards)
         }
     }
 
-    private func findBestFiveCardHand() -> HandType {
-        let combinations = generateCombinations(from: cards, taking: 5)
+    /// Evaluates the best hand type, treating cards of `wildcardRank` as wild.
+    ///
+    /// When `wildcardRank` is nil this is equivalent to `evaluate()`. Works with 5+ cards,
+    /// finding the best possible hand, matching `evaluate()`. When wildcards are present,
+    /// each candidate 5-card combination is evaluated via `HandResult` (wildcard-aware) using
+    /// its `handType` property; for non-paying combinations the standard evaluator is used,
+    /// with `.highCard` upgraded to `.pair` when that combination holds at least one wild card.
+    public func evaluate(wildcardRank: Rank?) -> HandType {
+        guard let wildcardRank else { return evaluate() }
+        guard cards.count >= 5 else { return .highCard }
+
+        func evaluateFiveCardsWithWild(
+            _ c0: PlayingCard,
+            _ c1: PlayingCard,
+            _ c2: PlayingCard,
+            _ c3: PlayingCard,
+            _ c4: PlayingCard,
+        ) -> HandType {
+            let fiveCards = [c0, c1, c2, c3, c4]
+            let result = HandResult.evaluate(cards: fiveCards, wildcardRank: wildcardRank)
+            if let handType = result.handType {
+                return handType
+            }
+            // .noWin: use standard evaluation, upgrading highCard when a wild is present.
+            let base = evaluateFiveCards(c0, c1, c2, c3, c4)
+            if base == .highCard, fiveCards.contains(where: { $0.rank == wildcardRank }) {
+                return .pair
+            }
+            return base
+        }
+
+        if cards.count == 5 {
+            return evaluateFiveCardsWithWild(cards[0], cards[1], cards[2], cards[3], cards[4])
+        }
+        return findBestFiveCardHand(evaluator: evaluateFiveCardsWithWild)
+    }
+
+    private func findBestFiveCardHand(
+        evaluator: (PlayingCard, PlayingCard, PlayingCard, PlayingCard, PlayingCard) -> HandType,
+    ) -> HandType {
+        let count = cards.count
+        guard count >= 5 else { return .highCard }
+
         var bestHandType: HandType = .highCard
 
-        for combination in combinations {
-            let handType = evaluateFiveCards(combination)
-            if handType > bestHandType {
-                bestHandType = handType
+        for i0 in 0 ..< count - 4 {
+            let c0 = cards[i0]
+            for i1 in i0 + 1 ..< count - 3 {
+                let c1 = cards[i1]
+                for i2 in i1 + 1 ..< count - 2 {
+                    let c2 = cards[i2]
+                    for i3 in i2 + 1 ..< count - 1 {
+                        let c3 = cards[i3]
+                        for i4 in i3 + 1 ..< count {
+                            let handType = evaluator(c0, c1, c2, c3, cards[i4])
+                            if handType > bestHandType {
+                                bestHandType = handType
+                                if bestHandType == .royalFlush {
+                                    return .royalFlush
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -122,94 +178,112 @@ public struct Hand {
     }
 
     private func evaluateFiveCards(_ fiveCards: [PlayingCard]) -> HandType {
-        let sortedCards = fiveCards.sorted()
-        let ranks = sortedCards.map { $0.rank }
-        let suits = sortedCards.map { $0.suit }
+        evaluateFiveCards(fiveCards[0], fiveCards[1], fiveCards[2], fiveCards[3], fiveCards[4])
+    }
 
-        let isFlush = Set(suits).count == 1
-        let isStraight = checkStraight(ranks)
-        let rankCounts = Dictionary(grouping: ranks, by: { $0 }).mapValues { $0.count }
-        let counts = Array(rankCounts.values).sorted(by: >)
+    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length
+    private func evaluateFiveCards(
+        _ c0: PlayingCard,
+        _ c1: PlayingCard,
+        _ c2: PlayingCard,
+        _ c3: PlayingCard,
+        _ c4: PlayingCard,
+    ) -> HandType {
+        // Direct, allocation-free flush check
+        let isFlush = c0.suit == c1.suit &&
+            c1.suit == c2.suit &&
+            c2.suit == c3.suit &&
+            c3.suit == c4.suit
 
-        // Check for royal flush
-        if isFlush && isStraight && ranks.contains(.ace) && ranks.contains(.king) {
-            return .royalFlush
+        // Inline insertion sort of the 5 ranks using stack-allocated registers
+        var s0 = c0.rank.rawValue
+        var s1 = c1.rank.rawValue
+        var s2 = c2.rank.rawValue
+        var s3 = c3.rank.rawValue
+        var s4 = c4.rank.rawValue
+        var t = 0
+
+        if s0 > s1 {
+            t = s0; s0 = s1; s1 = t
+        }
+        if s1 > s2 {
+            t = s1; s1 = s2; s2 = t
+            if s0 > s1 {
+                t = s0; s0 = s1; s1 = t
+            }
+        }
+        if s2 > s3 {
+            t = s2; s2 = s3; s3 = t
+            if s1 > s2 {
+                t = s1; s1 = s2; s2 = t
+                if s0 > s1 {
+                    t = s0; s0 = s1; s1 = t
+                }
+            }
+        }
+        if s3 > s4 {
+            t = s3; s3 = s4; s4 = t
+            if s2 > s3 {
+                t = s2; s2 = s3; s3 = t
+                if s1 > s2 {
+                    t = s1; s1 = s2; s2 = t
+                    if s0 > s1 {
+                        t = s0; s0 = s1; s1 = t
+                    }
+                }
+            }
         }
 
-        // Check for straight flush
+        // Inline straight check (including ace-low wheel straight: 2, 3, 4, 5, 14)
+        let isStraight = (s1 == s0 + 1 && s2 == s1 + 1 && s3 == s2 + 1 && s4 == s3 + 1) ||
+            (s0 == 2 && s1 == 3 && s2 == 4 && s3 == 5 && s4 == 14)
+
+        // Evaluate Hand Result in precedence order
         if isFlush && isStraight {
+            if s4 == 14, s3 == 13 {
+                return .royalFlush
+            }
             return .straightFlush
         }
 
-        // Check for four of a kind
-        if counts == [4, 1] {
+        // Four of a kind
+        if s0 == s3 || s1 == s4 {
             return .fourOfAKind
         }
 
-        // Check for full house
-        if counts == [3, 2] {
+        // Full house
+        if (s0 == s2 && s3 == s4) || (s0 == s1 && s2 == s4) {
             return .fullHouse
         }
 
-        // Check for flush
+        // Flush
         if isFlush {
             return .flush
         }
 
-        // Check for straight
+        // Straight
         if isStraight {
             return .straight
         }
 
-        // Check for three of a kind
-        if counts == [3, 1, 1] {
+        // Three of a kind
+        if s0 == s2 || s1 == s3 || s2 == s4 {
             return .threeOfAKind
         }
 
-        // Check for two pair
-        if counts == [2, 2, 1] {
+        // Two pair
+        if (s0 == s1 && s2 == s3) || (s0 == s1 && s3 == s4) || (s1 == s2 && s3 == s4) {
             return .twoPair
         }
 
-        // Check for pair
-        if counts == [2, 1, 1, 1] {
+        // Pair
+        if s0 == s1 || s1 == s2 || s2 == s3 || s3 == s4 {
             return .pair
         }
 
         return .highCard
     }
-
-    private func checkStraight(_ ranks: [Rank]) -> Bool {
-        let uniqueRanks = Array(Set(ranks)).sorted()
-        guard uniqueRanks.count == 5 else { return false }
-
-        // Check for wheel (A-2-3-4-5) special case first
-        if uniqueRanks == [.two, .three, .four, .five, .ace] {
-            return true
-        }
-
-        // Check for regular straight
-        return !uniqueRanks.indices.dropFirst().contains { index in
-            uniqueRanks[index].rawValue != uniqueRanks[index-1].rawValue + 1
-        }
-    }
-
-    private func generateCombinations<T>(from array: [T], taking count: Int) -> [[T]] {
-        guard count <= array.count else { return [] }
-        guard count > 0 else { return [[]] }
-
-        if count == array.count {
-            return [array]
-        }
-
-        let first = array[0]
-        let rest = Array(array[1...])
-
-        let withFirst = generateCombinations(from: rest, taking: count - 1).map { [first] + $0 }
-        let withoutFirst = generateCombinations(from: rest, taking: count)
-
-        return withFirst + withoutFirst
-    }
+    // swiftlint:enable identifier_name cyclomatic_complexity function_body_length
 }
 
 // MARK: - Comparable

@@ -1,8 +1,7 @@
 import Foundation
 
 /// Example demonstrating complete video poker game functionality
-public struct VideoPokerExample {
-
+public enum VideoPokerExample {
     /// Simulates a complete video poker hand with detailed output
     public static func playExampleHand() -> String {
         var output: [String] = []
@@ -23,9 +22,8 @@ public struct VideoPokerExample {
             output.append("  \(index + 1): \(card.description)")
         }
 
-        let initialHandType = playerHand.evaluate()
-        output.append("\nInitial hand evaluation: \(initialHandType.description)")
-        output.append("Initial payout: \(calculatePayout(handType: initialHandType))x\n")
+        output.append("\nInitial hand evaluation: \(HandResult.evaluate(cards: playerHand.handCards).description)")
+        output.append("Initial payout: \(PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: playerHand.handCards)))x\n")
 
         // Simulate player deciding to hold some cards
         let cardsToReplace = simulatePlayerStrategy(hand: playerHand)
@@ -48,12 +46,11 @@ public struct VideoPokerExample {
         }
 
         // Evaluate final hand
-        let finalHandType = playerHand.evaluate()
-        output.append("\nFinal hand evaluation: \(finalHandType.description)")
+        output.append("\nFinal hand evaluation: \(HandResult.evaluate(cards: playerHand.handCards).description)")
         output.append("Cards remaining in deck: \(deck.count)")
 
         // Calculate payout
-        let payout = calculatePayout(handType: finalHandType)
+        let payout = PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: playerHand.handCards))
         output.append("Final payout: \(payout)x")
 
         if payout > 0 {
@@ -130,7 +127,7 @@ public struct VideoPokerExample {
         let suitCounts = Dictionary(grouping: cards, by: { $0.suit }).mapValues { $0.count }
         let flushSuit = suitCounts.first { $0.value == 4 }?.key
 
-        if let flushSuit = flushSuit {
+        if let flushSuit {
             // Hold the 4 cards of the flush suit
             for (index, card) in cards.enumerated() where card.suit != flushSuit {
                 cardsToReplace.append(index)
@@ -139,7 +136,7 @@ public struct VideoPokerExample {
         }
 
         // Check for straight draw
-        let sortedRanks = cards.map { $0.rank }.sorted()
+        let sortedRanks = cards.map(\.rank).sorted()
         if isOpenEndedStraightDraw(ranks: sortedRanks) {
             // Hold all cards for straight draw
             return []
@@ -154,7 +151,7 @@ public struct VideoPokerExample {
             // No high cards, replace lowest 3 cards
             let cardsWithIndices = Array(zip(cards.indices, cards))
             let sortedWithIndices = cardsWithIndices.sorted { $0.1 < $1.1 }
-            for cardIndex in 0..<3 {
+            for cardIndex in 0 ..< 3 {
                 cardsToReplace.append(sortedWithIndices[cardIndex].0)
             }
         }
@@ -167,8 +164,8 @@ public struct VideoPokerExample {
         guard uniqueRanks.count >= 4 else { return false }
 
         // Check for consecutive sequences of 4 cards
-        for startIndex in 0...(uniqueRanks.count - 4) {
-            let isConsecutive = (1..<4).allSatisfy { offset in
+        for startIndex in 0 ... (uniqueRanks.count - 4) {
+            let isConsecutive = (1 ..< 4).allSatisfy { offset in
                 uniqueRanks[startIndex + offset].rawValue == uniqueRanks[startIndex + offset - 1].rawValue + 1
             }
             if isConsecutive {
@@ -177,28 +174,13 @@ public struct VideoPokerExample {
         }
 
         // Check for wheel draw (A, 2, 3, 4)
-        if uniqueRanks.contains(.ace) && uniqueRanks.contains(.two) &&
-           uniqueRanks.contains(.three) && uniqueRanks.contains(.four) {
+        if uniqueRanks.contains(.ace), uniqueRanks.contains(.two),
+           uniqueRanks.contains(.three), uniqueRanks.contains(.four)
+        {
             return true
         }
 
         return false
-    }
-
-    /// Standard video poker payout table (Jacks or Better)
-    private static func calculatePayout(handType: HandType) -> Int {
-        switch handType {
-        case .royalFlush: return 250
-        case .straightFlush: return 50
-        case .fourOfAKind: return 25
-        case .fullHouse: return 9
-        case .flush: return 6
-        case .straight: return 4
-        case .threeOfAKind: return 3
-        case .twoPair: return 2
-        case .pair: return 1  // Only Jacks or better
-        case .highCard: return 0
-        }
     }
 
     /// Demonstrates hand comparison functionality
@@ -213,35 +195,35 @@ public struct VideoPokerExample {
                 PlayingCard(rank: .king, suit: .spades),
                 PlayingCard(rank: .queen, suit: .spades),
                 PlayingCard(rank: .jack, suit: .spades),
-                PlayingCard(rank: .ten, suit: .spades)
+                PlayingCard(rank: .ten, suit: .spades),
             ])),
             ("Pair of Aces", Hand(cards: [
                 PlayingCard(rank: .ace, suit: .spades),
                 PlayingCard(rank: .ace, suit: .hearts),
                 PlayingCard(rank: .king, suit: .diamonds),
                 PlayingCard(rank: .queen, suit: .clubs),
-                PlayingCard(rank: .jack, suit: .spades)
+                PlayingCard(rank: .jack, suit: .spades),
             ])),
             ("Three Kings", Hand(cards: [
                 PlayingCard(rank: .king, suit: .spades),
                 PlayingCard(rank: .king, suit: .hearts),
                 PlayingCard(rank: .king, suit: .diamonds),
                 PlayingCard(rank: .queen, suit: .clubs),
-                PlayingCard(rank: .jack, suit: .spades)
+                PlayingCard(rank: .jack, suit: .spades),
             ])),
             ("High Card", Hand(cards: [
                 PlayingCard(rank: .king, suit: .spades),
                 PlayingCard(rank: .queen, suit: .hearts),
                 PlayingCard(rank: .jack, suit: .diamonds),
                 PlayingCard(rank: .nine, suit: .clubs),
-                PlayingCard(rank: .seven, suit: .spades)
-            ]))
+                PlayingCard(rank: .seven, suit: .spades),
+            ])),
         ]
 
         for (name, hand) in hands {
-            output.append("\(name): \(hand.handCards.map { $0.description }.joined(separator: " "))")
-            output.append("  Evaluation: \(hand.evaluate().description)")
-            output.append("  Payout: \(calculatePayout(handType: hand.evaluate()))x")
+            output.append("\(name): \(hand.handCards.map(\.description).joined(separator: " "))")
+            output.append("  Evaluation: \(HandResult.evaluate(cards: hand.handCards).description)")
+            output.append("  Payout: \(PayTable.jacksOrBetter96.multiplier(for: HandResult.evaluate(cards: hand.handCards)))x")
             output.append("")
         }
 
@@ -270,7 +252,7 @@ public struct VideoPokerExample {
             ("Straight (dealt)", "1 in 255"),
             ("Three of a Kind (dealt)", "1 in 47"),
             ("Two Pair (dealt)", "1 in 21"),
-            ("Jacks or Better (dealt)", "1 in 6")
+            ("Jacks or Better (dealt)", "1 in 6"),
         ]
 
         output.append("Probability of being dealt various hands:")
@@ -288,7 +270,7 @@ public struct VideoPokerExample {
     public static func runMultipleHands(count: Int = 3) -> String {
         var output: [String] = []
 
-        for handNumber in 1...count {
+        for handNumber in 1 ... count {
             output.append("HAND #\(handNumber)")
             output.append(String(repeating: "=", count: 50))
             output.append(playExampleHand())

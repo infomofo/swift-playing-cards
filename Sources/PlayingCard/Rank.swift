@@ -12,11 +12,11 @@ extension Rank: Comparable {
     public static func < (lhs: Rank, rhs: Rank) -> Bool {
         switch (lhs, rhs) {
         case (_, _) where lhs == rhs:
-            return false
+            false
         case (.ace, _):
-            return false
+            false
         default:
-            return lhs.rawValue < rhs.rawValue
+            lhs.rawValue < rhs.rawValue
         }
     }
 }
@@ -27,12 +27,12 @@ extension Rank: Comparable {
 extension Rank: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .ace: return "A"
-        case .jack: return "J"
-        case .queen: return "Q"
-        case .king: return "K"
+        case .ace: "A"
+        case .jack: "J"
+        case .queen: "Q"
+        case .king: "K"
         default:
-            return "\(rawValue)"
+            "\(rawValue)"
         }
     }
 }
@@ -40,26 +40,26 @@ extension Rank: CustomStringConvertible {
 // MARK: - Display Extensions
 
 /// Extensions for display purposes, especially for compact views
-extension Rank {
-    public var name: String {
+public extension Rank {
+    var name: String {
         switch self {
-        case .ace: return "Ace"
-        case .jack: return "Jack"
-        case .queen: return "Queen"
-        case .king: return "King"
-        default: return "\(rawValue)"
+        case .ace: "Ace"
+        case .jack: "Jack"
+        case .queen: "Queen"
+        case .king: "King"
+        default: "\(rawValue)"
         }
     }
 
     /// Returns the first letter of the rank for compact display
-    public var compactDescription: String {
+    var compactDescription: String {
         switch self {
-        case .ace: return "A"
-        case .jack: return "J"
-        case .queen: return "Q"
-        case .king: return "K"
+        case .ace: "A"
+        case .jack: "J"
+        case .queen: "Q"
+        case .king: "K"
         default:
-            return "\(rawValue)"
+            "\(rawValue)"
         }
     }
 }

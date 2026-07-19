@@ -1,13 +1,12 @@
-import XCTest
-@testable import PlayingCard
 import Foundation
+@testable import PlayingCard
+import XCTest
 
 #if canImport(SwiftUI)
-import SwiftUI
+    import SwiftUI
 #endif
 
 final class DisplayCardSnapshotTests: XCTestCase {
-
     func testGenerateSampleCardImages() throws {
         // Create output directory
         let outputURL = URL(fileURLWithPath: "card-images")
@@ -18,7 +17,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
             ("2_of_spades", PlayingCard(rank: .two, suit: .spades)),
             ("ace_of_clubs", PlayingCard(rank: .ace, suit: .clubs)),
             ("king_of_hearts", PlayingCard(rank: .king, suit: .hearts)),
-            ("9_of_diamonds", PlayingCard(rank: .nine, suit: .diamonds))
+            ("9_of_diamonds", PlayingCard(rank: .nine, suit: .diamonds)),
         ]
 
         var generatedFiles: [String] = []
@@ -97,9 +96,9 @@ final class DisplayCardSnapshotTests: XCTestCase {
     private func generateCardSVG(card: PlayingCard, displayMode: DisplayMode) -> String {
         switch displayMode {
         case .compact:
-            return generateCompactCardSVG(card: card)
+            generateCompactCardSVG(card: card)
         case .large:
-            return generateLargeCardSVG(card: card)
+            generateLargeCardSVG(card: card)
         }
     }
 
@@ -182,9 +181,9 @@ final class DisplayCardSnapshotTests: XCTestCase {
     private func generateCenterContent(card: PlayingCard, color: String) -> String {
         switch card.rank {
         case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
-            return generateNumberCardCenter(card: card, color: color)
+            generateNumberCardCenter(card: card, color: color)
         case .ace, .jack:
-            return """
+            """
               <!-- Center: Large rank letter -->
               <text x="60" y="74" text-anchor="middle" font-family="Arial, sans-serif"
                     font-size="24" font-weight="bold" fill="\(color)">
@@ -195,7 +194,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
               </text>
             """
         case .queen:
-            return """
+            """
               <!-- Center: Queen emoji -->
               <text x="60" y="84" text-anchor="middle" font-family="Arial, sans-serif" font-size="24">
                 \(getQueenEmoji(for: card.suit))
@@ -205,7 +204,7 @@ final class DisplayCardSnapshotTests: XCTestCase {
               </text>
             """
         case .king:
-            return """
+            """
               <!-- Center: King emoji -->
               <text x="60" y="84" text-anchor="middle" font-family="Arial, sans-serif" font-size="24">
                 \(getKingEmoji(for: card.suit))
@@ -275,27 +274,27 @@ final class DisplayCardSnapshotTests: XCTestCase {
     private func isNumberCard(_ rank: Rank) -> Bool {
         switch rank {
         case .two, .three, .four, .five, .six, .seven, .eight, .nine, .ten:
-            return true
+            true
         case .ace, .jack, .queen, .king:
-            return false
+            false
         }
     }
 
     private func getQueenEmoji(for suit: Suit) -> String {
         switch suit {
-        case .hearts: return "👸🏼"
-        case .spades: return "👸🏻"
-        case .clubs: return "👸🏽"
-        case .diamonds: return "👸🏾"
+        case .hearts: "👸🏼"
+        case .spades: "👸🏻"
+        case .clubs: "👸🏽"
+        case .diamonds: "👸🏾"
         }
     }
 
     private func getKingEmoji(for suit: Suit) -> String {
         switch suit {
-        case .hearts: return "🤴🏼"
-        case .spades: return "🤴🏻"
-        case .clubs: return "🤴🏽"
-        case .diamonds: return "🤴🏾"
+        case .hearts: "🤴🏼"
+        case .spades: "🤴🏻"
+        case .clubs: "🤴🏽"
+        case .diamonds: "🤴🏾"
         }
     }
 }

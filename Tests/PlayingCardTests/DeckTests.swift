@@ -1,8 +1,7 @@
-import XCTest
 @testable import PlayingCard
+import XCTest
 
 final class DeckTests: XCTestCase {
-
     func testDeckCreation() {
         let deck = Deck()
         XCTAssertEqual(deck.count, 52)
@@ -61,5 +60,16 @@ final class DeckTests: XCTestCase {
         let shuffledCards = deck1.remainingCards
 
         XCTAssertNotEqual(originalCards, shuffledCards)
+    }
+
+    func testRemainingCardsAfterDealing() {
+        var deck = Deck()
+        let dealt = deck.dealCards(5)
+
+        let remaining = deck.remainingCards
+        XCTAssertEqual(remaining.count, 47)
+        for card in dealt {
+            XCTAssertFalse(remaining.contains(card))
+        }
     }
 }

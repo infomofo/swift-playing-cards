@@ -9,17 +9,19 @@ let package = Package(
         .macOS(.v12),
         .iOS(.v15),
         .watchOS(.v8),
-        .tvOS(.v15)
+        .tvOS(.v15),
     ],
     products: [
-        .library(name: "PlayingCard", targets: ["PlayingCard"])
+        .library(name: "PlayingCard", targets: ["PlayingCard"]),
     ],
     targets: [
         .target(
             name: "PlayingCard",
-            dependencies: []),
+            dependencies: [],
+        ),
         .testTarget(
             name: "PlayingCardTests",
-            dependencies: ["PlayingCard"])
-    ]
+            dependencies: ["PlayingCard"],
+        ),
+    ],
 )

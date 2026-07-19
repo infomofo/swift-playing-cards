@@ -24,9 +24,9 @@
 
         private var accessibilityLabelString: String {
             if isShowingBack {
-                return "Hidden card"
+                "Hidden card"
             } else {
-                return "\(card.rank.name) of \(card.suit.rawValue.capitalized)"
+                "\(card.rank.name) of \(card.suit.rawValue.capitalized)"
             }
         }
 
@@ -45,19 +45,19 @@
                         cardBackView
                     } else {
                         DisplayCard(card: card, displayMode: .large)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.blue, lineWidth: isSelected ? 3 : 0)
-                            )
-                            .overlay(
-                                selectionOverlay,
-                                alignment: .topTrailing
-                            )
                     }
                 }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.blue, lineWidth: isSelected ? 3 : 0),
+                )
+                .overlay(
+                    selectionOverlay,
+                    alignment: .topTrailing,
+                )
                 .rotation3DEffect(
                     .degrees(rotationDegrees),
-                    axis: (x: 0, y: 1, z: 0)
+                    axis: (x: 0, y: 1, z: 0),
                 )
                 .scaleEffect(isSelected ? 1.05 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isSelected)
@@ -79,12 +79,12 @@
                     LinearGradient(
                         gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
                         startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                        endPoint: .bottomTrailing,
+                    ),
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.black, lineWidth: 2)
+                        .stroke(Color.black, lineWidth: 2),
                 )
                 .frame(width: 120, height: 168)
         }
@@ -119,7 +119,7 @@
 
         /// Returns whether the card is currently selected
         public var isCardSelected: Bool {
-            return isSelected
+            isSelected
         }
 
         /// Replace this card with a new card (with animation)
@@ -145,7 +145,7 @@
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     extension InteractiveCard: Hashable, Equatable {
         public static func == (lhs: InteractiveCard, rhs: InteractiveCard) -> Bool {
-            return lhs.card == rhs.card
+            lhs.card == rhs.card
         }
 
         public func hash(into hasher: inout Hasher) {
@@ -224,18 +224,18 @@
                                     LinearGradient(
                                         gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.6)]),
                                         startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
+                                        endPoint: .bottomTrailing,
+                                    ),
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.black, lineWidth: 2)
+                                        .stroke(Color.black, lineWidth: 2),
                                 )
                                 .frame(width: 120, height: 168)
                                 .opacity(CardFlipAnimator.isBackVisible(at: flipDegrees[index]) ? 1 : 0)
                                 .rotation3DEffect(
                                     .degrees(CardFlipAnimator.backFaceRotation(at: flipDegrees[index])),
-                                    axis: (x: 0, y: 1, z: 0)
+                                    axis: (x: 0, y: 1, z: 0),
                                 )
                                 .scaleEffect(CardFlipAnimator.backFaceScale(at: flipDegrees[index]))
                         }
@@ -364,7 +364,7 @@
             content.background(PlatformPerspectiveApplier(distance: distance))
         }
 
-        #if canImport(UIKit)
+        #if os(iOS) || os(tvOS)
             private struct PlatformPerspectiveApplier: UIViewRepresentable {
                 let distance: CGFloat
 
@@ -378,7 +378,7 @@
                     view.superview?.layer.sublayerTransform = transform
                 }
             }
-        #elseif canImport(AppKit)
+        #elseif os(macOS)
             private struct PlatformPerspectiveApplier: NSViewRepresentable {
                 let distance: CGFloat
 
@@ -390,6 +390,13 @@
                     var transform = CATransform3DIdentity
                     transform.m34 = -1 / max(distance, 0.001)
                     view.superview?.layer?.sublayerTransform = transform
+                }
+            }
+        #else
+            private struct PlatformPerspectiveApplier: View {
+                let distance: CGFloat
+                var body: some View {
+                    EmptyView()
                 }
             }
         #endif

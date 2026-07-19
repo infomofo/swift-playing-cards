@@ -176,10 +176,54 @@ struct ContentView: View {
 }
 ```
 
-### Video Poker Example
+### Video Poker Pay Tables
+
+Built-in pay tables for common video poker variants:
+
+| Pay Table | Return (optimal) |
+|-----------|-----------------|
+| `PayTable.jacksOrBetter96` | 9/6 Jacks or Better — 99.54% |
+| `PayTable.jacksOrBetter95` | 9/5 Jacks or Better — 98.45% |
+| `PayTable.jacksOrBetter86` | 8/6 Jacks or Better — 98.39% |
+| `PayTable.deucesWild` | Full-Pay Deuces Wild — 100.76% |
+
+Deuces Wild uses all 2s as wild cards. `PayTable.deucesWild` sets `wildcardRank = .two`, which triggers wildcard hand evaluation automatically. New hand types for Deuces Wild: `naturalRoyalFlush`, `fourDeuces`, `wildRoyalFlush`, `fiveOfAKind`.
+
+Custom pay tables:
 
 ```swift
-import PlayingCard
+let customTable = PayTable(
+    name: "8/5 Jacks or Better",
+    multipliers: [
+        .royalFlush: 800,
+        .straightFlush: 50,
+        .fourOfAKind: 25,
+        .fullHouse: 8,
+        .flush: 5,
+        .straight: 4,
+        .threeOfAKind: 3,
+        .twoPair: 2,
+        .jacksOrBetter: 1,
+        .noWin: 0,
+    ],
+)
+```
+
+### Optimal Play Engine
+
+`OptimalPlay` computes the expected value for every possible hold combination and identifies the mathematically optimal hold:
+
+```swift
+let engine = OptimalPlay(payTable: .jacksOrBetter96)
+let result = await engine.evaluate(hand: cards)
+// result.optimalHeld — indices of cards to keep
+// result.optimalEV   — expected value at optimal play
+// result.playerEV    — expected value for a player-chosen hold (if provided)
+```
+
+Works with all pay tables including Deuces Wild.
+
+
 
 // Video poker draw scenario
 var deck = Deck()

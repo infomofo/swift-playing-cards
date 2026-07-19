@@ -6,13 +6,14 @@ on:
       - main
 
 jobs:
-  swiftlint:
-    runs-on: ubuntu-latest
+  lint:
+    name: SwiftLint + SwiftFormat
+    runs-on: macos-15
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install mise
         uses: jdx/mise-action@v4
 
-      - name: SwiftLint
-        run: mise exec -- swiftlint lint
+      - name: Lint
+        run: mise run lint
