@@ -18,12 +18,16 @@
         }
 
         public var body: some View {
-            switch displayMode {
-            case .compact:
-                compactView
-            case .large:
-                largeView
+            Group {
+                switch displayMode {
+                case .compact:
+                    compactView
+                case .large:
+                    largeView
+                }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(card.rank.name) of \(card.suit.rawValue.capitalized)")
         }
 
         // MARK: - Compact View (Apple Watch)

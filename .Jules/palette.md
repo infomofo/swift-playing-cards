@@ -1,0 +1,3 @@
+## 2026-07-15 - SwiftUI Playing Card Accessibility Grouping
+**Learning:** Complex custom visual components (such as playing cards) that are composed of nested shapes, corner texts, and multiple centered icon grids (suit icons) are read piecemeal by screen readers. This results in an extremely verbose and confusing VoiceOver experience (e.g., repeating the word "Spade" 10 times for a 10 of Spades).
+**Action:** Always group custom graphic-heavy SwiftUI views using `.accessibilityElement(children: .ignore)` to hide internal structural detail from VoiceOver, and provide a single clean human-readable text via `.accessibilityLabel` and `.accessibilityValue`.
