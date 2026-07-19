@@ -215,7 +215,7 @@ let customTable = PayTable(
 
 ```swift
 let engine = OptimalPlay(payTable: .jacksOrBetter96)
-let result = engine.evaluate(hand: cards)
+let result = await engine.evaluate(hand: cards)
 // result.optimalHeld — indices of cards to keep
 // result.optimalEV   — expected value at optimal play
 // result.playerEV    — expected value for a player-chosen hold (if provided)

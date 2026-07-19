@@ -257,7 +257,7 @@ final class DeucesWildTests: XCTestCase {
         XCTAssertEqual(table.payout(for: cards, bet: 5), 1000)
     }
 
-    func testDWThreeOfAKindNetPayout() {
+    func testDWFourOfAKindNetPayout() {
         let table = PayTable.deucesWild
         // J♠ J♥ J♦ 2♠ 5♣ → three jacks + wild deuce = four jacks (4K: 5x)
         // Wait: 3 natural jacks + 1 deuce → maxFreq=3 + k=1 = 4 ≥ 4 → four of a kind!
