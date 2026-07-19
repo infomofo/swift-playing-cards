@@ -527,7 +527,7 @@ public struct HoldClassifier {
             // 4 to a SF: same suit, distinct ranks, both ≥ 6 (rank value), span ≤ 4.
             if suits[0] == suits[1], Set(ranks).count == 2 {
                 let span = ranks[1] - ranks[0]
-                if span <= 4, ranks[0] >= 4 { // rank value ≥ 6 means rawValue ≥ 6 → index ≥ 4
+                if span <= 4, ranks[0] >= 6 {
                     return .fourToStraightFlushTwoDeuces
                 }
             }
@@ -568,7 +568,7 @@ public struct HoldClassifier {
             if suits.dropFirst().allSatisfy({ $0 == suits[0] }), Set(ranks).count == 3 {
                 let sorted = ranks.sorted()
                 let span = sorted[2] - sorted[0]
-                if span == 2, sorted[0] >= 3 { // consecutive (no gaps), rank value ≥ 5
+                if span == 2, sorted[0] >= 5 { // consecutive (no gaps), rank value ≥ 5
                     return .fourToStraightFlushHighOneDeuce
                 }
                 // Other SF draws (span ≤ 4).
@@ -589,7 +589,7 @@ public struct HoldClassifier {
             if suits[0] == suits[1], Set(ranks).count == 2 {
                 let sorted = ranks.sorted()
                 let span = sorted[1] - sorted[0]
-                if span == 1, sorted[0] >= 4 { // consecutive, rank value ≥ 6
+                if span == 1, sorted[0] >= 6 { // consecutive, rank value ≥ 6
                     return .threeToStraightFlushHighOneDeuce
                 }
             }

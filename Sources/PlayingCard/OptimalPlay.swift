@@ -63,6 +63,10 @@ public struct OptimalPlayResult {
 /// Tie-breaking: when multiple hold sets have identical EV, the one holding more
 /// cards wins (conventional: do not draw from a pat hand unless strictly better).
 ///
+/// Wildcard support: only `wildcardRank == .two` (Deuces Wild) is supported. The fast
+/// inner-loop evaluator hard-codes rank-index 0 for wildcard detection. Passing a pay
+/// table with any other `wildcardRank` will trap at init time.
+///
 /// ## Usage
 ///
 /// ```swift
@@ -80,6 +84,11 @@ public struct OptimalPlay {
     private let isWild: Bool
 
     public init(payTable: PayTable = .jacksOrBetter96) {
+        precondition(
+            payTable.wildcardRank == nil || payTable.wildcardRank == .two,
+            "OptimalPlay only supports wildcardRank == .two (Deuces Wild). "
+                + "The fast evaluator hard-codes rank-index 0 for wild detection.",
+        )
         self.payTable = payTable
         // allCases is declared in rawValue order (0–13), so array index == rawValue.
         multiplierTable = HandResult.allCases.map { payTable.multiplier(for: $0) }

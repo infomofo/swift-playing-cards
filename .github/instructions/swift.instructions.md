@@ -18,3 +18,7 @@ Do not flag small fixed-size array allocations in Swift as defects based on spec
 ## Explicit `self.` in Closures
 
 Before flagging a missing `self.` qualifier in a closure, verify that the enclosing type is a class or actor. Swift does not require explicit `self` capture for value types (structs and enums); the requirement is specific to reference types to surface potential retain cycles. If the type is a struct or enum, do not comment on the absence of `self.`.
+
+## Game-Specific vs. General-Purpose APIs
+
+Before claiming that a function accepting a parameter is "specific to" one game variant or hard-coded to one value, read the full function body and verify that every decision point uses the parameter — not a hard-coded constant. A function is only game-specific if you can cite a specific line where the parameter is ignored and a constant is used in its place. If the implementation uses the parameter throughout, the function is general-purpose regardless of how its return type is named.
