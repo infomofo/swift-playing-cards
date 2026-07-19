@@ -135,13 +135,10 @@ public struct OptimalPlay {
             of: (mask: Int, ev: Double).self,
         ) { group in
             for mask in 0 ..< 32 {
-                let heldCodes = (0 ..< 5)
-                    .filter { mask & (1 << $0) != 0 }
-                    .map { handCodes[$0] }
                 group.addTask {
                     let ev = isWild
-                        ? fastEVWild(held: heldCodes, remaining: remaining)
-                        : fastEV(held: heldCodes, remaining: remaining)
+                        ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
+                        : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
                     return (mask: mask, ev: ev)
                 }
             }
@@ -168,10 +165,13 @@ public struct OptimalPlay {
         }
 
         let playerEV = playerHeld.map { indices -> Double in
-            let codes = indices.map { handCodes[$0] }
+            var mask = 0
+            for idx in indices {
+                mask |= (1 << idx)
+            }
             return isWild
-                ? fastEVWild(held: codes, remaining: remaining)
-                : fastEV(held: codes, remaining: remaining)
+                ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
+                : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
         }
 
         return OptimalPlayResult(
@@ -212,10 +212,13 @@ public struct OptimalPlay {
                 }
             }
         }
-        let heldCodes = holding.sorted().map { handCodes[$0] }
+        var mask = 0
+        for idx in holding {
+            mask |= (1 << idx)
+        }
         return isWild
-            ? fastEVWild(held: heldCodes, remaining: remaining)
-            : fastEV(held: heldCodes, remaining: remaining)
+            ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
+            : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
     }
 
     // MARK: - Fast Inner Loop
@@ -226,24 +229,74 @@ public struct OptimalPlay {
     ///
     /// All arithmetic operates on plain integers; no `PlayingCard` objects are accessed
     /// during the combination loop.
-    private func fastEV(held: [Int], remaining: [Int]) -> Double {
-        let drawCount = 5 - held.count
+    private func fastEV(handCodes: [Int], mask: Int, remaining: [Int]) -> Double {
         let count = remaining.count
         var total = 0
 
+        // Extract held cards efficiently to local registers using bitwise mask operations.
+        // This avoids heap-allocated array creation in the hot path.
+        var h0 = 0, h1 = 0, h2 = 0, h3 = 0, h4 = 0
+        var drawCount = 0
+
+        if mask & (1 << 0) != 0 {
+            h0 = handCodes[0]
+        } else {
+            drawCount += 1
+        }
+
+        if mask & (1 << 1) != 0 {
+            switch drawCount {
+            case 0: h1 = handCodes[1]
+            default: h0 = handCodes[1]
+            }
+        } else {
+            drawCount += 1
+        }
+
+        if mask & (1 << 2) != 0 {
+            switch drawCount {
+            case 0: h2 = handCodes[2]
+            case 1: h1 = handCodes[2]
+            default: h0 = handCodes[2]
+            }
+        } else {
+            drawCount += 1
+        }
+
+        if mask & (1 << 3) != 0 {
+            switch drawCount {
+            case 0: h3 = handCodes[3]
+            case 1: h2 = handCodes[3]
+            case 2: h1 = handCodes[3]
+            default: h0 = handCodes[3]
+            }
+        } else {
+            drawCount += 1
+        }
+
+        if mask & (1 << 4) != 0 {
+            switch drawCount {
+            case 0: h4 = handCodes[4]
+            case 1: h3 = handCodes[4]
+            case 2: h2 = handCodes[4]
+            case 3: h1 = handCodes[4]
+            default: h0 = handCodes[4]
+            }
+        } else {
+            drawCount += 1
+        }
+
         switch drawCount {
         case 0:
-            return Double(multiplierTable[handResultCode(held[0], held[1], held[2], held[3], held[4])])
+            return Double(multiplierTable[handResultCode(h0, h1, h2, h3, h4)])
 
         case 1:
-            let h0 = held[0], h1 = held[1], h2 = held[2], h3 = held[3]
             for i in 0 ..< count {
                 total += multiplierTable[handResultCode(h0, h1, h2, h3, remaining[i])]
             }
             return Double(total) / Double(count)
 
         case 2:
-            let h0 = held[0], h1 = held[1], h2 = held[2]
             for i in 0 ..< count - 1 {
                 let card0 = remaining[i]
                 for j in i + 1 ..< count {
@@ -254,7 +307,6 @@ public struct OptimalPlay {
             return Double(total) / Double(comboCount)
 
         case 3:
-            let h0 = held[0], h1 = held[1]
             for i in 0 ..< count - 2 {
                 let card0 = remaining[i]
                 for j in i + 1 ..< count - 1 {
@@ -268,7 +320,6 @@ public struct OptimalPlay {
             return Double(total) / Double(comboCount)
 
         case 4:
-            let h0 = held[0]
             for i in 0 ..< count - 3 {
                 let card0 = remaining[i]
                 for j in i + 1 ..< count - 2 {
@@ -418,28 +469,74 @@ public struct OptimalPlay {
 
     /// `fastEV` variant for Deuces Wild. Dispatches hand evaluation through
     /// `handResultCodeDeuces` which treats rank_index 0 (the 2) as a wildcard.
-    private func fastEVWild(held: [Int], remaining: [Int]) -> Double {
-        let drawCount = 5 - held.count
+    private func fastEVWild(handCodes: [Int], mask: Int, remaining: [Int]) -> Double {
         let count = remaining.count
         var total = 0
 
+        // Extract held cards efficiently to local registers using bitwise mask operations.
+        // This avoids heap-allocated array creation in the hot path.
+        var h0 = 0, h1 = 0, h2 = 0, h3 = 0, h4 = 0
+        var drawCount = 0
+
+        if mask & (1 << 0) != 0 {
+            h0 = handCodes[0]
+        } else {
+            drawCount += 1
+        }
+
+        if mask & (1 << 1) != 0 {
+            switch drawCount {
+            case 0: h1 = handCodes[1]
+            default: h0 = handCodes[1]
+            }
+        } else {
+            drawCount += 1
+        }
+
+        if mask & (1 << 2) != 0 {
+            switch drawCount {
+            case 0: h2 = handCodes[2]
+            case 1: h1 = handCodes[2]
+            default: h0 = handCodes[2]
+            }
+        } else {
+            drawCount += 1
+        }
+
+        if mask & (1 << 3) != 0 {
+            switch drawCount {
+            case 0: h3 = handCodes[3]
+            case 1: h2 = handCodes[3]
+            case 2: h1 = handCodes[3]
+            default: h0 = handCodes[3]
+            }
+        } else {
+            drawCount += 1
+        }
+
+        if mask & (1 << 4) != 0 {
+            switch drawCount {
+            case 0: h4 = handCodes[4]
+            case 1: h3 = handCodes[4]
+            case 2: h2 = handCodes[4]
+            case 3: h1 = handCodes[4]
+            default: h0 = handCodes[4]
+            }
+        } else {
+            drawCount += 1
+        }
+
         switch drawCount {
         case 0:
-            return Double(
-                multiplierTable[
-                    handResultCodeDeuces(held[0], held[1], held[2], held[3], held[4]),
-                ],
-            )
+            return Double(multiplierTable[handResultCodeDeuces(h0, h1, h2, h3, h4)])
 
         case 1:
-            let h0 = held[0], h1 = held[1], h2 = held[2], h3 = held[3]
             for i in 0 ..< count {
                 total += multiplierTable[handResultCodeDeuces(h0, h1, h2, h3, remaining[i])]
             }
             return Double(total) / Double(count)
 
         case 2:
-            let h0 = held[0], h1 = held[1], h2 = held[2]
             for i in 0 ..< count - 1 {
                 let card0 = remaining[i]
                 for j in i + 1 ..< count {
@@ -450,15 +547,12 @@ public struct OptimalPlay {
             return Double(total) / Double(comboCount)
 
         case 3:
-            let h0 = held[0], h1 = held[1]
             for i in 0 ..< count - 2 {
                 let card0 = remaining[i]
                 for j in i + 1 ..< count - 1 {
                     let card1 = remaining[j]
                     for k in j + 1 ..< count {
-                        total += multiplierTable[
-                            handResultCodeDeuces(h0, h1, card0, card1, remaining[k]),
-                        ]
+                        total += multiplierTable[handResultCodeDeuces(h0, h1, card0, card1, remaining[k])]
                     }
                 }
             }
@@ -466,7 +560,6 @@ public struct OptimalPlay {
             return Double(total) / Double(comboCount)
 
         case 4:
-            let h0 = held[0]
             for i in 0 ..< count - 3 {
                 let card0 = remaining[i]
                 for j in i + 1 ..< count - 2 {
@@ -474,9 +567,7 @@ public struct OptimalPlay {
                     for k in j + 1 ..< count - 1 {
                         let card2 = remaining[k]
                         for l in k + 1 ..< count {
-                            total += multiplierTable[
-                                handResultCodeDeuces(h0, card0, card1, card2, remaining[l]),
-                            ]
+                            total += multiplierTable[handResultCodeDeuces(h0, card0, card1, card2, remaining[l])]
                         }
                     }
                 }
@@ -494,16 +585,13 @@ public struct OptimalPlay {
                         for l in k + 1 ..< count - 1 {
                             let card3 = remaining[l]
                             for m in l + 1 ..< count {
-                                total += multiplierTable[
-                                    handResultCodeDeuces(card0, card1, card2, card3, remaining[m]),
-                                ]
+                                total += multiplierTable[handResultCodeDeuces(card0, card1, card2, card3, remaining[m])]
                             }
                         }
                     }
                 }
             }
-            let comboCount =
-                (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
+            let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
             return Double(total) / Double(comboCount)
 
         default:
