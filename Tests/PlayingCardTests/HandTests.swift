@@ -306,4 +306,53 @@ final class HandTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Wildcard-aware evaluate
+
+    func testEvaluateWildcardNilMatchesStandard() {
+        let hand = Hand(cards: [
+            PlayingCard(rank: .nine, suit: .diamonds),
+            PlayingCard(rank: .two, suit: .diamonds),
+            PlayingCard(rank: .five, suit: .diamonds),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .eight, suit: .clubs),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: nil), hand.evaluate())
+    }
+
+    func testEvaluateWildcardUpgradesHighCardToPair() {
+        // 9,2,5,4,8: no natural pair; 2 is wild → at least a pair.
+        let hand = Hand(cards: [
+            PlayingCard(rank: .nine, suit: .diamonds),
+            PlayingCard(rank: .two, suit: .diamonds),
+            PlayingCard(rank: .five, suit: .diamonds),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .eight, suit: .clubs),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: .two), .pair)
+    }
+
+    func testEvaluateWildcardNaturalPairBecomesThreeOfAKind() {
+        // 9,2,9,4,8: natural pair of 9s + wild → three of a kind.
+        let hand = Hand(cards: [
+            PlayingCard(rank: .nine, suit: .diamonds),
+            PlayingCard(rank: .two, suit: .diamonds),
+            PlayingCard(rank: .nine, suit: .hearts),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .eight, suit: .clubs),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: .two), .threeOfAKind)
+    }
+
+    func testEvaluateWildcardNoWildActsLikeStandard() {
+        // Pair of aces, no wild cards in hand.
+        let hand = Hand(cards: [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .ace, suit: .hearts),
+            PlayingCard(rank: .three, suit: .diamonds),
+            PlayingCard(rank: .five, suit: .clubs),
+            PlayingCard(rank: .seven, suit: .spades),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: .two), hand.evaluate())
+    }
 }
