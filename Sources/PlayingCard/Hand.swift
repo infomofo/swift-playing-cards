@@ -103,11 +103,50 @@ public struct Hand {
         if cards.count == 5 {
             return evaluateFiveCards(cards)
         } else {
-            return findBestFiveCardHand()
+            return findBestFiveCardHand(evaluator: evaluateFiveCards)
         }
     }
 
-    private func findBestFiveCardHand() -> HandType {
+    /// Evaluates the best hand type, treating cards of `wildcardRank` as wild.
+    ///
+    /// When `wildcardRank` is nil this is equivalent to `evaluate()`. Works with 5+ cards,
+    /// finding the best possible hand, matching `evaluate()`. When wildcards are present,
+    /// each candidate 5-card combination is evaluated via `HandResult` (wildcard-aware) using
+    /// its `handType` property; for non-paying combinations the standard evaluator is used,
+    /// with `.highCard` upgraded to `.pair` when that combination holds at least one wild card.
+    public func evaluate(wildcardRank: Rank?) -> HandType {
+        guard let wildcardRank else { return evaluate() }
+        guard cards.count >= 5 else { return .highCard }
+
+        func evaluateFiveCardsWithWild(
+            _ c0: PlayingCard,
+            _ c1: PlayingCard,
+            _ c2: PlayingCard,
+            _ c3: PlayingCard,
+            _ c4: PlayingCard,
+        ) -> HandType {
+            let fiveCards = [c0, c1, c2, c3, c4]
+            let result = HandResult.evaluate(cards: fiveCards, wildcardRank: wildcardRank)
+            if let handType = result.handType {
+                return handType
+            }
+            // .noWin: use standard evaluation, upgrading highCard when a wild is present.
+            let base = evaluateFiveCards(c0, c1, c2, c3, c4)
+            if base == .highCard, fiveCards.contains(where: { $0.rank == wildcardRank }) {
+                return .pair
+            }
+            return base
+        }
+
+        if cards.count == 5 {
+            return evaluateFiveCardsWithWild(cards[0], cards[1], cards[2], cards[3], cards[4])
+        }
+        return findBestFiveCardHand(evaluator: evaluateFiveCardsWithWild)
+    }
+
+    private func findBestFiveCardHand(
+        evaluator: (PlayingCard, PlayingCard, PlayingCard, PlayingCard, PlayingCard) -> HandType,
+    ) -> HandType {
         let count = cards.count
         guard count >= 5 else { return .highCard }
 
@@ -122,7 +161,7 @@ public struct Hand {
                     for i3 in i2 + 1 ..< count - 1 {
                         let c3 = cards[i3]
                         for i4 in i3 + 1 ..< count {
-                            let handType = evaluateFiveCards(c0, c1, c2, c3, cards[i4])
+                            let handType = evaluator(c0, c1, c2, c3, cards[i4])
                             if handType > bestHandType {
                                 bestHandType = handType
                                 if bestHandType == .royalFlush {

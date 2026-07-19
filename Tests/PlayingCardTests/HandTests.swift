@@ -306,4 +306,86 @@ final class HandTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Wildcard-aware evaluate
+
+    func testEvaluateWildcardNilMatchesStandard() {
+        let hand = Hand(cards: [
+            PlayingCard(rank: .nine, suit: .diamonds),
+            PlayingCard(rank: .two, suit: .diamonds),
+            PlayingCard(rank: .five, suit: .diamonds),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .eight, suit: .clubs),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: nil), hand.evaluate())
+    }
+
+    func testEvaluateWildcardUpgradesHighCardToPair() {
+        // 9,2,5,4,8: no natural pair; 2 is wild → at least a pair.
+        let hand = Hand(cards: [
+            PlayingCard(rank: .nine, suit: .diamonds),
+            PlayingCard(rank: .two, suit: .diamonds),
+            PlayingCard(rank: .five, suit: .diamonds),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .eight, suit: .clubs),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: .two), .pair)
+    }
+
+    func testEvaluateWildcardNaturalPairBecomesThreeOfAKind() {
+        // 9,2,9,4,8: natural pair of 9s + wild → three of a kind.
+        let hand = Hand(cards: [
+            PlayingCard(rank: .nine, suit: .diamonds),
+            PlayingCard(rank: .two, suit: .diamonds),
+            PlayingCard(rank: .nine, suit: .hearts),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .eight, suit: .clubs),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: .two), .threeOfAKind)
+    }
+
+    func testEvaluateWildcardNoWildActsLikeStandard() {
+        // Pair of aces, no wild cards in hand.
+        let hand = Hand(cards: [
+            PlayingCard(rank: .ace, suit: .spades),
+            PlayingCard(rank: .ace, suit: .hearts),
+            PlayingCard(rank: .three, suit: .diamonds),
+            PlayingCard(rank: .five, suit: .clubs),
+            PlayingCard(rank: .seven, suit: .spades),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: .two), hand.evaluate())
+    }
+
+    func testEvaluateWildcardSupportsSevenCards() {
+        // 7 cards: 9,9,2(wild),4,8,3,6. The best 5-card subset (9,9,2,4,8) is three of
+        // a kind via the wild 9. No 5-card subset of these 7 cards forms a flush, straight,
+        // full house, or four of a kind, so three of a kind is the overall best. The standard
+        // (non-wildcard) evaluation of the full 7 cards is only a pair, so this also confirms
+        // the wildcard-aware search is actually considering the winning subset.
+        let hand = Hand(cards: [
+            PlayingCard(rank: .nine, suit: .diamonds),
+            PlayingCard(rank: .nine, suit: .hearts),
+            PlayingCard(rank: .two, suit: .clubs),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .eight, suit: .clubs),
+            PlayingCard(rank: .three, suit: .spades),
+            PlayingCard(rank: .six, suit: .diamonds),
+        ])
+        XCTAssertEqual(hand.evaluate(), .pair)
+        XCTAssertEqual(hand.evaluate(wildcardRank: .two), .threeOfAKind)
+    }
+
+    func testEvaluateWildcardSupportsSixCards() {
+        // Drop one filler card from the 7-card case above; the winning 5-card subset
+        // (9,9,2,4,8) is unaffected, so the wildcard-aware result stays three of a kind.
+        let hand = Hand(cards: [
+            PlayingCard(rank: .nine, suit: .diamonds),
+            PlayingCard(rank: .nine, suit: .hearts),
+            PlayingCard(rank: .two, suit: .clubs),
+            PlayingCard(rank: .four, suit: .spades),
+            PlayingCard(rank: .eight, suit: .clubs),
+            PlayingCard(rank: .three, suit: .spades),
+        ])
+        XCTAssertEqual(hand.evaluate(wildcardRank: .two), .threeOfAKind)
+    }
 }

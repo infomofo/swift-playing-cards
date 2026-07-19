@@ -293,6 +293,16 @@ final class DeucesWildTests: XCTestCase {
         XCTAssertTrue(HandResult.naturalRoyalFlush.isWin)
     }
 
+    /// `HandType` has no five-of-a-kind or "four deuces" case, so the mapping from
+    /// wild-only `HandResult` cases to `HandType` is intentionally lossy. This test
+    /// pins down the exact (documented) approximation so any future change to it is explicit.
+    func testHandResultHandTypeLossyWildMapping() {
+        XCTAssertEqual(HandResult.fiveOfAKind.handType, .fourOfAKind)
+        XCTAssertEqual(HandResult.fourDeuces.handType, .fourOfAKind)
+        XCTAssertEqual(HandResult.wildRoyalFlush.handType, .royalFlush)
+        XCTAssertEqual(HandResult.naturalRoyalFlush.handType, .royalFlush)
+    }
+
     // MARK: - OptimalPlay with Deuces Wild
 
     func testDWOptimalHoldFourDeuces() async {
