@@ -43,7 +43,7 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .noWin: "No Win"
+        case .noWin: "No Winner"
         case .jacksOrBetter: "Jacks or Better"
         case .twoPair: "Two Pair"
         case .threeOfAKind: "Three of a Kind"
