@@ -110,30 +110,23 @@ public struct Hand {
     /// Evaluates the best hand type, treating cards of `wildcardRank` as wild.
     ///
     /// When `wildcardRank` is nil this is equivalent to `evaluate()`. When wildcards
-    /// are present, winning types derive from `HandResult` (wildcard-aware); for
-    /// non-paying combinations the standard evaluator is used, with `.highCard`
-    /// upgraded to `.pair` when at least one wild card is held.
+    /// are present, the result derives from `HandResult` (wildcard-aware) via its
+    /// `handType` property; for non-paying combinations the standard evaluator is used,
+    /// with `.highCard` upgraded to `.pair` when at least one wild card is held.
     public func evaluate(wildcardRank: Rank?) -> HandType {
         guard let wildcardRank else { return evaluate() }
         guard cards.count == 5 else { return .highCard }
 
-        switch HandResult.evaluate(cards: cards, wildcardRank: wildcardRank) {
-        case .naturalRoyalFlush, .wildRoyalFlush, .royalFlush: return .royalFlush
-        case .straightFlush: return .straightFlush
-        case .fiveOfAKind, .fourDeuces, .fourOfAKind: return .fourOfAKind
-        case .fullHouse: return .fullHouse
-        case .flush: return .flush
-        case .straight: return .straight
-        case .threeOfAKind: return .threeOfAKind
-        case .twoPair: return .twoPair
-        case .jacksOrBetter: return .pair
-        case .noWin:
-            let base = evaluate()
-            if base == .highCard, cards.contains(where: { $0.rank == wildcardRank }) {
-                return .pair
-            }
-            return base
+        let result = HandResult.evaluate(cards: cards, wildcardRank: wildcardRank)
+        if let handType = result.handType {
+            return handType
         }
+        // .noWin: use standard evaluation, upgrading highCard when a wild is present.
+        let base = evaluate()
+        if base == .highCard, cards.contains(where: { $0.rank == wildcardRank }) {
+            return .pair
+        }
+        return base
     }
 
     private func findBestFiveCardHand() -> HandType {

@@ -65,7 +65,26 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
         self != .noWin
     }
 
-    /// Classifies a 5-card hand into its video poker result.
+    /// The generic poker hand type corresponding to this video poker result.
+    ///
+    /// Returns nil for `.noWin` because the underlying hand type (pair, two-pair, high card)
+    /// cannot be determined from the pay table result alone.
+    public var handType: HandType? {
+        switch self {
+        case .noWin: nil
+        case .jacksOrBetter: .pair
+        case .twoPair: .twoPair
+        case .threeOfAKind: .threeOfAKind
+        case .straight: .straight
+        case .flush: .flush
+        case .fullHouse: .fullHouse
+        case .fourOfAKind, .fourDeuces: .fourOfAKind
+        case .straightFlush: .straightFlush
+        case .royalFlush, .wildRoyalFlush, .naturalRoyalFlush: .royalFlush
+        case .fiveOfAKind: .fourOfAKind
+        }
+    }
+
     ///
     /// - Parameters:
     ///   - cards: Exactly 5 cards.
