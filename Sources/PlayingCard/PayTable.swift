@@ -69,6 +69,12 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
     ///
     /// Returns nil for `.noWin` because the underlying hand type (pair, two-pair, high card)
     /// cannot be determined from the pay table result alone.
+    ///
+    /// This mapping is lossy for wild-only results that have no equivalent `HandType` case:
+    /// `.fiveOfAKind` and `.fourDeuces` both map to `.fourOfAKind`, and `.wildRoyalFlush` /
+    /// `.naturalRoyalFlush` both map to `.royalFlush`. Callers that need to distinguish these
+    /// wild-enhanced hands from their standard counterparts should switch on `HandResult`
+    /// directly instead of relying on `handType`.
     public var handType: HandType? {
         switch self {
         case .noWin: nil
