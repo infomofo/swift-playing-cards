@@ -113,4 +113,24 @@ final class HoldClassifierDeucesWildTests: XCTestCase {
         let pattern = HoldClassifier.classifyDeucesWild(hand: hand, holding: [0, 1, 2, 3, 4])
         XCTAssertEqual(pattern, .pair)
     }
+
+    func testDW0DeucesFourHeldQuadsIsFourOfAKind() {
+        // Holding all four kings (K♦ K♣ K♥ K♠) from a K-K-K-K-9 deal: one rank held four times.
+        let hand = [
+            card(.king, .diamonds), card(.king, .clubs), card(.king, .hearts),
+            card(.king, .spades), card(.nine, .clubs),
+        ]
+        let pattern = HoldClassifier.classifyDeucesWild(hand: hand, holding: [0, 1, 2, 3])
+        XCTAssertEqual(pattern, .fourOfAKind)
+    }
+
+    func testDW0DeucesFourHeldTripsWithKickerIsThreeOfAKind() {
+        // Holding three kings plus one kicker (K♦ K♣ K♥ 3♦) from a K-K-K-3-9 deal: one rank held three times.
+        let hand = [
+            card(.king, .diamonds), card(.king, .clubs), card(.king, .hearts),
+            card(.three, .diamonds), card(.nine, .clubs),
+        ]
+        let pattern = HoldClassifier.classifyDeucesWild(hand: hand, holding: [0, 1, 2, 3])
+        XCTAssertEqual(pattern, .threeOfAKind)
+    }
 }

@@ -656,7 +656,14 @@ public struct HoldClassifier {
         let sorted = ranks.sorted()
         let rankCounts = Dictionary(grouping: ranks, by: { $0 }).mapValues(\.count)
         guard rankCounts.count == 4 else {
-            // Two ranks each appearing twice = two pair; one duplicated rank = pair.
+            // One rank held four times = quads; one rank held three times = trips;
+            // two ranks each appearing twice = two pair; one duplicated rank = pair.
+            if rankCounts.values.contains(4) {
+                return .fourOfAKind
+            }
+            if rankCounts.values.contains(3) {
+                return .threeOfAKind
+            }
             return rankCounts.values.filter { $0 == 2 }.count == 2 ? .twoPair : .pair
         }
         if isOutsideStraightDraw(sorted) {
