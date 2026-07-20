@@ -230,132 +230,139 @@ public struct OptimalPlay {
     /// All arithmetic operates on plain integers; no `PlayingCard` objects are accessed
     /// during the combination loop.
     private func fastEV(handCodes: [Int], mask: Int, remaining: [Int]) -> Double {
-        let count = remaining.count
-        var total = 0
+        let c0 = handCodes[0], c1 = handCodes[1], c2 = handCodes[2], c3 = handCodes[3], c4 = handCodes[4]
+        return multiplierTable.withUnsafeBufferPointer { multsBuf in
+            let mults = multsBuf.baseAddress!
+            return remaining.withUnsafeBufferPointer { remBuf in
+                let rem = remBuf.baseAddress!
+                let count = remBuf.count
+                var total = 0
 
-        // Extract held cards efficiently to local registers using bitwise mask operations.
-        // This avoids heap-allocated array creation in the hot path.
-        var h0 = 0, h1 = 0, h2 = 0, h3 = 0, h4 = 0
-        var drawCount = 0
+                // Extract held cards efficiently to local registers using bitwise mask operations.
+                // This avoids heap-allocated array creation in the hot path.
+                var h0 = 0, h1 = 0, h2 = 0, h3 = 0, h4 = 0
+                var drawCount = 0
 
-        if mask & (1 << 0) != 0 {
-            h0 = handCodes[0]
-        } else {
-            drawCount += 1
-        }
-
-        if mask & (1 << 1) != 0 {
-            switch drawCount {
-            case 0: h1 = handCodes[1]
-            default: h0 = handCodes[1]
-            }
-        } else {
-            drawCount += 1
-        }
-
-        if mask & (1 << 2) != 0 {
-            switch drawCount {
-            case 0: h2 = handCodes[2]
-            case 1: h1 = handCodes[2]
-            default: h0 = handCodes[2]
-            }
-        } else {
-            drawCount += 1
-        }
-
-        if mask & (1 << 3) != 0 {
-            switch drawCount {
-            case 0: h3 = handCodes[3]
-            case 1: h2 = handCodes[3]
-            case 2: h1 = handCodes[3]
-            default: h0 = handCodes[3]
-            }
-        } else {
-            drawCount += 1
-        }
-
-        if mask & (1 << 4) != 0 {
-            switch drawCount {
-            case 0: h4 = handCodes[4]
-            case 1: h3 = handCodes[4]
-            case 2: h2 = handCodes[4]
-            case 3: h1 = handCodes[4]
-            default: h0 = handCodes[4]
-            }
-        } else {
-            drawCount += 1
-        }
-
-        switch drawCount {
-        case 0:
-            return Double(multiplierTable[handResultCode(h0, h1, h2, h3, h4)])
-
-        case 1:
-            for i in 0 ..< count {
-                total += multiplierTable[handResultCode(h0, h1, h2, h3, remaining[i])]
-            }
-            return Double(total) / Double(count)
-
-        case 2:
-            for i in 0 ..< count - 1 {
-                let card0 = remaining[i]
-                for j in i + 1 ..< count {
-                    total += multiplierTable[handResultCode(h0, h1, h2, card0, remaining[j])]
+                if mask & (1 << 0) != 0 {
+                    h0 = c0
+                } else {
+                    drawCount += 1
                 }
-            }
-            let comboCount = (count * (count - 1)) / 2
-            return Double(total) / Double(comboCount)
 
-        case 3:
-            for i in 0 ..< count - 2 {
-                let card0 = remaining[i]
-                for j in i + 1 ..< count - 1 {
-                    let card1 = remaining[j]
-                    for k in j + 1 ..< count {
-                        total += multiplierTable[handResultCode(h0, h1, card0, card1, remaining[k])]
+                if mask & (1 << 1) != 0 {
+                    switch drawCount {
+                    case 0: h1 = c1
+                    default: h0 = c1
                     }
+                } else {
+                    drawCount += 1
                 }
-            }
-            let comboCount = (count * (count - 1) * (count - 2)) / 6
-            return Double(total) / Double(comboCount)
 
-        case 4:
-            for i in 0 ..< count - 3 {
-                let card0 = remaining[i]
-                for j in i + 1 ..< count - 2 {
-                    let card1 = remaining[j]
-                    for k in j + 1 ..< count - 1 {
-                        let card2 = remaining[k]
-                        for l in k + 1 ..< count {
-                            total += multiplierTable[handResultCode(h0, card0, card1, card2, remaining[l])]
+                if mask & (1 << 2) != 0 {
+                    switch drawCount {
+                    case 0: h2 = c2
+                    case 1: h1 = c2
+                    default: h0 = c2
+                    }
+                } else {
+                    drawCount += 1
+                }
+
+                if mask & (1 << 3) != 0 {
+                    switch drawCount {
+                    case 0: h3 = c3
+                    case 1: h2 = c3
+                    case 2: h1 = c3
+                    default: h0 = c3
+                    }
+                } else {
+                    drawCount += 1
+                }
+
+                if mask & (1 << 4) != 0 {
+                    switch drawCount {
+                    case 0: h4 = c4
+                    case 1: h3 = c4
+                    case 2: h2 = c4
+                    case 3: h1 = c4
+                    default: h0 = c4
+                    }
+                } else {
+                    drawCount += 1
+                }
+
+                switch drawCount {
+                case 0:
+                    return Double(mults[handResultCode(h0, h1, h2, h3, h4)])
+
+                case 1:
+                    for i in 0 ..< count {
+                        total += mults[handResultCode(h0, h1, h2, h3, rem[i])]
+                    }
+                    return Double(total) / Double(count)
+
+                case 2:
+                    for i in 0 ..< count - 1 {
+                        let card0 = rem[i]
+                        for j in i + 1 ..< count {
+                            total += mults[handResultCode(h0, h1, h2, card0, rem[j])]
                         }
                     }
-                }
-            }
-            let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
-            return Double(total) / Double(comboCount)
+                    let comboCount = (count * (count - 1)) / 2
+                    return Double(total) / Double(comboCount)
 
-        case 5:
-            for i in 0 ..< count - 4 {
-                let card0 = remaining[i]
-                for j in i + 1 ..< count - 3 {
-                    let card1 = remaining[j]
-                    for k in j + 1 ..< count - 2 {
-                        let card2 = remaining[k]
-                        for l in k + 1 ..< count - 1 {
-                            let card3 = remaining[l]
-                            for m in l + 1 ..< count {
-                                total += multiplierTable[handResultCode(card0, card1, card2, card3, remaining[m])]
+                case 3:
+                    for i in 0 ..< count - 2 {
+                        let card0 = rem[i]
+                        for j in i + 1 ..< count - 1 {
+                            let card1 = rem[j]
+                            for k in j + 1 ..< count {
+                                total += mults[handResultCode(h0, h1, card0, card1, rem[k])]
                             }
                         }
                     }
+                    let comboCount = (count * (count - 1) * (count - 2)) / 6
+                    return Double(total) / Double(comboCount)
+
+                case 4:
+                    for i in 0 ..< count - 3 {
+                        let card0 = rem[i]
+                        for j in i + 1 ..< count - 2 {
+                            let card1 = rem[j]
+                            for k in j + 1 ..< count - 1 {
+                                let card2 = rem[k]
+                                for l in k + 1 ..< count {
+                                    total += mults[handResultCode(h0, card0, card1, card2, rem[l])]
+                                }
+                            }
+                        }
+                    }
+                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
+                    return Double(total) / Double(comboCount)
+
+                case 5:
+                    for i in 0 ..< count - 4 {
+                        let card0 = rem[i]
+                        for j in i + 1 ..< count - 3 {
+                            let card1 = rem[j]
+                            for k in j + 1 ..< count - 2 {
+                                let card2 = rem[k]
+                                for l in k + 1 ..< count - 1 {
+                                    let card3 = rem[l]
+                                    for m in l + 1 ..< count {
+                                        total += mults[handResultCode(card0, card1, card2, card3, rem[m])]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
+                    return Double(total) / Double(comboCount)
+
+                default:
+                    preconditionFailure("drawCount must be 0–5, got \(drawCount)")
                 }
             }
-            let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
-            return Double(total) / Double(comboCount)
-
-        default:
-            preconditionFailure("drawCount must be 0–5, got \(drawCount)")
         }
     }
 
@@ -470,132 +477,139 @@ public struct OptimalPlay {
     /// `fastEV` variant for Deuces Wild. Dispatches hand evaluation through
     /// `handResultCodeDeuces` which treats rank_index 0 (the 2) as a wildcard.
     private func fastEVWild(handCodes: [Int], mask: Int, remaining: [Int]) -> Double {
-        let count = remaining.count
-        var total = 0
+        let c0 = handCodes[0], c1 = handCodes[1], c2 = handCodes[2], c3 = handCodes[3], c4 = handCodes[4]
+        return multiplierTable.withUnsafeBufferPointer { multsBuf in
+            let mults = multsBuf.baseAddress!
+            return remaining.withUnsafeBufferPointer { remBuf in
+                let rem = remBuf.baseAddress!
+                let count = remBuf.count
+                var total = 0
 
-        // Extract held cards efficiently to local registers using bitwise mask operations.
-        // This avoids heap-allocated array creation in the hot path.
-        var h0 = 0, h1 = 0, h2 = 0, h3 = 0, h4 = 0
-        var drawCount = 0
+                // Extract held cards efficiently to local registers using bitwise mask operations.
+                // This avoids heap-allocated array creation in the hot path.
+                var h0 = 0, h1 = 0, h2 = 0, h3 = 0, h4 = 0
+                var drawCount = 0
 
-        if mask & (1 << 0) != 0 {
-            h0 = handCodes[0]
-        } else {
-            drawCount += 1
-        }
-
-        if mask & (1 << 1) != 0 {
-            switch drawCount {
-            case 0: h1 = handCodes[1]
-            default: h0 = handCodes[1]
-            }
-        } else {
-            drawCount += 1
-        }
-
-        if mask & (1 << 2) != 0 {
-            switch drawCount {
-            case 0: h2 = handCodes[2]
-            case 1: h1 = handCodes[2]
-            default: h0 = handCodes[2]
-            }
-        } else {
-            drawCount += 1
-        }
-
-        if mask & (1 << 3) != 0 {
-            switch drawCount {
-            case 0: h3 = handCodes[3]
-            case 1: h2 = handCodes[3]
-            case 2: h1 = handCodes[3]
-            default: h0 = handCodes[3]
-            }
-        } else {
-            drawCount += 1
-        }
-
-        if mask & (1 << 4) != 0 {
-            switch drawCount {
-            case 0: h4 = handCodes[4]
-            case 1: h3 = handCodes[4]
-            case 2: h2 = handCodes[4]
-            case 3: h1 = handCodes[4]
-            default: h0 = handCodes[4]
-            }
-        } else {
-            drawCount += 1
-        }
-
-        switch drawCount {
-        case 0:
-            return Double(multiplierTable[handResultCodeDeuces(h0, h1, h2, h3, h4)])
-
-        case 1:
-            for i in 0 ..< count {
-                total += multiplierTable[handResultCodeDeuces(h0, h1, h2, h3, remaining[i])]
-            }
-            return Double(total) / Double(count)
-
-        case 2:
-            for i in 0 ..< count - 1 {
-                let card0 = remaining[i]
-                for j in i + 1 ..< count {
-                    total += multiplierTable[handResultCodeDeuces(h0, h1, h2, card0, remaining[j])]
+                if mask & (1 << 0) != 0 {
+                    h0 = c0
+                } else {
+                    drawCount += 1
                 }
-            }
-            let comboCount = (count * (count - 1)) / 2
-            return Double(total) / Double(comboCount)
 
-        case 3:
-            for i in 0 ..< count - 2 {
-                let card0 = remaining[i]
-                for j in i + 1 ..< count - 1 {
-                    let card1 = remaining[j]
-                    for k in j + 1 ..< count {
-                        total += multiplierTable[handResultCodeDeuces(h0, h1, card0, card1, remaining[k])]
+                if mask & (1 << 1) != 0 {
+                    switch drawCount {
+                    case 0: h1 = c1
+                    default: h0 = c1
                     }
+                } else {
+                    drawCount += 1
                 }
-            }
-            let comboCount = (count * (count - 1) * (count - 2)) / 6
-            return Double(total) / Double(comboCount)
 
-        case 4:
-            for i in 0 ..< count - 3 {
-                let card0 = remaining[i]
-                for j in i + 1 ..< count - 2 {
-                    let card1 = remaining[j]
-                    for k in j + 1 ..< count - 1 {
-                        let card2 = remaining[k]
-                        for l in k + 1 ..< count {
-                            total += multiplierTable[handResultCodeDeuces(h0, card0, card1, card2, remaining[l])]
+                if mask & (1 << 2) != 0 {
+                    switch drawCount {
+                    case 0: h2 = c2
+                    case 1: h1 = c2
+                    default: h0 = c2
+                    }
+                } else {
+                    drawCount += 1
+                }
+
+                if mask & (1 << 3) != 0 {
+                    switch drawCount {
+                    case 0: h3 = c3
+                    case 1: h2 = c3
+                    case 2: h1 = c3
+                    default: h0 = c3
+                    }
+                } else {
+                    drawCount += 1
+                }
+
+                if mask & (1 << 4) != 0 {
+                    switch drawCount {
+                    case 0: h4 = c4
+                    case 1: h3 = c4
+                    case 2: h2 = c4
+                    case 3: h1 = c4
+                    default: h0 = c4
+                    }
+                } else {
+                    drawCount += 1
+                }
+
+                switch drawCount {
+                case 0:
+                    return Double(mults[handResultCodeDeuces(h0, h1, h2, h3, h4)])
+
+                case 1:
+                    for i in 0 ..< count {
+                        total += mults[handResultCodeDeuces(h0, h1, h2, h3, rem[i])]
+                    }
+                    return Double(total) / Double(count)
+
+                case 2:
+                    for i in 0 ..< count - 1 {
+                        let card0 = rem[i]
+                        for j in i + 1 ..< count {
+                            total += mults[handResultCodeDeuces(h0, h1, h2, card0, rem[j])]
                         }
                     }
-                }
-            }
-            let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
-            return Double(total) / Double(comboCount)
+                    let comboCount = (count * (count - 1)) / 2
+                    return Double(total) / Double(comboCount)
 
-        case 5:
-            for i in 0 ..< count - 4 {
-                let card0 = remaining[i]
-                for j in i + 1 ..< count - 3 {
-                    let card1 = remaining[j]
-                    for k in j + 1 ..< count - 2 {
-                        let card2 = remaining[k]
-                        for l in k + 1 ..< count - 1 {
-                            let card3 = remaining[l]
-                            for m in l + 1 ..< count {
-                                total += multiplierTable[handResultCodeDeuces(card0, card1, card2, card3, remaining[m])]
+                case 3:
+                    for i in 0 ..< count - 2 {
+                        let card0 = rem[i]
+                        for j in i + 1 ..< count - 1 {
+                            let card1 = rem[j]
+                            for k in j + 1 ..< count {
+                                total += mults[handResultCodeDeuces(h0, h1, card0, card1, rem[k])]
                             }
                         }
                     }
+                    let comboCount = (count * (count - 1) * (count - 2)) / 6
+                    return Double(total) / Double(comboCount)
+
+                case 4:
+                    for i in 0 ..< count - 3 {
+                        let card0 = rem[i]
+                        for j in i + 1 ..< count - 2 {
+                            let card1 = rem[j]
+                            for k in j + 1 ..< count - 1 {
+                                let card2 = rem[k]
+                                for l in k + 1 ..< count {
+                                    total += mults[handResultCodeDeuces(h0, card0, card1, card2, rem[l])]
+                                }
+                            }
+                        }
+                    }
+                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
+                    return Double(total) / Double(comboCount)
+
+                case 5:
+                    for i in 0 ..< count - 4 {
+                        let card0 = rem[i]
+                        for j in i + 1 ..< count - 3 {
+                            let card1 = rem[j]
+                            for k in j + 1 ..< count - 2 {
+                                let card2 = rem[k]
+                                for l in k + 1 ..< count - 1 {
+                                    let card3 = rem[l]
+                                    for m in l + 1 ..< count {
+                                        total += mults[handResultCodeDeuces(card0, card1, card2, card3, rem[m])]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
+                    return Double(total) / Double(comboCount)
+
+                default:
+                    preconditionFailure("drawCount must be 0–5, got \(drawCount)")
                 }
             }
-            let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
-            return Double(total) / Double(comboCount)
-
-        default:
-            preconditionFailure("drawCount must be 0–5, got \(drawCount)")
         }
     }
 
