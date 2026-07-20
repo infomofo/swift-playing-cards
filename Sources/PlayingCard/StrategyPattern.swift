@@ -20,7 +20,9 @@ public enum StrategyPattern: String, Equatable, CaseIterable, Sendable {
     case straight = "Straight"
     /// Three cards of the same rank (held as 3 or held pat).
     case threeOfAKind = "Three of a kind"
-    /// Two separate pairs (all 5 held).
+    /// Two separate pairs. Pays in Jacks or Better; doesn't pay in Deuces Wild, but
+    /// still names a distinct held-card shape there (e.g. holding both pairs when only
+    /// the stronger one should be kept).
     case twoPair = "Two pair"
 
     // MARK: - Partial holds
@@ -110,7 +112,8 @@ public enum StrategyPattern: String, Equatable, CaseIterable, Sendable {
     case threeToStraightFlushHighOneDeuce = "Three to a straight flush, 2 consecutive 6+ (one deuce)"
     /// One deuce only — hold only the deuce and draw four.
     case oneDeuce = "One deuce"
-    /// Any pair (no distinction between high/low in Deuces Wild; pairs don't pay).
+    /// A single pair (no distinction between high/low in Deuces Wild; pairs don't pay).
+    /// See ``twoPair`` for the case where the hold contains two separate pairs.
     case pair = "Pair"
     /// Two suited cards both J or higher (Deuces Wild 0-deuce position 10).
     case twoToRoyalFlushJQHigh = "Two to a royal flush (J/Q high)"
@@ -235,18 +238,18 @@ public struct HoldClassifier {
         // Mixed suits: look for straight draws.
         let sorted = ranks.sorted()
         guard Set(ranks).count == 4 else {
-            let rankCounts = Dictionary(grouping: ranks, by: { $0 }).mapValues { $0.count }
-            if rankCounts.values.contains(4) {
+            switch classifyRankShape(ranks) {
+            case .fourOfAKind:
                 return .fourOfAKind
-            }
-            if rankCounts.values.contains(3) {
+            case .threeOfAKind:
                 return .threeOfAKind
-            }
-            let pairRanks = rankCounts.filter { $0.value == 2 }.map(\.key)
-            if !pairRanks.isEmpty {
+            case let .twoPair(pairRanks):
                 return pairRanks.max()! >= 11 ? .highPair : .lowPair
+            case let .onePair(rank):
+                return rank >= 11 ? .highPair : .lowPair
+            case .noMatch:
+                preconditionFailure("4-card hold has duplicates but no pair, trips, or quads: impossible rank distribution")
             }
-            preconditionFailure("4-card hold has duplicates but no pair, trips, or quads: impossible rank distribution")
         }
 
         // Open-ended: 4 consecutive ranks completable on both ends (span == 3, ace not high).
@@ -300,8 +303,7 @@ public struct HoldClassifier {
         }
 
         // Mixed suits: check for pairs (two cards of same rank with a third).
-        let rankCounts = Dictionary(grouping: ranks, by: { $0 }).mapValues { $0.count }
-        if let pairRank = rankCounts.first(where: { $0.value == 2 })?.key {
+        if case let .onePair(pairRank) = classifyRankShape(ranks) {
             return pairRank >= 11 ? .highPair : .lowPair
         }
 
@@ -361,6 +363,39 @@ public struct HoldClassifier {
     }
 
     // MARK: - Helpers
+
+    /// The count-based shape of a set of ranks (quads/trips/two pair/pair/no match).
+    ///
+    /// Wild-card games and non-wild games both identify pairs, trips, and quads by
+    /// counting rank frequencies among held cards; only the surrounding straight/flush
+    /// logic differs by variant. Centralizing the frequency count here means adding a
+    /// new game variant never requires re-deriving this logic.
+    private enum RankShape {
+        case fourOfAKind
+        case threeOfAKind
+        case twoPair(ranks: [Int])
+        case onePair(rank: Int)
+        case noMatch
+    }
+
+    /// Classifies `ranks` by rank-frequency shape.
+    private static func classifyRankShape(_ ranks: [Int]) -> RankShape {
+        let counts = Dictionary(grouping: ranks, by: { $0 }).mapValues(\.count)
+        if counts.values.contains(4) {
+            return .fourOfAKind
+        }
+        if counts.values.contains(3) {
+            return .threeOfAKind
+        }
+        let pairRanks = counts.filter { $0.value == 2 }.map(\.key)
+        if pairRanks.count == 2 {
+            return .twoPair(ranks: pairRanks)
+        }
+        if let rank = pairRanks.first {
+            return .onePair(rank: rank)
+        }
+        return .noMatch
+    }
 
     /// Classifies a 3-card suited straight flush draw into WoO types 1, 2, or 3.
     ///
@@ -630,7 +665,8 @@ public struct HoldClassifier {
         case .flush: .flush
         case .straight: .straight
         case .threeOfAKind: .threeOfAKind
-        case .twoPair, .pair: .pair // two-pair treated as pair in DW
+        case .twoPair: .twoPair
+        case .pair: .pair
         case .highCard: .discardAll
         }
     }
@@ -651,8 +687,18 @@ public struct HoldClassifier {
         }
         let sorted = ranks.sorted()
         guard Set(ranks).count == 4 else {
-            // Duplicate ranks = pair.
-            return .pair
+            switch classifyRankShape(ranks) {
+            case .fourOfAKind:
+                return .fourOfAKind
+            case .threeOfAKind:
+                return .threeOfAKind
+            case .twoPair:
+                return .twoPair
+            case .onePair:
+                return .pair
+            case .noMatch:
+                preconditionFailure("4-card hold has duplicates but no pair, trips, or quads: impossible rank distribution")
+            }
         }
         if isOutsideStraightDraw(sorted) {
             return .fourToOutsideStraight
@@ -678,8 +724,7 @@ public struct HoldClassifier {
                 return .threeToStraightFlushType1
             }
         }
-        let rankCounts = Dictionary(grouping: ranks, by: { $0 }).mapValues { $0.count }
-        if rankCounts.values.contains(2) {
+        if case .onePair = classifyRankShape(ranks) {
             return .pair
         }
         return .discardAll
