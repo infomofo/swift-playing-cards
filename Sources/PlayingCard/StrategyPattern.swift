@@ -20,7 +20,9 @@ public enum StrategyPattern: String, Equatable, CaseIterable, Sendable {
     case straight = "Straight"
     /// Three cards of the same rank (held as 3 or held pat).
     case threeOfAKind = "Three of a kind"
-    /// Two separate pairs (all 5 held).
+    /// Two separate pairs. Pays in Jacks or Better; doesn't pay in Deuces Wild, but
+    /// still names a distinct held-card shape there (e.g. holding both pairs when only
+    /// the stronger one should be kept).
     case twoPair = "Two pair"
 
     // MARK: - Partial holds
@@ -110,7 +112,8 @@ public enum StrategyPattern: String, Equatable, CaseIterable, Sendable {
     case threeToStraightFlushHighOneDeuce = "Three to a straight flush, 2 consecutive 6+ (one deuce)"
     /// One deuce only — hold only the deuce and draw four.
     case oneDeuce = "One deuce"
-    /// Any pair (no distinction between high/low in Deuces Wild; pairs don't pay).
+    /// A single pair (no distinction between high/low in Deuces Wild; pairs don't pay).
+    /// See ``twoPair`` for the case where the hold contains two separate pairs.
     case pair = "Pair"
     /// Two suited cards both J or higher (Deuces Wild 0-deuce position 10).
     case twoToRoyalFlushJQHigh = "Two to a royal flush (J/Q high)"
@@ -630,7 +633,8 @@ public struct HoldClassifier {
         case .flush: .flush
         case .straight: .straight
         case .threeOfAKind: .threeOfAKind
-        case .twoPair, .pair: .pair // two-pair treated as pair in DW
+        case .twoPair: .twoPair
+        case .pair: .pair
         case .highCard: .discardAll
         }
     }
@@ -650,9 +654,10 @@ public struct HoldClassifier {
             return .fourToFlush
         }
         let sorted = ranks.sorted()
-        guard Set(ranks).count == 4 else {
-            // Duplicate ranks = pair.
-            return .pair
+        let rankCounts = Dictionary(grouping: ranks, by: { $0 }).mapValues(\.count)
+        guard rankCounts.count == 4 else {
+            // Two ranks each appearing twice = two pair; one duplicated rank = pair.
+            return rankCounts.values.filter { $0 == 2 }.count == 2 ? .twoPair : .pair
         }
         if isOutsideStraightDraw(sorted) {
             return .fourToOutsideStraight
