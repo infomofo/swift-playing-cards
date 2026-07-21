@@ -31,6 +31,11 @@ public enum PayTableAnalyzer {
     /// is an internal implementation detail of this library, not part of its public
     /// API.
     public static func overallReturn(payTable: PayTable) -> Double {
+        precondition(
+            payTable.wildcardRank == nil || payTable.wildcardRank == .two,
+            "PayTableAnalyzer only supports wildcardRank == .two (Deuces Wild). "
+                + "The fast evaluator hard-codes rank-index 0 for wild detection.",
+        )
         let arrays = HandOutcomeArrays.build(wildcardRank: payTable.wildcardRank)
         let multipliers = HandResult.allCases.map { Double(payTable.multiplier(for: $0)) }
 
