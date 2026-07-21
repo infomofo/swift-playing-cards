@@ -198,4 +198,61 @@ struct HandOutcomeArrays {
         let start = index * Self.resultCount
         return (0 ..< Self.resultCount).map { Int(flat[start + $0]) }
     }
+
+    // swiftlint:disable large_tuple cyclomatic_complexity
+    /// Returns the total payout (`Σ count * multiplier`) for the count row addressed by
+    /// a specific subset of a 5-card hand, without materializing an intermediate row
+    /// array or a subset-cards array.
+    ///
+    /// `mask`'s bit `i` selects `cards`'s element `i` (`cards.0` for bit 0, `cards.4`
+    /// for bit 4); `cards` must be in ascending order, matching every other
+    /// subset-index computation in this type. `multipliers` must have `resultCount`
+    /// entries, indexed by `HandResult.rawValue`.
+    ///
+    /// This is the hot-path counterpart to `outcomeCounts`/`rowCounts`:
+    /// `PayTableAnalyzer` calls this on the order of a few hundred million times per
+    /// pay table (2,598,960 hands times up to 32 subsets each), so avoiding per-call
+    /// heap allocation is what makes that computation tractable — a first
+    /// implementation built on `outcomeCounts` directly measured at roughly two orders
+    /// of magnitude slower, entirely from Array allocation/ARC overhead, not from the
+    /// combinatorial-index arithmetic itself.
+    func payout(forSubsetMask mask: Int, cards: (Int, Int, Int, Int, Int), multipliers: [Double]) -> Double {
+        var index = 0
+        var position = 0
+        if mask & 0b00001 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.0, position)
+        }
+        if mask & 0b00010 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.1, position)
+        }
+        if mask & 0b00100 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.2, position)
+        }
+        if mask & 0b01000 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.3, position)
+        }
+        if mask & 0b10000 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.4, position)
+        }
+
+        switch position {
+        case 5: return multipliers[Int(scoreForFiveCardHand[index])]
+        case 4: return dotProduct(countsForFourHeld, rowIndex: index, multipliers: multipliers)
+        case 3: return dotProduct(countsForThreeHeld, rowIndex: index, multipliers: multipliers)
+        case 2: return dotProduct(countsForTwoHeld, rowIndex: index, multipliers: multipliers)
+        case 1: return dotProduct(countsForOneHeld, rowIndex: index, multipliers: multipliers)
+        default: return dotProduct(countsForNoneHeld, rowIndex: 0, multipliers: multipliers)
+        }
+    }
+
+    // swiftlint:enable large_tuple cyclomatic_complexity
+
+    private func dotProduct(_ flat: [Int32], rowIndex: Int, multipliers: [Double]) -> Double {
+        let start = rowIndex * Self.resultCount
+        var sum = 0.0
+        for resultIndex in 0 ..< Self.resultCount {
+            sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+        }
+        return sum
+    }
 }

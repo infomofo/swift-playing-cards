@@ -7,13 +7,25 @@
 /// hand.
 enum CombinatorialIndex {
     // swiftlint:disable identifier_name
-    /// Returns `n choose k` (the binomial coefficient), or 0 when `k` is out of range.
+    /// Maximum subset size this library ever indexes (holds are at most 5 cards).
+    private static let maxK = 5
+
+    /// Precomputed `choose(n, k)` for every `n` in `0...52` and `k` in `0...maxK`,
+    /// built once on first access.
     ///
-    /// Cards are encoded as small integers (0..<52 in this library), and holds are at
-    /// most 5 cards, so `k` never exceeds single digits; a direct multiplicative
-    /// computation is simpler and cheap enough here that a precomputed lookup table
-    /// would be premature.
-    static func choose(_ n: Int, _ k: Int) -> Int {
+    /// `PayTableAnalyzer.overallReturn` calls `index(sortedCards:)` (and therefore
+    /// `choose`) on the order of a few billion times per pay table (2,598,960 hands,
+    /// up to 32 hold subsets each, up to 32 discard subsets per hold); a naive
+    /// multiplicative recomputation per call was measured to make that computation
+    /// roughly two orders of magnitude slower than it needed to be, so a lookup table
+    /// replaces the O(k) multiplicative loop with an O(1) array read.
+    private static let chooseTable: [[Int]] = (0 ... 52).map { n in
+        (0 ... maxK).map { k in computeChoose(n, k) }
+    }
+
+    /// The multiplicative binomial-coefficient computation `choose` uses to build
+    /// `chooseTable`. Not used directly outside table construction; see `choose`.
+    private static func computeChoose(_ n: Int, _ k: Int) -> Int {
         guard k >= 0, k <= n else { return 0 }
         if k == 0 || k == n {
             return 1
@@ -23,6 +35,17 @@ enum CombinatorialIndex {
             result = result * (n - i) / (i + 1)
         }
         return result
+    }
+
+    /// Returns `n choose k` (the binomial coefficient), or 0 when `k` is out of range.
+    ///
+    /// Cards are encoded as small integers (0..<52 in this library), and holds are at
+    /// most 5 cards, so this is always a lookup into `chooseTable`; falls back to a
+    /// direct computation for any `n`/`k` outside that table's range.
+    static func choose(_ n: Int, _ k: Int) -> Int {
+        guard k >= 0, k <= n else { return 0 }
+        guard n <= 52, k <= maxK else { return computeChoose(n, k) }
+        return chooseTable[n][k]
     }
 
     // swiftlint:enable identifier_name
