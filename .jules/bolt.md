@@ -1,3 +1,7 @@
+## 2026-07-21 - Optimal Branchless Sorting Networks
+**Learning:** Deeply nested insertion sorting in critical inner loops (such as rank sorting in 5-card poker hand evaluation) introduces highly unpredictable branches that degrade hardware pipeline efficiency. Utilizing a flat, branchless-friendly 5-element sorting network (Bose-Nelson algorithm) with exactly 9 compare-and-swap operations optimizes instruction scheduling, reduces CPI, and eliminates misprediction penalties.
+**Action:** Replace nested conditional sorting logic in hot execution paths with flat, mathematically optimal sorting networks.
+
 ## 2026-07-17 - Swift Inner Loop Heap Allocations
 **Learning:** In Swift, allocating arrays of even small fixed sizes (like 13-element arrays for rank frequencies) or dynamic arrays for combinations in tight, multi-million iteration loops incurs substantial heap allocation and reference counting overhead. Unrolling loops for specific draw sizes (0 to 5) and using inline insertion sort on local stack variables completely bypasses allocations, resulting in a ~7.7x speedup in release builds (10.53s to 1.36s).
 **Action:** Always prefer unrolled loops, stack variables, and flat, zero-allocation switch statements when dealing with heavy combination evaluation and game theory trees.

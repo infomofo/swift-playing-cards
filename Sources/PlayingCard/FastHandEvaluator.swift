@@ -19,42 +19,42 @@ enum FastHandEvaluator {
 
         let flush = suit0 == suit1 && suit1 == suit2 && suit2 == suit3 && suit3 == suit4
 
-        // Inline insertion sort of the 5 ranks using stack-allocated registers
+        // ⚡ Bolt Optimization: Use the optimal 5-element sorting network (Bose-Nelson algorithm).
+        // It uses exactly 9 comparisons in a flat, branch-friendly layout instead of a deeply
+        // nested insertion sort, significantly improving pipeline efficiency and CPI.
         var s0 = rank0, s1 = rank1, s2 = rank2, s3 = rank3, s4 = rank4
         var t = 0
+
+        if s0 > s3 {
+            t = s0; s0 = s3; s3 = t
+        }
+        if s1 > s4 {
+            t = s1; s1 = s4; s4 = t
+        }
+
+        if s0 > s2 {
+            t = s0; s0 = s2; s2 = t
+        }
+        if s1 > s3 {
+            t = s1; s1 = s3; s3 = t
+        }
 
         if s0 > s1 {
             t = s0; s0 = s1; s1 = t
         }
+        if s2 > s4 {
+            t = s2; s2 = s4; s4 = t
+        }
 
         if s1 > s2 {
             t = s1; s1 = s2; s2 = t
-            if s0 > s1 {
-                t = s0; s0 = s1; s1 = t
-            }
+        }
+        if s3 > s4 {
+            t = s3; s3 = s4; s4 = t
         }
 
         if s2 > s3 {
             t = s2; s2 = s3; s3 = t
-            if s1 > s2 {
-                t = s1; s1 = s2; s2 = t
-                if s0 > s1 {
-                    t = s0; s0 = s1; s1 = t
-                }
-            }
-        }
-
-        if s3 > s4 {
-            t = s3; s3 = s4; s4 = t
-            if s2 > s3 {
-                t = s2; s2 = s3; s3 = t
-                if s1 > s2 {
-                    t = s1; s1 = s2; s2 = t
-                    if s0 > s1 {
-                        t = s0; s0 = s1; s1 = t
-                    }
-                }
-            }
         }
 
         // Distinct check for straight detection
