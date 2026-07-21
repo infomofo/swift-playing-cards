@@ -16,7 +16,7 @@ run = "prek run --all-files"
 
 [tasks.test]
 description = "Run the Swift test suite"
-run = "swift test"
+run = "swift test -c release"
 
 [tasks.build]
 description = "Build the Swift package"
