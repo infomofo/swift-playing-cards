@@ -21,4 +21,4 @@ jobs:
           echo "$HOME/.local/share/swiftly/bin" >> $GITHUB_PATH
 
       - name: Run tests
-        run: swift test
+        run: swift test -c release

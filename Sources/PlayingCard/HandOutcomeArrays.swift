@@ -49,7 +49,7 @@ struct HandOutcomeArrays {
     /// Scores every one of the `C(52, 5) = 2,598,960` possible 5-card hands exactly
     /// once, and buckets the result into the six count arrays above.
     ///
-    /// This is a one-time, relatively expensive pass — see `HandOutcomeArraysTests`
+    /// This is a one-time, relatively expensive pass, see `HandOutcomeArraysTests`
     /// for measured timing. Callers should build once per wildcard mode and reuse the
     /// result rather than rebuilding per hand.
     ///
@@ -151,6 +151,12 @@ struct HandOutcomeArrays {
     /// (or added back, for even-sized subsets) to correct for that.
     func outcomeCounts(held: [Int], discarded: [Int]) -> [Int] {
         precondition(held.count + discarded.count == 5, "held and discarded must total 5 cards")
+        let combined = Set(held + discarded)
+        precondition(
+            combined.count == held.count + discarded.count,
+            "held and discarded must be disjoint and each contain no duplicate cards",
+        )
+        precondition(combined.allSatisfy { (0 ..< 52).contains($0) }, "held and discarded must contain valid card codes (0..<52)")
         var totals = [Int](repeating: 0, count: Self.resultCount)
 
         for subsetMask in 0 ..< (1 << discarded.count) {
@@ -212,7 +218,7 @@ struct HandOutcomeArrays {
     /// This is the hot-path counterpart to `outcomeCounts`/`rowCounts`:
     /// `PayTableAnalyzer` calls this on the order of a few hundred million times per
     /// pay table (2,598,960 hands times up to 32 subsets each), so avoiding per-call
-    /// heap allocation is what makes that computation tractable — a first
+    /// heap allocation is what makes that computation tractable. A first
     /// implementation built on `outcomeCounts` directly measured at roughly two orders
     /// of magnitude slower, entirely from Array allocation/ARC overhead, not from the
     /// combinatorial-index arithmetic itself.

@@ -8,21 +8,13 @@ import XCTest
 /// sign error there would silently corrupt every derived RTP number, so every hold size
 /// (0 through 5) is cross-checked against ground truth for both wildcard modes.
 ///
-/// Skipped by default (opt in with `RUN_SLOW_TESTS=1`): building `HandOutcomeArrays`
-/// scores all 2,598,960 possible 5-card hands, which takes ~0.6s per wildcard mode in a
-/// Release build but ~70s per mode in the unoptimized Debug build `swift test` uses by
-/// default in CI — the same Debug-vs-Release gap documented for `OptimalPlay`'s hot
-/// loop. Run locally with `RUN_SLOW_TESTS=1 swift test --filter HandOutcomeArraysTests`,
-/// or `swift test -c release --filter HandOutcomeArraysTests` for the fast path.
+/// Building `HandOutcomeArrays` scores all 2,598,960 possible 5-card hands, which
+/// takes ~0.6s per wildcard mode in a Release build but ~70s per mode in the
+/// unoptimized Debug build, the same Debug-vs-Release gap documented for
+/// `OptimalPlay`'s hot loop. Run with `swift test -c release --filter
+/// HandOutcomeArraysTests` for the fast path; CI runs the whole suite with `-c
+/// release` for this reason (see `.github/workflows/test.yml`).
 final class HandOutcomeArraysTests: XCTestCase {
-    override func setUpWithError() throws {
-        try XCTSkipUnless(
-            ProcessInfo.processInfo.environment["RUN_SLOW_TESTS"] == "1",
-            "Builds all 2,598,960 possible 5-card hands per wildcard mode; opt in with "
-                + "RUN_SLOW_TESTS=1 to keep default CI runs fast. See class doc comment.",
-        )
-    }
-
     // Building HandOutcomeArrays is a one-time, relatively expensive pass (scores all
     // 2,598,960 possible 5-card hands). Cache one build per wildcard mode and reuse it
     // across every test in this file, instead of rebuilding per test.
@@ -129,26 +121,42 @@ final class HandOutcomeArraysTests: XCTestCase {
         )
     }
 
+    func testOutcomeCountsSumMatchesExpectedComboCountForDiscardFourDeucesWild() {
+        assertOutcomeCountsSumMatchesExpectedCombos(
+            handCodes: deucesWildFourOfAKindCodes,
+            heldPositions: [0],
+            wildcardRank: .two,
+        )
+    }
+
+    func testOutcomeCountsSumMatchesExpectedComboCountForDiscardFiveDeucesWild() {
+        assertOutcomeCountsSumMatchesExpectedCombos(
+            handCodes: deucesWildFourOfAKindCodes,
+            heldPositions: [],
+            wildcardRank: .two,
+        )
+    }
+
     // MARK: - Helpers
 
-    /// A♠ K♠ Q♠ J♠ T♠ — royal flush, encoded as `(rank_index << 2) | suit_index`.
+    /// A♠ K♠ Q♠ J♠ T♠: royal flush, encoded as `(rank_index << 2) | suit_index`.
     private var royalFlushCodes: [Int] {
         [(12 << 2) | 0, (11 << 2) | 0, (10 << 2) | 0, (9 << 2) | 0, (8 << 2) | 0]
     }
 
-    /// 5♠ 5♥ 8♠ 8♥ 2♣ — two pair (fives and eights) plus an unrelated deuce kicker,
+    /// 5♠ 5♥ 8♠ 8♥ 2♣: two pair (fives and eights) plus an unrelated deuce kicker,
     /// using a real, non-wild-context deuce so the standard evaluator treats it as a
     /// plain low card.
     private var twoPairCodes: [Int] {
         [(3 << 2) | 0, (3 << 2) | 1, (6 << 2) | 0, (6 << 2) | 1, (0 << 2) | 3]
     }
 
-    /// 2♠ 7♥ 9♦ J♣ K♠ — no pair, no straight, no flush.
+    /// 2♠ 7♥ 9♦ J♣ K♠: no pair, no straight, no flush.
     private var highCardCodes: [Int] {
         [(0 << 2) | 0, (5 << 2) | 1, (7 << 2) | 2, (9 << 2) | 3, (11 << 2) | 0]
     }
 
-    /// 8♠ 8♥ 8♦ 8♣ 2♠ — four of a kind with a wild deuce kicker, so the Deuces Wild
+    /// 8♠ 8♥ 8♦ 8♣ 2♠: four of a kind with a wild deuce kicker, so the Deuces Wild
     /// evaluator has a wild card in play even for the "hold everything" case.
     private var deucesWildFourOfAKindCodes: [Int] {
         [(6 << 2) | 0, (6 << 2) | 1, (6 << 2) | 2, (6 << 2) | 3, (0 << 2) | 0]

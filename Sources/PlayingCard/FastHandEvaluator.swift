@@ -148,7 +148,7 @@ enum FastHandEvaluator {
             return base <= 2 ? HandResult.noWin.rawValue : base
         }
 
-        // k = 1, 2, or 3 — extract natural (non-wild) cards into fixed slots.
+        // k = 1, 2, or 3: extract natural (non-wild) cards into fixed slots.
         // n = 5 - k  (guaranteed 2–4 naturals).
         // c0 is first: if r0 != 0, n is always 0 before this block.
         var na0 = 0, na1 = 0, na2 = 0, na3 = 0 // natural rank indices

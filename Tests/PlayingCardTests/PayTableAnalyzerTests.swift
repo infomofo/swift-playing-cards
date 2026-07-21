@@ -14,21 +14,11 @@ import XCTest
 /// - 8/6 Jacks or Better: 98.39%
 /// - Full-pay Deuces Wild: 100.762%
 ///
-/// Skipped by default (opt in with `RUN_SLOW_TESTS=1`): each `overallReturn` call
-/// exhaustively evaluates all 2,598,960 possible starting hands times up to 32 hold
-/// subsets each (~1.5s per pay table in a Release build, ~160s per pay table in the
-/// unoptimized Debug build `swift test` uses by default in CI). See
-/// `HandOutcomeArraysTests` for background on why these slow tests are gated instead
-/// of running by default.
+/// Each `overallReturn` call exhaustively evaluates all 2,598,960 possible starting
+/// hands times up to 32 hold subsets each (~1.5s per pay table in a Release build,
+/// ~160s per pay table in the unoptimized Debug build). CI runs the whole suite with
+/// `-c release` for this reason (see `.github/workflows/test.yml`).
 final class PayTableAnalyzerTests: XCTestCase {
-    override func setUpWithError() throws {
-        try XCTSkipUnless(
-            ProcessInfo.processInfo.environment["RUN_SLOW_TESTS"] == "1",
-            "Exhaustively evaluates all 2,598,960 possible starting hands; opt in with "
-                + "RUN_SLOW_TESTS=1 to keep default CI runs fast. See class doc comment.",
-        )
-    }
-
     func testFullPayJacksOrBetterReturn() {
         let returnPercent = PayTableAnalyzer.overallReturn(payTable: .jacksOrBetter96) * 100
         XCTAssertEqual(returnPercent, 99.5439, accuracy: 0.0005)

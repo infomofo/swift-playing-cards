@@ -24,7 +24,7 @@ public enum PayTableAnalyzer {
     /// The overall return to player for `payTable` under exact optimal play, as a
     /// fraction of the amount bet (for example `0.995439` for 99.5439%).
     ///
-    /// This is a one-time, relatively expensive pass — see `PayTableAnalyzerTests` for
+    /// This is a one-time, relatively expensive pass, see `PayTableAnalyzerTests` for
     /// measured timing. It builds a fresh `HandOutcomeArrays` for `payTable`'s
     /// wildcard mode internally; computing returns for many pay tables that share a
     /// wildcard mode currently repeats that build per call, since `HandOutcomeArrays`
