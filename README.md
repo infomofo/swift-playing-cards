@@ -116,7 +116,7 @@ mise run test
 |------|-------------|
 | `mise install` | Install SwiftLint, SwiftFormat, prek, and register git hooks |
 | `mise run build` | `swift build` |
-| `mise run test` | `swift test` |
+| `mise run test` | `swift test -c release` |
 | `mise run lint` | Run all hooks via `prek run --all-files` |
 
 ## Quick Start
@@ -253,6 +253,11 @@ swift test                          # Run all tests
 swift test --filter HandTests      # Run specific test class
 swift test --parallel              # Run tests in parallel
 ```
+
+`HandOutcomeArraysTests` and `PayTableAnalyzerTests` exhaustively enumerate all
+2,598,960 possible 5-card hands and are much faster with optimizations enabled
+(`swift test -c release`, what CI and `mise run test` use) than in the default debug
+build.
 
 Generate sample card representations:
 ```bash

@@ -88,7 +88,7 @@ After install, `mise exec -- swiftlint lint` and `mise exec -- swiftformat --lin
 - Write tests for all logic branches, including edge cases.
 - Poker hand evaluation must cover: all hand types, wheel straights (A-2-3-4-5), ace-high straights, tie-breaking, and 5+ card hand evaluation (Texas Hold'em style).
 - SwiftUI components: use text-based representations for validation in headless CI. No pixel-perfect image comparisons.
-- Run `swift test` before every PR. Fix all failures before submitting.
+- Run `swift test -c release` before every PR (matches CI; the default debug build is far slower for the exhaustive pay-table tests). Fix all failures before submitting.
 
 ## Card and Game Logic Rules
 
