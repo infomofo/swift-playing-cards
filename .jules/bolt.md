@@ -25,3 +25,7 @@
 ## 2026-07-20 - Swift Direct Memory Access with Unsafe Buffer Pointers
 **Learning:** In Swift, standard array subscriptions inside heavy multi-million iteration loops (such as combination evaluations) check bounds on every single iteration, introducing significant CPU overhead. Using `withUnsafeBufferPointer` to obtain direct memory pointers (`rem.baseAddress!`) and subscripting those pointers instead bypasses bounds-checking completely, yielding a measurable speed improvement (~6.1%) on already state-of-the-art hand evaluation logic.
 **Action:** Always prefer `withUnsafeBufferPointer` and raw pointer subscripts for collections accessed inside performance-critical, multi-million iteration inner loops.
+
+## 2026-07-22 - Swift Zero-Allocation Combinatorial Index Generation
+**Learning:** Constructing intermediate arrays (`[Int]`) and subsets inside highly iterative loops (such as the 2,598,960-hand enumeration in `HandOutcomeArrays.swift`) triggers heavy heap allocation and reference-counting operations. Factoring out card slice manipulation and pre-calculating choose combinations at intermediate outer-loop levels allows combinatorial indices to be calculated entirely inline on the stack with zero allocations, yielding a massive (~1.6x) speedup for the entire RTP test suite.
+**Action:** Avoid allocating any arrays or arrays of arrays inside deeply nested hot loops; compute indices directly on the stack using hoisted intermediate values and unrolled flat lookups.

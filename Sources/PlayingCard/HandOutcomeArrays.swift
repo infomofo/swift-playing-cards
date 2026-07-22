@@ -74,43 +74,86 @@ struct HandOutcomeArrays {
         var countsForNoneHeld = [Int32](repeating: 0, count: n)
 
         for c0 in 0 ..< 52 {
+            let chooseC0_1 = CombinatorialIndex.choose(c0, 1)
             for c1 in (c0 + 1) ..< 52 {
+                let chooseC1_1 = CombinatorialIndex.choose(c1, 1)
+                let chooseC1_2 = CombinatorialIndex.choose(c1, 2)
                 for c2 in (c1 + 1) ..< 52 {
+                    let chooseC2_1 = CombinatorialIndex.choose(c2, 1)
+                    let chooseC2_2 = CombinatorialIndex.choose(c2, 2)
+                    let chooseC2_3 = CombinatorialIndex.choose(c2, 3)
                     for c3 in (c2 + 1) ..< 52 {
+                        let chooseC3_1 = CombinatorialIndex.choose(c3, 1)
+                        let chooseC3_2 = CombinatorialIndex.choose(c3, 2)
+                        let chooseC3_3 = CombinatorialIndex.choose(c3, 3)
+                        let chooseC3_4 = CombinatorialIndex.choose(c3, 4)
                         for c4 in (c3 + 1) ..< 52 {
                             let score = isWild
                                 ? FastHandEvaluator.deucesWildCode(c0, c1, c2, c3, c4)
                                 : FastHandEvaluator.standardCode(c0, c1, c2, c3, c4)
 
-                            let cards = [c0, c1, c2, c3, c4]
-                            let index5 = CombinatorialIndex.index(sortedCards: cards)
+                            // ⚡ Bolt Optimization: Calculate combinatorial indices inline on the stack,
+                            // completely bypassing heap allocations of temporary array objects inside the hot loop.
+                            let chooseC4_2 = CombinatorialIndex.choose(c4, 2)
+                            let chooseC4_3 = CombinatorialIndex.choose(c4, 3)
+                            let chooseC4_4 = CombinatorialIndex.choose(c4, 4)
+                            let chooseC4_5 = CombinatorialIndex.choose(c4, 5)
+
+                            let index5 = chooseC0_1 + chooseC1_2 + chooseC2_3 + chooseC3_4 + chooseC4_5
                             scoreForFiveCardHand[index5] = UInt8(score)
                             countsForNoneHeld[score] += 1
 
-                            for excluded in 0 ..< 5 {
-                                var four = cards
-                                four.remove(at: excluded)
-                                let idx4 = CombinatorialIndex.index(sortedCards: four)
-                                countsForFourHeld[idx4 * n + score] += 1
-                            }
+                            // countsForFourHeld (exclude exactly one card)
+                            // Exclude c0: c1, c2, c3, c4
+                            let idx4_0 = chooseC1_1 + chooseC2_2 + chooseC3_3 + chooseC4_4
+                            countsForFourHeld[idx4_0 * n + score] += 1
 
-                            for i in 0 ..< 5 {
-                                for j in (i + 1) ..< 5 {
-                                    let two = [cards[i], cards[j]]
-                                    let idx2 = CombinatorialIndex.index(sortedCards: two)
-                                    countsForTwoHeld[idx2 * n + score] += 1
+                            // Exclude c1: c0, c2, c3, c4
+                            let idx4_1 = chooseC0_1 + chooseC2_2 + chooseC3_3 + chooseC4_4
+                            countsForFourHeld[idx4_1 * n + score] += 1
 
-                                    for k in (j + 1) ..< 5 {
-                                        let three = [cards[i], cards[j], cards[k]]
-                                        let idx3 = CombinatorialIndex.index(sortedCards: three)
-                                        countsForThreeHeld[idx3 * n + score] += 1
-                                    }
-                                }
-                            }
+                            // Exclude c2: c0, c1, c3, c4
+                            let idx4_2 = chooseC0_1 + chooseC1_2 + chooseC3_3 + chooseC4_4
+                            countsForFourHeld[idx4_2 * n + score] += 1
 
-                            for card in cards {
-                                countsForOneHeld[card * n + score] += 1
-                            }
+                            // Exclude c3: c0, c1, c2, c4
+                            let idx4_3 = chooseC0_1 + chooseC1_2 + chooseC2_3 + chooseC4_4
+                            countsForFourHeld[idx4_3 * n + score] += 1
+
+                            // Exclude c4: c0, c1, c2, c3
+                            let idx4_4 = chooseC0_1 + chooseC1_2 + chooseC2_3 + chooseC3_4
+                            countsForFourHeld[idx4_4 * n + score] += 1
+
+                            // countsForTwoHeld (all 10 pairs)
+                            countsForTwoHeld[(chooseC0_1 + chooseC1_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC0_1 + chooseC2_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC0_1 + chooseC3_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC0_1 + chooseC4_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC1_1 + chooseC2_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC1_1 + chooseC3_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC1_1 + chooseC4_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC2_1 + chooseC3_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC2_1 + chooseC4_2) * n + score] += 1
+                            countsForTwoHeld[(chooseC3_1 + chooseC4_2) * n + score] += 1
+
+                            // countsForThreeHeld (all 10 triples)
+                            countsForThreeHeld[(chooseC0_1 + chooseC1_2 + chooseC2_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC0_1 + chooseC1_2 + chooseC3_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC0_1 + chooseC1_2 + chooseC4_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC0_1 + chooseC2_2 + chooseC3_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC0_1 + chooseC2_2 + chooseC4_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC0_1 + chooseC3_2 + chooseC4_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC1_1 + chooseC2_2 + chooseC3_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC1_1 + chooseC2_2 + chooseC4_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC1_1 + chooseC3_2 + chooseC4_3) * n + score] += 1
+                            countsForThreeHeld[(chooseC2_1 + chooseC3_2 + chooseC4_3) * n + score] += 1
+
+                            // countsForOneHeld
+                            countsForOneHeld[c0 * n + score] += 1
+                            countsForOneHeld[c1 * n + score] += 1
+                            countsForOneHeld[c2 * n + score] += 1
+                            countsForOneHeld[c3 * n + score] += 1
+                            countsForOneHeld[c4 * n + score] += 1
                         }
                     }
                 }
