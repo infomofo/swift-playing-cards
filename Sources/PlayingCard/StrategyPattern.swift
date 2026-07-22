@@ -736,8 +736,9 @@ public struct HoldClassifier {
         if case .onePair = classifyRankShape(ranks) {
             return .pair
         }
-        // Mixed suits, no pair, no suited straight/royal draw: describe by high-card
-        // count rather than collapsing to "discard all" — the player held 3 cards.
+        // No pair, and not a royal or straight-flush draw (whether same-suit or mixed):
+        // describe by high-card count rather than collapsing to "discard all" — the
+        // player held 3 cards.
         if ranks.allSatisfy({ $0 >= 10 }) {
             return .threeUnsuitedHighCards
         }
@@ -759,8 +760,8 @@ public struct HoldClassifier {
         if sameSuit, fv >= 11, sv >= 11 {
             return .twoToRoyalFlushJQHigh
         }
-        // Mixed pattern (not the royal-flush draw above), no pair: describe by
-        // high-card count rather than collapsing to "discard all".
+        // No pair, and not the suited J/Q-high royal-flush draw above (whether same-suit
+        // or mixed): describe by high-card count rather than collapsing to "discard all".
         if fv >= 11, sv >= 11 {
             return .twoUnsuitedHighCards
         }
