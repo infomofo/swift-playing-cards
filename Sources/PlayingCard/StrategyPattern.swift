@@ -706,6 +706,15 @@ public struct HoldClassifier {
         if isInsideStraightDraw(sorted) {
             return .fourToInsideStraight
         }
+        // Mixed suits, no straight draw, no pair: describe by high-card count rather
+        // than collapsing to "discard all" — the player held 4 cards, not none.
+        let highCount = ranks.filter { $0 >= 11 }.count
+        if highCount >= 2 {
+            return .twoUnsuitedHighCards
+        }
+        if highCount == 1 {
+            return .oneHighCard
+        }
         return .discardAll
     }
 
@@ -727,7 +736,17 @@ public struct HoldClassifier {
         if case .onePair = classifyRankShape(ranks) {
             return .pair
         }
-        return .discardAll
+        // Mixed suits, no pair, no suited straight/royal draw: describe by high-card
+        // count rather than collapsing to "discard all" — the player held 3 cards.
+        if ranks.allSatisfy({ $0 >= 10 }) {
+            return .threeUnsuitedHighCards
+        }
+        let highRanks = ranks.filter { $0 >= 11 }
+        switch highRanks.count {
+        case 2: return .twoUnsuitedHighCards
+        case 1: return .oneHighCard
+        default: return .discardAll
+        }
     }
 
     private static func classifyDW0Two(_ first: PlayingCard, _ second: PlayingCard) -> StrategyPattern {
@@ -739,6 +758,14 @@ public struct HoldClassifier {
         // 2 to a royal flush, J/Q high (highest-rank 2-card hold in DW).
         if sameSuit, fv >= 11, sv >= 11 {
             return .twoToRoyalFlushJQHigh
+        }
+        // Mixed pattern (not the royal-flush draw above), no pair: describe by
+        // high-card count rather than collapsing to "discard all".
+        if fv >= 11, sv >= 11 {
+            return .twoUnsuitedHighCards
+        }
+        if fv >= 11 || sv >= 11 {
+            return .oneHighCard
         }
         return .discardAll
     }
