@@ -29,3 +29,11 @@
 ## 2026-07-22 - Swift Zero-Allocation Combinatorial Index Generation
 **Learning:** Constructing intermediate arrays (`[Int]`) and subsets inside highly iterative loops (such as the 2,598,960-hand enumeration in `HandOutcomeArrays.swift`) triggers heavy heap allocation and reference-counting operations. Factoring out card slice manipulation and pre-calculating choose combinations at intermediate outer-loop levels allows combinatorial indices to be calculated entirely inline on the stack with zero allocations, yielding a massive (~1.6x) speedup for the entire RTP test suite.
 **Action:** Avoid allocating any arrays or arrays of arrays inside deeply nested hot loops; compute indices directly on the stack using hoisted intermediate values and unrolled flat lookups.
+
+## 2026-07-23 - Swift Flat Contiguous Arrays vs 2D Lookup Tables
+**Learning:** Reading from nested arrays (e.g. `[[Int]]`) requires double dereferencing and separate bounds checks in Swift. Flattening to a contiguous 1D array (`[Int]`) indexed by a stride calculation (e.g. `n * stride + k`) eliminates this nesting overhead and achieves much higher execution speed in hot path lookups.
+**Action:** Always flatten small multi-dimensional lookup tables to contiguous 1D arrays on performance-critical evaluation paths.
+
+## 2026-07-23 - Closure Overhead of withUnsafeBufferPointer in Hot Paths
+**Learning:** Wrapping collections in `withUnsafeBufferPointer` inside extremely frequent loops (e.g. millions of calls) can introduce closure setup and teardown overhead that outweighs the benefits of bypassing standard array bounds checks.
+**Action:** Extract unsafe buffer pointers at higher loop levels and pass down raw pointers to innermost operations, rather than calling buffer-wrapping methods repeatedly.
