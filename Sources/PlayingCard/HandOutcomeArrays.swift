@@ -304,4 +304,97 @@ struct HandOutcomeArrays {
         }
         return sum
     }
+
+    // swiftformat:disable trailingCommas
+    // swiftlint:disable identifier_name
+    /// Exposes underlying array buffers as raw unsafe pointers in a flat monadic scope
+    /// to avoid nesting buffer pointer lookups in tight loops.
+    func withUnsafePointers<R>(
+        _ body: (
+            _ scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
+            _ countsForFourHeldPtr: UnsafePointer<Int32>,
+            _ countsForThreeHeldPtr: UnsafePointer<Int32>,
+            _ countsForTwoHeldPtr: UnsafePointer<Int32>,
+            _ countsForOneHeldPtr: UnsafePointer<Int32>,
+            _ countsForNoneHeldPtr: UnsafePointer<Int32>
+        ) -> R
+    ) -> R {
+        scoreForFiveCardHand.withUnsafeBufferPointer { b5 in
+            countsForFourHeld.withUnsafeBufferPointer { b4 in
+                countsForThreeHeld.withUnsafeBufferPointer { b3 in
+                    countsForTwoHeld.withUnsafeBufferPointer { b2 in
+                        countsForOneHeld.withUnsafeBufferPointer { b1 in
+                            countsForNoneHeld.withUnsafeBufferPointer { b0 in
+                                body(
+                                    b5.baseAddress!,
+                                    b4.baseAddress!,
+                                    b3.baseAddress!,
+                                    b2.baseAddress!,
+                                    b1.baseAddress!,
+                                    b0.baseAddress!
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // swiftlint:enable identifier_name
+
+    // swiftlint:disable large_tuple cyclomatic_complexity function_parameter_count
+    /// High-performance overload of payout that uses UnsafePointers to avoid array bounds checking.
+    @inline(__always)
+    func payout(
+        forSubsetMask mask: Int,
+        cards: (Int, Int, Int, Int, Int),
+        multipliers: UnsafePointer<Double>,
+        scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
+        countsForFourHeldPtr: UnsafePointer<Int32>,
+        countsForThreeHeldPtr: UnsafePointer<Int32>,
+        countsForTwoHeldPtr: UnsafePointer<Int32>,
+        countsForOneHeldPtr: UnsafePointer<Int32>,
+        countsForNoneHeldPtr: UnsafePointer<Int32>
+    ) -> Double {
+        // swiftformat:enable trailingCommas
+        var index = 0
+        var position = 0
+        if mask & 0b00001 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.0, position)
+        }
+        if mask & 0b00010 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.1, position)
+        }
+        if mask & 0b00100 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.2, position)
+        }
+        if mask & 0b01000 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.3, position)
+        }
+        if mask & 0b10000 != 0 {
+            position += 1; index += CombinatorialIndex.choose(cards.4, position)
+        }
+
+        switch position {
+        case 5: return multipliers[Int(scoreForFiveCardHandPtr[index])]
+        case 4: return dotProduct(countsForFourHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 3: return dotProduct(countsForThreeHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 2: return dotProduct(countsForTwoHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 1: return dotProduct(countsForOneHeldPtr, rowIndex: index, multipliers: multipliers)
+        default: return dotProduct(countsForNoneHeldPtr, rowIndex: 0, multipliers: multipliers)
+        }
+    }
+
+    // swiftlint:enable large_tuple cyclomatic_complexity
+
+    @inline(__always)
+    private func dotProduct(_ flat: UnsafePointer<Int32>, rowIndex: Int, multipliers: UnsafePointer<Double>) -> Double {
+        let start = rowIndex * Self.resultCount
+        var sum = 0.0
+        for resultIndex in 0 ..< Self.resultCount {
+            sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+        }
+        return sum
+    }
 }
