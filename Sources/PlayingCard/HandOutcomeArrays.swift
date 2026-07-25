@@ -305,6 +305,7 @@ struct HandOutcomeArrays {
         return sum
     }
 
+    // swiftformat:disable trailingCommas
     // swiftlint:disable identifier_name
     /// Exposes underlying array buffers as raw unsafe pointers in a flat monadic scope
     /// to avoid nesting buffer pointer lookups in tight loops.
@@ -315,8 +316,8 @@ struct HandOutcomeArrays {
             _ countsForThreeHeldPtr: UnsafePointer<Int32>,
             _ countsForTwoHeldPtr: UnsafePointer<Int32>,
             _ countsForOneHeldPtr: UnsafePointer<Int32>,
-            _ countsForNoneHeldPtr: UnsafePointer<Int32>,
-        ) -> R,
+            _ countsForNoneHeldPtr: UnsafePointer<Int32>
+        ) -> R
     ) -> R {
         scoreForFiveCardHand.withUnsafeBufferPointer { b5 in
             countsForFourHeld.withUnsafeBufferPointer { b4 in
@@ -330,7 +331,7 @@ struct HandOutcomeArrays {
                                     b3.baseAddress!,
                                     b2.baseAddress!,
                                     b1.baseAddress!,
-                                    b0.baseAddress!,
+                                    b0.baseAddress!
                                 )
                             }
                         }
@@ -354,8 +355,9 @@ struct HandOutcomeArrays {
         countsForThreeHeldPtr: UnsafePointer<Int32>,
         countsForTwoHeldPtr: UnsafePointer<Int32>,
         countsForOneHeldPtr: UnsafePointer<Int32>,
-        countsForNoneHeldPtr: UnsafePointer<Int32>,
+        countsForNoneHeldPtr: UnsafePointer<Int32>
     ) -> Double {
+        // swiftformat:enable trailingCommas
         var index = 0
         var position = 0
         if mask & 0b00001 != 0 {
