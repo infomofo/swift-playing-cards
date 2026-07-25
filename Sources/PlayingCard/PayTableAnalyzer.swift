@@ -53,29 +53,43 @@ public enum PayTableAnalyzer {
         var payoutOfSubset = [Double](repeating: 0, count: 32)
         var numeratorForHold = [Double](repeating: 0, count: 32)
 
-        // swiftlint:disable identifier_name
-        for c0 in 0 ..< 52 {
-            for c1 in (c0 + 1) ..< 52 {
-                for c2 in (c1 + 1) ..< 52 {
-                    for c3 in (c2 + 1) ..< 52 {
-                        for c4 in (c3 + 1) ..< 52 {
-                            let cards = (c0, c1, c2, c3, c4)
-                            totalEV += bestHoldEV(
-                                cards: cards, arrays: arrays, multipliers: multipliers,
-                                payoutOfSubset: &payoutOfSubset, numeratorForHold: &numeratorForHold,
-                            )
-                            handCount += 1
+        multipliers.withUnsafeBufferPointer { multipliersBuf in
+            let multipliersPtr = multipliersBuf.baseAddress!
+            arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
+                // swiftlint:disable identifier_name
+                for c0 in 0 ..< 52 {
+                    for c1 in (c0 + 1) ..< 52 {
+                        for c2 in (c1 + 1) ..< 52 {
+                            for c3 in (c2 + 1) ..< 52 {
+                                for c4 in (c3 + 1) ..< 52 {
+                                    let cards = (c0, c1, c2, c3, c4)
+                                    totalEV += bestHoldEV(
+                                        cards: cards,
+                                        arrays: arrays,
+                                        multipliers: multipliersPtr,
+                                        scoreForFiveCardHandPtr: scorePtr,
+                                        countsForFourHeldPtr: counts4Ptr,
+                                        countsForThreeHeldPtr: counts3Ptr,
+                                        countsForTwoHeldPtr: counts2Ptr,
+                                        countsForOneHeldPtr: counts1Ptr,
+                                        countsForNoneHeldPtr: counts0Ptr,
+                                        payoutOfSubset: &payoutOfSubset,
+                                        numeratorForHold: &numeratorForHold,
+                                    )
+                                    handCount += 1
+                                }
+                            }
                         }
                     }
                 }
+                // swiftlint:enable identifier_name
             }
         }
-        // swiftlint:enable identifier_name
 
         return totalEV / Double(handCount)
     }
 
-    // swiftlint:disable large_tuple
+    // swiftlint:disable large_tuple function_parameter_count
     /// Evaluates all 32 possible hold subsets of a dealt hand and returns the highest
     /// expected value: the return-per-unit-bet a perfect-strategy player would get by
     /// holding whichever subset maximizes EV.
@@ -88,12 +102,28 @@ public enum PayTableAnalyzer {
     private static func bestHoldEV(
         cards: (Int, Int, Int, Int, Int),
         arrays: HandOutcomeArrays,
-        multipliers: [Double],
+        multipliers: UnsafePointer<Double>,
+        scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
+        countsForFourHeldPtr: UnsafePointer<Int32>,
+        countsForThreeHeldPtr: UnsafePointer<Int32>,
+        countsForTwoHeldPtr: UnsafePointer<Int32>,
+        countsForOneHeldPtr: UnsafePointer<Int32>,
+        countsForNoneHeldPtr: UnsafePointer<Int32>,
         payoutOfSubset: inout [Double],
         numeratorForHold: inout [Double],
     ) -> Double {
         for mask in 0 ..< 32 {
-            payoutOfSubset[mask] = arrays.payout(forSubsetMask: mask, cards: cards, multipliers: multipliers)
+            payoutOfSubset[mask] = arrays.payout(
+                forSubsetMask: mask,
+                cards: cards,
+                multipliers: multipliers,
+                scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
+                countsForFourHeldPtr: countsForFourHeldPtr,
+                countsForThreeHeldPtr: countsForThreeHeldPtr,
+                countsForTwoHeldPtr: countsForTwoHeldPtr,
+                countsForOneHeldPtr: countsForOneHeldPtr,
+                countsForNoneHeldPtr: countsForNoneHeldPtr,
+            )
             numeratorForHold[mask] = 0
         }
 
