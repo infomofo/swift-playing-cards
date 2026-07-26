@@ -278,4 +278,27 @@ final class PayTableTests: XCTestCase {
         XCTAssertTrue(HandResult.jacksOrBetter.isWin)
         XCTAssertTrue(HandResult.royalFlush.isWin)
     }
+
+    // MARK: - isWild
+
+    func testIsWildTrueForWildcardRankUnderDeucesWild() {
+        let card = PlayingCard(rank: .two, suit: .hearts)
+        XCTAssertTrue(PayTable.deucesWild.isWild(card))
+    }
+
+    func testIsWildFalseForNonWildcardRankUnderDeucesWild() {
+        let card = PlayingCard(rank: .three, suit: .hearts)
+        XCTAssertFalse(PayTable.deucesWild.isWild(card))
+    }
+
+    func testIsWildFalseUnderJacksOrBetterEvenForRankTwo() {
+        // Jacks or Better has no wildcardRank, so a two is just a plain low card.
+        let card = PlayingCard(rank: .two, suit: .hearts)
+        XCTAssertFalse(PayTable.jacksOrBetter96.isWild(card))
+    }
+
+    func testIsWildIgnoresSuit() {
+        XCTAssertTrue(PayTable.deucesWild.isWild(PlayingCard(rank: .two, suit: .clubs)))
+        XCTAssertTrue(PayTable.deucesWild.isWild(PlayingCard(rank: .two, suit: .spades)))
+    }
 }
