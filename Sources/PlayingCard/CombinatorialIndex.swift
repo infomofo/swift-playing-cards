@@ -27,6 +27,12 @@ enum CombinatorialIndex {
         return table
     }()
 
+    /// ⚡ Bolt Optimization: Safely yields the raw pointer of the precomputed table.
+    /// This ensures memory safety by tying the pointer lifetime to the provided closure.
+    static func withChooseTablePointer<R>(_ body: (UnsafePointer<Int>) -> R) -> R {
+        chooseTable.withUnsafeBufferPointer { body($0.baseAddress!) }
+    }
+
     /// The multiplicative binomial-coefficient computation `choose` uses to build
     /// `chooseTable`. Not used directly outside table construction; see `choose`.
     private static func computeChoose(_ n: Int, _ k: Int) -> Int {

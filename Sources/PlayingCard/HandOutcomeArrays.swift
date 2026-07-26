@@ -350,6 +350,7 @@ struct HandOutcomeArrays {
         forSubsetMask mask: Int,
         cards: (Int, Int, Int, Int, Int),
         multipliers: UnsafePointer<Double>,
+        chooseTablePtr: UnsafePointer<Int>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
         countsForFourHeldPtr: UnsafePointer<Int32>,
         countsForThreeHeldPtr: UnsafePointer<Int32>,
@@ -361,19 +362,19 @@ struct HandOutcomeArrays {
         var index = 0
         var position = 0
         if mask & 0b00001 != 0 {
-            position += 1; index += CombinatorialIndex.choose(cards.0, position)
+            position += 1; index += chooseTablePtr[cards.0 * 6 + position]
         }
         if mask & 0b00010 != 0 {
-            position += 1; index += CombinatorialIndex.choose(cards.1, position)
+            position += 1; index += chooseTablePtr[cards.1 * 6 + position]
         }
         if mask & 0b00100 != 0 {
-            position += 1; index += CombinatorialIndex.choose(cards.2, position)
+            position += 1; index += chooseTablePtr[cards.2 * 6 + position]
         }
         if mask & 0b01000 != 0 {
-            position += 1; index += CombinatorialIndex.choose(cards.3, position)
+            position += 1; index += chooseTablePtr[cards.3 * 6 + position]
         }
         if mask & 0b10000 != 0 {
-            position += 1; index += CombinatorialIndex.choose(cards.4, position)
+            position += 1; index += chooseTablePtr[cards.4 * 6 + position]
         }
 
         switch position {
