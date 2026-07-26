@@ -37,3 +37,7 @@
 ## 2026-07-23 - Closure Overhead of withUnsafeBufferPointer in Hot Paths
 **Learning:** Wrapping collections in `withUnsafeBufferPointer` inside extremely frequent loops (e.g. millions of calls) can introduce closure setup and teardown overhead that outweighs the benefits of bypassing standard array bounds checks.
 **Action:** Extract unsafe buffer pointers at higher loop levels and pass down raw pointers to innermost operations, rather than calling buffer-wrapping methods repeatedly.
+
+## 2026-07-26 - Swift Lifetime-Bounded Pointer Passing
+**Learning:** Escaping raw pointers from `withUnsafeBufferPointer` closures to static or global properties violates memory safety. It causes undefined behavior because Swift does not guarantee the pointer remains valid after the closure ends. Wrapping the entire hot loop in a lifetime-bounded monadic closure (like `withChooseTablePointer`) and passing the pointer down the call stack is 100% memory safe.
+**Action:** Always bind the lifetime of unsafe pointers to the outer-most loop and pass them down as function parameters, rather than storing them in variables.
