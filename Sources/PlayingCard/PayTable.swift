@@ -339,6 +339,14 @@ public struct PayTable {
         HandResult.evaluate(cards: cards, wildcardRank: wildcardRank)
     }
 
+    /// Whether `card` acts as a wild card under this pay table.
+    ///
+    /// Always `false` for pay tables with no `wildcardRank` (e.g. Jacks or Better). For
+    /// Deuces Wild, returns `true` for any card ranked `.two` regardless of suit.
+    public func isWild(_ card: PlayingCard) -> Bool {
+        wildcardRank == card.rank
+    }
+
     /// Total coins returned for the given bet. `bet` must be 1-5.
     ///
     /// Royal flush (`.royalFlush` or `.naturalRoyalFlush`) pays 800x at bet=5 (4000 total)
