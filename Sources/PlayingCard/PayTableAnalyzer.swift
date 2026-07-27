@@ -16,10 +16,22 @@
 /// `PayTableAnalyzerTests` cross-checks its output against the published return
 /// percentages for this library's existing pay tables.
 public enum PayTableAnalyzer {
-    /// Number of possible draw completions for holding exactly `k` cards, indexed by
-    /// `k` (0...5): `C(47, 5 - k)`, since the draw pool always excludes the 5 originally
-    /// dealt cards regardless of which of them are held.
-    private static let completionsForHoldSize: [Int] = (0 ... 5).map { CombinatorialIndex.choose(47, 5 - $0) }
+    /// Precomputed reciprocals of completion counts for hold sizes 0-5 to avoid expensive divisions.
+    /// holdMask.nonzeroBitCount maps to 0...5:
+    /// - 0: 1 / choose(47, 5) = 1 / 1533939
+    /// - 1: 1 / choose(47, 4) = 1 / 178365
+    /// - 2: 1 / choose(47, 3) = 1 / 16215
+    /// - 3: 1 / choose(47, 2) = 1 / 1081
+    /// - 4: 1 / choose(47, 1) = 1 / 47
+    /// - 5: 1 / choose(47, 0) = 1 / 1
+    private static let reciprocalCompletions: [Double] = [
+        1.0 / 1_533_939.0,
+        1.0 / 178_365.0,
+        1.0 / 16215.0,
+        1.0 / 1081.0,
+        1.0 / 47.0,
+        1.0,
+    ]
 
     /// The overall return to player for `payTable` under exact optimal play, as a
     /// fraction of the amount bet (for example `0.995439` for 99.5439%).
@@ -53,42 +65,46 @@ public enum PayTableAnalyzer {
         var payoutOfSubset = [Double](repeating: 0, count: 32)
         var numeratorForHold = [Double](repeating: 0, count: 32)
 
-        multipliers.withUnsafeBufferPointer { multipliersBuf in
-            let multipliersPtr = multipliersBuf.baseAddress!
-            payoutOfSubset.withUnsafeMutableBufferPointer { payoutBuf in
-                let payoutPtr = payoutBuf.baseAddress!
-                numeratorForHold.withUnsafeMutableBufferPointer { numeratorBuf in
-                    let numeratorPtr = numeratorBuf.baseAddress!
-                    CombinatorialIndex.withChooseTablePointer { choosePtr in
-                        arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
-                            // swiftlint:disable identifier_name
-                            for c0 in 0 ..< 52 {
-                                for c1 in (c0 + 1) ..< 52 {
-                                    for c2 in (c1 + 1) ..< 52 {
-                                        for c3 in (c2 + 1) ..< 52 {
-                                            for c4 in (c3 + 1) ..< 52 {
-                                                let cards = (c0, c1, c2, c3, c4)
-                                                totalEV += bestHoldEV(
-                                                    cards: cards,
-                                                    arrays: arrays,
-                                                    multipliers: multipliersPtr,
-                                                    chooseTablePtr: choosePtr,
-                                                    scoreForFiveCardHandPtr: scorePtr,
-                                                    countsForFourHeldPtr: counts4Ptr,
-                                                    countsForThreeHeldPtr: counts3Ptr,
-                                                    countsForTwoHeldPtr: counts2Ptr,
-                                                    countsForOneHeldPtr: counts1Ptr,
-                                                    countsForNoneHeldPtr: counts0Ptr,
-                                                    payoutOfSubset: payoutPtr,
-                                                    numeratorForHold: numeratorPtr,
-                                                )
-                                                handCount += 1
+        reciprocalCompletions.withUnsafeBufferPointer { reciprocalBuf in
+            let reciprocalPtr = reciprocalBuf.baseAddress!
+            multipliers.withUnsafeBufferPointer { multipliersBuf in
+                let multipliersPtr = multipliersBuf.baseAddress!
+                payoutOfSubset.withUnsafeMutableBufferPointer { payoutBuf in
+                    let payoutPtr = payoutBuf.baseAddress!
+                    numeratorForHold.withUnsafeMutableBufferPointer { numeratorBuf in
+                        let numeratorPtr = numeratorBuf.baseAddress!
+                        CombinatorialIndex.withChooseTablePointer { choosePtr in
+                            arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
+                                // swiftlint:disable identifier_name
+                                for c0 in 0 ..< 52 {
+                                    for c1 in (c0 + 1) ..< 52 {
+                                        for c2 in (c1 + 1) ..< 52 {
+                                            for c3 in (c2 + 1) ..< 52 {
+                                                for c4 in (c3 + 1) ..< 52 {
+                                                    let cards = (c0, c1, c2, c3, c4)
+                                                    totalEV += bestHoldEV(
+                                                        cards: cards,
+                                                        arrays: arrays,
+                                                        multipliers: multipliersPtr,
+                                                        chooseTablePtr: choosePtr,
+                                                        scoreForFiveCardHandPtr: scorePtr,
+                                                        countsForFourHeldPtr: counts4Ptr,
+                                                        countsForThreeHeldPtr: counts3Ptr,
+                                                        countsForTwoHeldPtr: counts2Ptr,
+                                                        countsForOneHeldPtr: counts1Ptr,
+                                                        countsForNoneHeldPtr: counts0Ptr,
+                                                        payoutOfSubset: payoutPtr,
+                                                        numeratorForHold: numeratorPtr,
+                                                        reciprocalPtr: reciprocalPtr,
+                                                    )
+                                                    handCount += 1
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                // swiftlint:enable identifier_name
                             }
-                            // swiftlint:enable identifier_name
                         }
                     }
                 }
@@ -121,6 +137,7 @@ public enum PayTableAnalyzer {
         countsForNoneHeldPtr: UnsafePointer<Int32>,
         payoutOfSubset: UnsafeMutablePointer<Double>,
         numeratorForHold: UnsafeMutablePointer<Double>,
+        reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
@@ -158,8 +175,8 @@ public enum PayTableAnalyzer {
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let completions = completionsForHoldSize[holdMask.nonzeroBitCount]
-            best = max(best, numeratorForHold[holdMask] / Double(completions))
+            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
+            best = max(best, numeratorForHold[holdMask] * completionsRecip)
         }
         return best
     }
