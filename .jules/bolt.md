@@ -41,3 +41,7 @@
 ## 2026-07-26 - Swift Lifetime-Bounded Pointer Passing
 **Learning:** Escaping raw pointers from `withUnsafeBufferPointer` closures to static or global properties violates memory safety. It causes undefined behavior because Swift does not guarantee the pointer remains valid after the closure ends. Wrapping the entire hot loop in a lifetime-bounded monadic closure (like `withChooseTablePointer`) and passing the pointer down the call stack is 100% memory safe.
 **Action:** Always bind the lifetime of unsafe pointers to the outer-most loop and pass them down as function parameters, rather than storing them in variables.
+
+## 2026-07-28 - Fast Reciprocal Multiplication in High-Frequency Loops
+**Learning:** Performing floating-point divisions inside highly frequent evaluation loops (e.g. 83 million times in the RTP pay table analyzer) incurs massive execution latency on modern CPUs. Precomputing the reciprocals of division denominators as a static array, extracting its raw pointer using `withUnsafeBufferPointer` at the highest outer level, and multiplying by the pointer offsets instead of dividing completely avoids both division overhead and array bounds-checking, speeding up execution.
+**Action:** Replace floating-point division in ultra-frequent loops with multiplication by precomputed reciprocals passed down as raw unsafe pointers.
