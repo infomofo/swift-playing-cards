@@ -41,3 +41,7 @@
 ## 2026-07-26 - Swift Lifetime-Bounded Pointer Passing
 **Learning:** Escaping raw pointers from `withUnsafeBufferPointer` closures to static or global properties violates memory safety. It causes undefined behavior because Swift does not guarantee the pointer remains valid after the closure ends. Wrapping the entire hot loop in a lifetime-bounded monadic closure (like `withChooseTablePointer`) and passing the pointer down the call stack is 100% memory safe.
 **Action:** Always bind the lifetime of unsafe pointers to the outer-most loop and pass them down as function parameters, rather than storing them in variables.
+
+## 2026-07-29 - Swift Hot Path Loop Unsafe Pointer Nesting and Exclusivity Violations
+**Learning:** Wrapping multiple pre-allocated arrays in nested `withUnsafeMutableBufferPointer` closures alongside `withChooseTablePointer` yields raw base address pointers for high-performance loops. This completely bypasses all array bounds checking (83+ million writes) and millions of function lookup calls inside the tight 5-nested loops. To avoid compile-time exclusivity violation errors, any instantiation of objects referencing those arrays must occur strictly after all mutable buffer closures have exited.
+**Action:** When optimizing multi-array mutations in hot loops, nest `withUnsafeMutableBufferPointer` closures returning `Void` and construct the final object outside the closures.
