@@ -45,3 +45,15 @@
 ## 2026-07-27 - Swift Exclusivity Violations in Nested Buffer Pointer Closures
 **Learning:** Modifying arrays via `withUnsafeMutableBufferPointer` closures and then using/passing the original arrays to construct other types *inside* those same closures triggers compile-time exclusivity violation errors (`overlapping accesses, but modification requires exclusive access`).
 **Action:** Let monadic pointer closures return `Void`, performing all mutations in place, and only construct/return the containing object *after* the outermost closure has fully completed and closed.
+
+## 2026-07-28 - Fast Reciprocal Multiplication in High-Frequency Loops
+**Learning:** Performing floating-point divisions inside highly frequent evaluation loops (e.g. 83 million times in the RTP pay table analyzer) incurs massive execution latency on modern CPUs. Precomputing the reciprocals of division denominators as a static array, extracting its raw pointer using `withUnsafeBufferPointer` at the highest outer level, and multiplying by the pointer offsets instead of dividing completely avoids both division overhead and array bounds-checking, speeding up execution.
+**Action:** Replace floating-point division in ultra-frequent loops with multiplication by precomputed reciprocals passed down as raw unsafe pointers.
+
+## 2026-07-29 - Swift Hot Path Loop Unsafe Pointer Nesting and Exclusivity Violations
+**Learning:** Wrapping multiple pre-allocated arrays in nested `withUnsafeMutableBufferPointer` closures alongside `withChooseTablePointer` yields raw base address pointers for high-performance loops. This completely bypasses all array bounds checking (83+ million writes) and millions of function lookup calls inside the tight 5-nested loops. To avoid compile-time exclusivity violation errors, any instantiation of objects referencing those arrays must occur strictly after all mutable buffer closures have exited.
+**Action:** When optimizing multi-array mutations in hot loops, nest `withUnsafeMutableBufferPointer` closures returning `Void` and construct the final object outside the closures.
+
+## 2026-08-01 - Safe Hybrid Loop Unrolling
+**Learning:** Manually unrolling loops in performance-critical paths eliminates significant loop control, index calculation, and branch prediction overhead. However, hardcoding loop boundaries directly can introduce major maintainability and safety risks if data shapes change in the future. Implementing a hybrid approach, checking dynamically if the count matches the expected unrolled boundary size, running the fast path if true, and falling back to a clean dynamic loop otherwise, preserves maximum optimization while keeping the code flexible.
+**Action:** Always use a hybrid safe-path/fallback check when manually unrolling loops with non-constant bounds.

@@ -16,6 +16,10 @@
 /// computation, and as a spike for a possible future `OptimalPlay` fast path once
 /// benchmarked against the existing direct-enumeration approach.
 struct HandOutcomeArrays {
+    /// Stride of the flattened choose table, matching `CombinatorialIndex`'s
+    /// `maxK + 1` layout.
+    private static let chooseTableStride = 6
+
     /// Number of distinct `HandResult` cases. Every count row has this many columns,
     /// indexed by `HandResult.rawValue`.
     static let resultCount = HandResult.allCases.count
@@ -73,6 +77,9 @@ struct HandOutcomeArrays {
         var countsForOneHeld = [Int32](repeating: 0, count: 52 * n)
         var countsForNoneHeld = [Int32](repeating: 0, count: n)
 
+        // ⚡ Bolt Optimization: Wrap mutating arrays in UnsafeMutableBufferPointer closures
+        // and extract their raw base address pointers. This completely bypasses all array
+        // bounds checking overhead (83 million writes) inside the tight 5-nested loops.
         scoreForFiveCardHand.withUnsafeMutableBufferPointer { scoreBuf in
             let scorePtr = scoreBuf.baseAddress!
             countsForFourHeld.withUnsafeMutableBufferPointer { c4Buf in
@@ -87,28 +94,28 @@ struct HandOutcomeArrays {
                                 let c0Ptr = c0Buf.baseAddress!
                                 CombinatorialIndex.withChooseTablePointer { choosePtr in
                                     for c0 in 0 ..< 52 {
-                                        let chooseC0_1 = choosePtr[c0 * 6 + 1]
+                                        let chooseC0_1 = choosePtr[c0 * Self.chooseTableStride + 1]
                                         for c1 in (c0 + 1) ..< 52 {
-                                            let chooseC1_1 = choosePtr[c1 * 6 + 1]
-                                            let chooseC1_2 = choosePtr[c1 * 6 + 2]
+                                            let chooseC1_1 = choosePtr[c1 * Self.chooseTableStride + 1]
+                                            let chooseC1_2 = choosePtr[c1 * Self.chooseTableStride + 2]
                                             for c2 in (c1 + 1) ..< 52 {
-                                                let chooseC2_1 = choosePtr[c2 * 6 + 1]
-                                                let chooseC2_2 = choosePtr[c2 * 6 + 2]
-                                                let chooseC2_3 = choosePtr[c2 * 6 + 3]
+                                                let chooseC2_1 = choosePtr[c2 * Self.chooseTableStride + 1]
+                                                let chooseC2_2 = choosePtr[c2 * Self.chooseTableStride + 2]
+                                                let chooseC2_3 = choosePtr[c2 * Self.chooseTableStride + 3]
                                                 for c3 in (c2 + 1) ..< 52 {
-                                                    let chooseC3_1 = choosePtr[c3 * 6 + 1]
-                                                    let chooseC3_2 = choosePtr[c3 * 6 + 2]
-                                                    let chooseC3_3 = choosePtr[c3 * 6 + 3]
-                                                    let chooseC3_4 = choosePtr[c3 * 6 + 4]
+                                                    let chooseC3_1 = choosePtr[c3 * Self.chooseTableStride + 1]
+                                                    let chooseC3_2 = choosePtr[c3 * Self.chooseTableStride + 2]
+                                                    let chooseC3_3 = choosePtr[c3 * Self.chooseTableStride + 3]
+                                                    let chooseC3_4 = choosePtr[c3 * Self.chooseTableStride + 4]
                                                     for c4 in (c3 + 1) ..< 52 {
                                                         let score = isWild
                                                             ? FastHandEvaluator.deucesWildCode(c0, c1, c2, c3, c4)
                                                             : FastHandEvaluator.standardCode(c0, c1, c2, c3, c4)
 
-                                                        let chooseC4_2 = choosePtr[c4 * 6 + 2]
-                                                        let chooseC4_3 = choosePtr[c4 * 6 + 3]
-                                                        let chooseC4_4 = choosePtr[c4 * 6 + 4]
-                                                        let chooseC4_5 = choosePtr[c4 * 6 + 5]
+                                                        let chooseC4_2 = choosePtr[c4 * Self.chooseTableStride + 2]
+                                                        let chooseC4_3 = choosePtr[c4 * Self.chooseTableStride + 3]
+                                                        let chooseC4_4 = choosePtr[c4 * Self.chooseTableStride + 4]
+                                                        let chooseC4_5 = choosePtr[c4 * Self.chooseTableStride + 5]
 
                                                         let index5 = chooseC0_1 + chooseC1_2 + chooseC2_3 + chooseC3_4 + chooseC4_5
                                                         scorePtr[index5] = UInt8(score)
@@ -316,11 +323,28 @@ struct HandOutcomeArrays {
 
     private func dotProduct(_ flat: [Int32], rowIndex: Int, multipliers: [Double]) -> Double {
         let start = rowIndex * Self.resultCount
-        var sum = 0.0
-        for resultIndex in 0 ..< Self.resultCount {
-            sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+        if Self.resultCount == 14 {
+            return Double(flat[start + 0]) * multipliers[0]
+                + Double(flat[start + 1]) * multipliers[1]
+                + Double(flat[start + 2]) * multipliers[2]
+                + Double(flat[start + 3]) * multipliers[3]
+                + Double(flat[start + 4]) * multipliers[4]
+                + Double(flat[start + 5]) * multipliers[5]
+                + Double(flat[start + 6]) * multipliers[6]
+                + Double(flat[start + 7]) * multipliers[7]
+                + Double(flat[start + 8]) * multipliers[8]
+                + Double(flat[start + 9]) * multipliers[9]
+                + Double(flat[start + 10]) * multipliers[10]
+                + Double(flat[start + 11]) * multipliers[11]
+                + Double(flat[start + 12]) * multipliers[12]
+                + Double(flat[start + 13]) * multipliers[13]
+        } else {
+            var sum = 0.0
+            for resultIndex in 0 ..< Self.resultCount {
+                sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+            }
+            return sum
         }
-        return sum
     }
 
     // swiftformat:disable trailingCommas
@@ -380,19 +404,19 @@ struct HandOutcomeArrays {
         var index = 0
         var position = 0
         if mask & 0b00001 != 0 {
-            position += 1; index += chooseTablePtr[cards.0 * 6 + position]
+            position += 1; index += chooseTablePtr[cards.0 * Self.chooseTableStride + position]
         }
         if mask & 0b00010 != 0 {
-            position += 1; index += chooseTablePtr[cards.1 * 6 + position]
+            position += 1; index += chooseTablePtr[cards.1 * Self.chooseTableStride + position]
         }
         if mask & 0b00100 != 0 {
-            position += 1; index += chooseTablePtr[cards.2 * 6 + position]
+            position += 1; index += chooseTablePtr[cards.2 * Self.chooseTableStride + position]
         }
         if mask & 0b01000 != 0 {
-            position += 1; index += chooseTablePtr[cards.3 * 6 + position]
+            position += 1; index += chooseTablePtr[cards.3 * Self.chooseTableStride + position]
         }
         if mask & 0b10000 != 0 {
-            position += 1; index += chooseTablePtr[cards.4 * 6 + position]
+            position += 1; index += chooseTablePtr[cards.4 * Self.chooseTableStride + position]
         }
 
         switch position {
@@ -410,10 +434,27 @@ struct HandOutcomeArrays {
     @inline(__always)
     private func dotProduct(_ flat: UnsafePointer<Int32>, rowIndex: Int, multipliers: UnsafePointer<Double>) -> Double {
         let start = rowIndex * Self.resultCount
-        var sum = 0.0
-        for resultIndex in 0 ..< Self.resultCount {
-            sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+        if Self.resultCount == 14 {
+            return Double(flat[start + 0]) * multipliers[0]
+                + Double(flat[start + 1]) * multipliers[1]
+                + Double(flat[start + 2]) * multipliers[2]
+                + Double(flat[start + 3]) * multipliers[3]
+                + Double(flat[start + 4]) * multipliers[4]
+                + Double(flat[start + 5]) * multipliers[5]
+                + Double(flat[start + 6]) * multipliers[6]
+                + Double(flat[start + 7]) * multipliers[7]
+                + Double(flat[start + 8]) * multipliers[8]
+                + Double(flat[start + 9]) * multipliers[9]
+                + Double(flat[start + 10]) * multipliers[10]
+                + Double(flat[start + 11]) * multipliers[11]
+                + Double(flat[start + 12]) * multipliers[12]
+                + Double(flat[start + 13]) * multipliers[13]
+        } else {
+            var sum = 0.0
+            for resultIndex in 0 ..< Self.resultCount {
+                sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+            }
+            return sum
         }
-        return sum
     }
 }
