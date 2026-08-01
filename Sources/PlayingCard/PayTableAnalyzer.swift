@@ -16,9 +16,17 @@
 /// `PayTableAnalyzerTests` cross-checks its output against the published return
 /// percentages for this library's existing pay tables.
 public enum PayTableAnalyzer {
-    /// Precomputed reciprocals of the number of possible draw completions for holding exactly `k` cards, indexed by `k` (0...5).
-    /// Precomputing these avoids expensive floating-point division in the hot loop.
-    private static let reciprocalsForHoldSize: [Double] = (0 ... 5).map {
+    /// Precomputed reciprocals of completion counts for hold sizes 0-5 to avoid expensive divisions.
+    /// Derived from `CombinatorialIndex.choose` so the values stay tied to the shared
+    /// combinatorics table instead of repeating raw coefficients.
+    /// holdMask.nonzeroBitCount maps to 0...5:
+    /// - 0: 1 / choose(47, 5) = 1 / 1533939
+    /// - 1: 1 / choose(47, 4) = 1 / 178365
+    /// - 2: 1 / choose(47, 3) = 1 / 16215
+    /// - 3: 1 / choose(47, 2) = 1 / 1081
+    /// - 4: 1 / choose(47, 1) = 1 / 47
+    /// - 5: 1 / choose(47, 0) = 1 / 1
+    private static let reciprocalCompletions: [Double] = (0 ... 5).map {
         1.0 / Double(CombinatorialIndex.choose(47, 5 - $0))
     }
 
@@ -54,8 +62,8 @@ public enum PayTableAnalyzer {
         var payoutOfSubset = [Double](repeating: 0, count: 32)
         var numeratorForHold = [Double](repeating: 0, count: 32)
 
-        reciprocalsForHoldSize.withUnsafeBufferPointer { reciprocalsBuf in
-            let reciprocalsPtr = reciprocalsBuf.baseAddress!
+        reciprocalCompletions.withUnsafeBufferPointer { reciprocalBuf in
+            let reciprocalPtr = reciprocalBuf.baseAddress!
             multipliers.withUnsafeBufferPointer { multipliersBuf in
                 let multipliersPtr = multipliersBuf.baseAddress!
                 payoutOfSubset.withUnsafeMutableBufferPointer { payoutBuf in
@@ -84,7 +92,7 @@ public enum PayTableAnalyzer {
                                                         countsForNoneHeldPtr: counts0Ptr,
                                                         payoutOfSubset: payoutPtr,
                                                         numeratorForHold: numeratorPtr,
-                                                        reciprocalsPtr: reciprocalsPtr,
+                                                        reciprocalPtr: reciprocalPtr,
                                                     )
                                                     handCount += 1
                                                 }
@@ -126,7 +134,7 @@ public enum PayTableAnalyzer {
         countsForNoneHeldPtr: UnsafePointer<Int32>,
         payoutOfSubset: UnsafeMutablePointer<Double>,
         numeratorForHold: UnsafeMutablePointer<Double>,
-        reciprocalsPtr: UnsafePointer<Double>,
+        reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
@@ -164,8 +172,8 @@ public enum PayTableAnalyzer {
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let holdSize = holdMask.nonzeroBitCount
-            best = max(best, numeratorForHold[holdMask] * reciprocalsPtr[holdSize])
+            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
+            best = max(best, numeratorForHold[holdMask] * completionsRecip)
         }
         return best
     }

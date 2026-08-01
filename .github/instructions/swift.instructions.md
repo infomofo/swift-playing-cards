@@ -25,4 +25,6 @@ Before flagging a `switch` statement as "missing return" or a compile error, che
 
 
 
-Before claiming that a function accepting a parameter is "specific to" one game variant or hard-coded to one value, read the full function body and verify that every decision point uses the parameter — not a hard-coded constant. A function is only game-specific if you can cite a specific line where the parameter is ignored and a constant is used in its place. If the implementation uses the parameter throughout, the function is general-purpose regardless of how its return type is named.
+Before claiming that a function accepting a parameter is "specific to" one game variant or hard-coded to one value, read the full function body and verify that every decision point uses the parameter, not a hard-coded constant. A function is only game-specific if you can cite a specific line where the parameter is ignored and a constant is used in its place. If the implementation uses the parameter throughout, the function is general-purpose regardless of how its return type is named.
+
+Before claiming a precomputed lookup table or reciprocal array has no hot-path benefit, trace where it is consumed. If the value is loaded once and used inside an inner loop to avoid repeated work, do not dismiss it as dead weight, and do not ask for its removal without a benchmark or allocation profile that shows the loop is faster without it.
