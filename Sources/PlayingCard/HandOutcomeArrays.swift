@@ -298,11 +298,28 @@ struct HandOutcomeArrays {
 
     private func dotProduct(_ flat: [Int32], rowIndex: Int, multipliers: [Double]) -> Double {
         let start = rowIndex * Self.resultCount
-        var sum = 0.0
-        for resultIndex in 0 ..< Self.resultCount {
-            sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+        if Self.resultCount == 14 {
+            return Double(flat[start + 0]) * multipliers[0]
+                + Double(flat[start + 1]) * multipliers[1]
+                + Double(flat[start + 2]) * multipliers[2]
+                + Double(flat[start + 3]) * multipliers[3]
+                + Double(flat[start + 4]) * multipliers[4]
+                + Double(flat[start + 5]) * multipliers[5]
+                + Double(flat[start + 6]) * multipliers[6]
+                + Double(flat[start + 7]) * multipliers[7]
+                + Double(flat[start + 8]) * multipliers[8]
+                + Double(flat[start + 9]) * multipliers[9]
+                + Double(flat[start + 10]) * multipliers[10]
+                + Double(flat[start + 11]) * multipliers[11]
+                + Double(flat[start + 12]) * multipliers[12]
+                + Double(flat[start + 13]) * multipliers[13]
+        } else {
+            var sum = 0.0
+            for resultIndex in 0 ..< Self.resultCount {
+                sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+            }
+            return sum
         }
-        return sum
     }
 
     // swiftformat:disable trailingCommas
@@ -392,10 +409,27 @@ struct HandOutcomeArrays {
     @inline(__always)
     private func dotProduct(_ flat: UnsafePointer<Int32>, rowIndex: Int, multipliers: UnsafePointer<Double>) -> Double {
         let start = rowIndex * Self.resultCount
-        var sum = 0.0
-        for resultIndex in 0 ..< Self.resultCount {
-            sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+        if Self.resultCount == 14 {
+            return Double(flat[start + 0]) * multipliers[0]
+                + Double(flat[start + 1]) * multipliers[1]
+                + Double(flat[start + 2]) * multipliers[2]
+                + Double(flat[start + 3]) * multipliers[3]
+                + Double(flat[start + 4]) * multipliers[4]
+                + Double(flat[start + 5]) * multipliers[5]
+                + Double(flat[start + 6]) * multipliers[6]
+                + Double(flat[start + 7]) * multipliers[7]
+                + Double(flat[start + 8]) * multipliers[8]
+                + Double(flat[start + 9]) * multipliers[9]
+                + Double(flat[start + 10]) * multipliers[10]
+                + Double(flat[start + 11]) * multipliers[11]
+                + Double(flat[start + 12]) * multipliers[12]
+                + Double(flat[start + 13]) * multipliers[13]
+        } else {
+            var sum = 0.0
+            for resultIndex in 0 ..< Self.resultCount {
+                sum += Double(flat[start + resultIndex]) * multipliers[resultIndex]
+            }
+            return sum
         }
-        return sum
     }
 }

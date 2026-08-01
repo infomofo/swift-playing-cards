@@ -41,3 +41,7 @@
 ## 2026-07-26 - Swift Lifetime-Bounded Pointer Passing
 **Learning:** Escaping raw pointers from `withUnsafeBufferPointer` closures to static or global properties violates memory safety. It causes undefined behavior because Swift does not guarantee the pointer remains valid after the closure ends. Wrapping the entire hot loop in a lifetime-bounded monadic closure (like `withChooseTablePointer`) and passing the pointer down the call stack is 100% memory safe.
 **Action:** Always bind the lifetime of unsafe pointers to the outer-most loop and pass them down as function parameters, rather than storing them in variables.
+
+## 2026-08-01 - Safe Hybrid Loop Unrolling
+**Learning:** Manually unrolling loops in performance-critical paths eliminates significant loop control, index calculation, and branch prediction overhead. However, hardcoding loop boundaries directly can introduce major maintainability and robustness risks if data shapes change in the future. Implementing a hybrid approach—checking dynamically if the count matches the expected unrolled boundary size, running the fast-path if true, and falling back to a clean dynamic loop otherwise—preserves maximum optimization while ensuring 100% safety and flexibility.
+**Action:** Always use a hybrid safe-path/fallback check when manually unrolling loops with non-constant bounds.
