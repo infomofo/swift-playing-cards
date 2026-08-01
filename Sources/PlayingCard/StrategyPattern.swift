@@ -117,6 +117,21 @@ public enum StrategyPattern: String, Equatable, CaseIterable, Sendable {
     case pair = "Pair"
     /// Two suited cards both J or higher (Deuces Wild 0-deuce position 10).
     case twoToRoyalFlushJQHigh = "Two to a royal flush (J/Q high)"
+    /// Zero-deuce, 3-card straight flush draw spanning 2 or 3 ranks (0 or 1 internal gaps),
+    /// e.g. suited 5-6-7 or suited 5-6-8. WoO's 0-deuce simple strategy splits 3-card straight
+    /// flush draws by rank spread, not by held high-card count: a single pair never pays in
+    /// Deuces Wild (the JoB "backup pair" rationale behind ``threeToStraightFlushType1``/
+    /// ``threeToStraightFlushType2``/``threeToStraightFlushType3`` doesn't apply here).
+    /// EV ~0.40–0.51, ranking below a low pair and four to a flush.
+    case threeToStraightFlushLowSpreadNoDeuce = "Three to a straight flush (spread 3-4, no deuce)"
+    /// Zero-deuce, 3-card straight flush draw spanning 4 ranks (2 internal gaps), e.g. suited
+    /// 5-7-9. The widest gap that can still complete a straight flush; weaker than
+    /// ``threeToStraightFlushLowSpreadNoDeuce``. EV ~0.30–0.36.
+    case threeToStraightFlushHighSpreadNoDeuce = "Three to a straight flush (spread 5, no deuce)"
+    /// Zero-deuce, 3-card ace-low straight flush draw (ace + two suited cards ranked 5 or
+    /// lower), e.g. suited A-2-4. Only completes toward a wheel (A-2-3-4-5), so per WoO this
+    /// is weaker than discarding everything and ranks last in the 0-deuce hierarchy.
+    case threeToStraightFlushAceLowNoDeuce = "Three to a straight flush (ace low, no deuce)"
 }
 
 // MARK: - HoldClassifier
@@ -730,7 +745,7 @@ public struct HoldClassifier {
                 return .threeToRoyalFlush
             }
             if canFormStraightFlush(ranks) {
-                return .threeToStraightFlushType1
+                return classifyDW0ThreeToStraightFlushSpread(ranks: ranks)
             }
         }
         if case .onePair = classifyRankShape(ranks) {
@@ -748,6 +763,31 @@ public struct HoldClassifier {
         case 1: return .oneHighCard
         default: return .discardAll
         }
+    }
+
+    /// Classifies a zero-deuce, 3-card suited straight flush draw by rank spread, per WoO's
+    /// Deuces Wild 0-deuce simple strategy. Unlike the Jacks-or-Better equivalent
+    /// (`classifyThreeToSFType`), this does not weigh held high-card count: a single pair
+    /// never pays in Deuces Wild, so there's no "backup pair" value to a held jack or queen.
+    ///
+    /// Called only when `canFormStraightFlush` already returned true.
+    private static func classifyDW0ThreeToStraightFlushSpread(ranks: [Int]) -> StrategyPattern {
+        let sorted = ranks.sorted()
+
+        // Ace-low: ace + two low cards (all ≤ 5) — only completes toward a wheel, per WoO
+        // this ranks below discarding everything.
+        if sorted.contains(14) {
+            let nonAce = sorted.filter { $0 != 14 }
+            if nonAce.allSatisfy({ $0 <= 5 }) {
+                return .threeToStraightFlushAceLowNoDeuce
+            }
+        }
+
+        // Number of interior gaps: for 3 cards, gapCount = span - 2.
+        let span = sorted.last! - sorted.first!
+        let gapCount = span - 2
+
+        return gapCount <= 1 ? .threeToStraightFlushLowSpreadNoDeuce : .threeToStraightFlushHighSpreadNoDeuce
     }
 
     private static func classifyDW0Two(_ first: PlayingCard, _ second: PlayingCard) -> StrategyPattern {

@@ -411,4 +411,47 @@ final class HoldClassifierDeucesWildTests: XCTestCase {
         let pattern = HoldClassifier.classifyDeucesWild(hand: hand, holding: [0, 1])
         XCTAssertEqual(pattern, .oneDeuce)
     }
+
+    // MARK: - Zero-deuce, 3-card straight flush spread (spread 3-4 vs spread 5 vs ace-low)
+
+    func testDW0ThreeToSFConsecutiveIsLowSpread() {
+        // 5♣ 6♣ 7♣ held (consecutive, span 2, 0 gaps) + unrelated K♦ 9♥ kickers.
+        let hand = [
+            card(.five, .clubs), card(.six, .clubs), card(.seven, .clubs),
+            card(.king, .diamonds), card(.nine, .hearts),
+        ]
+        let pattern = HoldClassifier.classifyDeucesWild(hand: hand, holding: [0, 1, 2])
+        XCTAssertEqual(pattern, .threeToStraightFlushLowSpreadNoDeuce)
+    }
+
+    func testDW0ThreeToSFOneGapIsLowSpread() {
+        // 5♣ 6♣ 8♣ held (span 3, 1 gap) + unrelated K♦ 9♥ kickers.
+        let hand = [
+            card(.five, .clubs), card(.six, .clubs), card(.eight, .clubs),
+            card(.king, .diamonds), card(.nine, .hearts),
+        ]
+        let pattern = HoldClassifier.classifyDeucesWild(hand: hand, holding: [0, 1, 2])
+        XCTAssertEqual(pattern, .threeToStraightFlushLowSpreadNoDeuce)
+    }
+
+    func testDW0ThreeToSFTwoGapsIsHighSpread() {
+        // 5♣ 7♣ 9♣ held (span 4, 2 gaps) + unrelated K♦ 8♥ kickers.
+        let hand = [
+            card(.five, .clubs), card(.seven, .clubs), card(.nine, .clubs),
+            card(.king, .diamonds), card(.eight, .hearts),
+        ]
+        let pattern = HoldClassifier.classifyDeucesWild(hand: hand, holding: [0, 1, 2])
+        XCTAssertEqual(pattern, .threeToStraightFlushHighSpreadNoDeuce)
+    }
+
+    func testDW0ThreeToSFAceLowIsWorstTier() {
+        // A♣ 3♣ 4♣ held (wheel-only draw, no deuce since 2 is the wild card in this game)
+        // + unrelated K♦ 9♥ kickers.
+        let hand = [
+            card(.ace, .clubs), card(.three, .clubs), card(.four, .clubs),
+            card(.king, .diamonds), card(.nine, .hearts),
+        ]
+        let pattern = HoldClassifier.classifyDeucesWild(hand: hand, holding: [0, 1, 2])
+        XCTAssertEqual(pattern, .threeToStraightFlushAceLowNoDeuce)
+    }
 }
