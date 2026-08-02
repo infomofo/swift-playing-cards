@@ -53,14 +53,12 @@ public enum PayTableAnalyzer {
 
         // Scratch buffers reused across all 2,598,960 hands: `payoutOfSubset[mask]` is
         // the total payout for holding exactly the cards `mask` selects (before
-        // correcting for the other 4 dealt cards), and `numeratorForHold[mask]` is the
-        // inclusion-exclusion-corrected EV numerator for actually holding `mask`.
-        // Allocating these once and mutating in place, instead of building fresh
+        // correcting for the other 4 dealt cards).
+        // Allocating this once and mutating in place, instead of building fresh
         // arrays per hand, is most of what makes this loop fast: an earlier version
         // built on `HandOutcomeArrays.outcomeCounts` (which allocates per call)
         // measured roughly two orders of magnitude slower.
         var payoutOfSubset = [Double](repeating: 0, count: 32)
-        var numeratorForHold = [Double](repeating: 0, count: 32)
 
         reciprocalCompletions.withUnsafeBufferPointer { reciprocalBuf in
             let reciprocalPtr = reciprocalBuf.baseAddress!
@@ -68,40 +66,36 @@ public enum PayTableAnalyzer {
                 let multipliersPtr = multipliersBuf.baseAddress!
                 payoutOfSubset.withUnsafeMutableBufferPointer { payoutBuf in
                     let payoutPtr = payoutBuf.baseAddress!
-                    numeratorForHold.withUnsafeMutableBufferPointer { numeratorBuf in
-                        let numeratorPtr = numeratorBuf.baseAddress!
-                        CombinatorialIndex.withChooseTablePointer { choosePtr in
-                            arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
-                                // swiftlint:disable identifier_name
-                                for c0 in 0 ..< 52 {
-                                    for c1 in (c0 + 1) ..< 52 {
-                                        for c2 in (c1 + 1) ..< 52 {
-                                            for c3 in (c2 + 1) ..< 52 {
-                                                for c4 in (c3 + 1) ..< 52 {
-                                                    let cards = (c0, c1, c2, c3, c4)
-                                                    totalEV += bestHoldEV(
-                                                        cards: cards,
-                                                        arrays: arrays,
-                                                        multipliers: multipliersPtr,
-                                                        chooseTablePtr: choosePtr,
-                                                        scoreForFiveCardHandPtr: scorePtr,
-                                                        countsForFourHeldPtr: counts4Ptr,
-                                                        countsForThreeHeldPtr: counts3Ptr,
-                                                        countsForTwoHeldPtr: counts2Ptr,
-                                                        countsForOneHeldPtr: counts1Ptr,
-                                                        countsForNoneHeldPtr: counts0Ptr,
-                                                        payoutOfSubset: payoutPtr,
-                                                        numeratorForHold: numeratorPtr,
-                                                        reciprocalPtr: reciprocalPtr,
-                                                    )
-                                                    handCount += 1
-                                                }
+                    CombinatorialIndex.withChooseTablePointer { choosePtr in
+                        arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
+                            // swiftlint:disable identifier_name
+                            for c0 in 0 ..< 52 {
+                                for c1 in (c0 + 1) ..< 52 {
+                                    for c2 in (c1 + 1) ..< 52 {
+                                        for c3 in (c2 + 1) ..< 52 {
+                                            for c4 in (c3 + 1) ..< 52 {
+                                                let cards = (c0, c1, c2, c3, c4)
+                                                totalEV += bestHoldEV(
+                                                    cards: cards,
+                                                    arrays: arrays,
+                                                    multipliers: multipliersPtr,
+                                                    chooseTablePtr: choosePtr,
+                                                    scoreForFiveCardHandPtr: scorePtr,
+                                                    countsForFourHeldPtr: counts4Ptr,
+                                                    countsForThreeHeldPtr: counts3Ptr,
+                                                    countsForTwoHeldPtr: counts2Ptr,
+                                                    countsForOneHeldPtr: counts1Ptr,
+                                                    countsForNoneHeldPtr: counts0Ptr,
+                                                    payoutOfSubset: payoutPtr,
+                                                    reciprocalPtr: reciprocalPtr,
+                                                )
+                                                handCount += 1
                                             }
                                         }
                                     }
                                 }
-                                // swiftlint:enable identifier_name
                             }
+                            // swiftlint:enable identifier_name
                         }
                     }
                 }
@@ -116,11 +110,10 @@ public enum PayTableAnalyzer {
     /// expected value: the return-per-unit-bet a perfect-strategy player would get by
     /// holding whichever subset maximizes EV.
     ///
-    /// Uses the same inclusion-exclusion identity as `HandOutcomeArrays.outcomeCounts`
-    /// (for held set `H`, `EV(H) = Σ_{T ⊇ H} (-1)^|T∖H| * payout(T) / completions(H)`),
-    /// but restructured as a single subset-sum (Möbius) transform over all 32 subsets
-    /// of the 5 dealt cards, computed with fixed-size scratch buffers instead of
-    /// per-hold, per-discard-subset array allocation.
+    /// Restructured as a single subset-sum Fast Möbius Transform (FMT) over all 32 subsets
+    /// of the 5 dealt cards, computed in-place with a single fixed-size scratch buffer.
+    /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
+    /// completely bypassing the second scratch buffer and redundant writes.
     private static func bestHoldEV(
         cards: (Int, Int, Int, Int, Int),
         arrays: HandOutcomeArrays,
@@ -133,7 +126,6 @@ public enum PayTableAnalyzer {
         countsForOneHeldPtr: UnsafePointer<Int32>,
         countsForNoneHeldPtr: UnsafePointer<Int32>,
         payoutOfSubset: UnsafeMutablePointer<Double>,
-        numeratorForHold: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
         for mask in 0 ..< 32 {
@@ -149,31 +141,26 @@ public enum PayTableAnalyzer {
                 countsForOneHeldPtr: countsForOneHeldPtr,
                 countsForNoneHeldPtr: countsForNoneHeldPtr,
             )
-            numeratorForHold[mask] = 0
         }
 
-        // For every pair (hold, superset) with hold ⊆ superset, the superset's raw
-        // payout contributes to the hold's EV numerator with sign (-1)^|superset∖hold|.
-        // Enumerating subsets of each superset via the standard `(s - 1) & superset`
-        // bit trick visits exactly the 3^5 = 243 such pairs, with no allocation.
-        for supersetMask in 0 ..< 32 {
-            let payout = payoutOfSubset[supersetMask]
-            var holdMask = supersetMask
-            while true {
-                let discardedFromSuperset = (supersetMask & ~holdMask).nonzeroBitCount
-                let sign = discardedFromSuperset.isMultiple(of: 2) ? 1.0 : -1.0
-                numeratorForHold[holdMask] += sign * payout
-                if holdMask == 0 {
-                    break
+        // Fast Möbius Transform (FMT) in-place:
+        for step in 0 ..< 5 {
+            let stepSize = 1 << step
+            var baseIdx = 0
+            while baseIdx < 32 {
+                for offset in 0 ..< stepSize {
+                    let lowMask = baseIdx + offset
+                    let highMask = lowMask + stepSize
+                    payoutOfSubset[lowMask] -= payoutOfSubset[highMask]
                 }
-                holdMask = (holdMask - 1) & supersetMask
+                baseIdx += stepSize * 2
             }
         }
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
             let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
-            best = max(best, numeratorForHold[holdMask] * completionsRecip)
+            best = max(best, payoutOfSubset[holdMask] * completionsRecip)
         }
         return best
     }
