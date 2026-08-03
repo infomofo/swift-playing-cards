@@ -1,3 +1,7 @@
+## 2026-08-03 - Hoisting and Reusing Sub-sums in Nested Combinatorial Loops
+**Learning:** In nested multi-million iteration loops (such as the 2,598,960-hand loop in `HandOutcomeArrays.build`), many combinatorial offset additions and array-width multiplications can be hoisted and shared. Precalculating `c0 * n`, `pair` indices, and `triple` sub-sums at Level 0, 1, 2, and 3 completely eliminates redundant additions and multiplications from the innermost `c4` loop, dropping the operation count per iteration from 80 down to 19, delivering an ~8.6% speedup to the entire RTP analyzer.
+**Action:** When working with deeply nested loops evaluating combinations, aggressively hoist common sub-expressions and pre-multiply them with loop-level widths to minimize hot-path CPU instructions.
+
 ## 2026-08-02 - Fast Möbius Transform for Subset-Sum (Möbius) EV Calculations
 **Learning:** In Video Poker EV evaluations, replacing the $O(3^N)$ naive inclusion-exclusion loop (which visits 243 pairs) with an in-place $O(N 2^N)$ Fast Möbius Transform (FMT) requiring only 80 subtraction operations on the payout array eliminates the need for an extra scratch buffer (`numeratorForHold`). This reduces cache footprint, completely avoids redundant memory writes, and delivers a massive ~27.72% overall speedup in return-to-player analysis.
 **Action:** Whenever performing inclusion-exclusion or subset-sum operations over small bitmasks, prefer in-place Fast Möbius Transforms to achieve $O(N 2^N)$ complexity and optimal memory layouts.
@@ -18,7 +22,7 @@
 **Learning:** Standard high-level collections like Arrays, Sets, and Dictionary groupings inside core evaluation loops incur massive heap allocation and reference-counting overheads. Bypassing them completely via inline register sorting networks (such as 5-item sorting networks) and direct, zero-allocation comparisons yields a ~5.5x speedup in release builds.
 **Action:** Always replace map, Set, and Dictionary grouping in high-frequency evaluation functions with fixed-size inline variables and optimized sorting/conditional logic.
 
-## 2026-07-18 - Safe O(1) Deck Dealing and Dynamic Loop Bounds
+## 2026-08-02 - Safe O(1) Deck Dealing and Dynamic Loop Bounds
 **Learning:** When optimizing card deck dealing, modifying array size or dealing from the end of the array (reversing the order) can cause functional regressions if down-stream tests expect specific cards in sequential order. Utilizing an index pointer tracks the deal state in O(1) time while perfectly preserving the original card sequence. Additionally, hardcoding loop boundaries for hand evaluation introduces index out-of-bounds risks; dynamic loop boundaries using `cards.count` guarantee safety.
 **Action:** Prefer tracking state with index pointers over modifying array sizes in performance critical code, and always use dynamic collection counts for safety.
 
