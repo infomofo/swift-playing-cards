@@ -95,18 +95,43 @@ struct HandOutcomeArrays {
                                 CombinatorialIndex.withChooseTablePointer { choosePtr in
                                     for c0 in 0 ..< 52 {
                                         let chooseC0_1 = choosePtr[c0 * Self.chooseTableStride + 1]
+                                        let c0_n_mul = chooseC0_1 * n
+                                        let c0_mul_n = c0 * n
                                         for c1 in (c0 + 1) ..< 52 {
                                             let chooseC1_1 = choosePtr[c1 * Self.chooseTableStride + 1]
                                             let chooseC1_2 = choosePtr[c1 * Self.chooseTableStride + 2]
+                                            let c1_n_mul = chooseC1_1 * n
+                                            let c1_mul_n = c1 * n
+                                            let pair_0_1 = (chooseC0_1 + chooseC1_2) * n
                                             for c2 in (c1 + 1) ..< 52 {
                                                 let chooseC2_1 = choosePtr[c2 * Self.chooseTableStride + 1]
                                                 let chooseC2_2 = choosePtr[c2 * Self.chooseTableStride + 2]
                                                 let chooseC2_3 = choosePtr[c2 * Self.chooseTableStride + 3]
+                                                let c2_n_mul = chooseC2_1 * n
+                                                let c2_mul_n = c2 * n
+                                                let pair_0_2 = (chooseC0_1 + chooseC2_2) * n
+                                                let pair_1_2 = (chooseC1_1 + chooseC2_2) * n
+                                                let triple_0_1_2 = (chooseC0_1 + chooseC1_2 + chooseC2_3) * n
                                                 for c3 in (c2 + 1) ..< 52 {
                                                     let chooseC3_1 = choosePtr[c3 * Self.chooseTableStride + 1]
                                                     let chooseC3_2 = choosePtr[c3 * Self.chooseTableStride + 2]
                                                     let chooseC3_3 = choosePtr[c3 * Self.chooseTableStride + 3]
                                                     let chooseC3_4 = choosePtr[c3 * Self.chooseTableStride + 4]
+                                                    let c3_n_mul = chooseC3_1 * n
+                                                    let c3_mul_n = c3 * n
+                                                    let pair_0_3 = (chooseC0_1 + chooseC3_2) * n
+                                                    let pair_1_3 = (chooseC1_1 + chooseC3_2) * n
+                                                    let pair_2_3 = (chooseC2_1 + chooseC3_2) * n
+                                                    let triple_0_1_3 = (chooseC0_1 + chooseC1_2 +
+                                                        chooseC3_3) * n
+                                                    let triple_0_2_3 = (chooseC0_1 + chooseC2_2 +
+                                                        chooseC3_3) * n
+                                                    let triple_1_2_3 = (chooseC1_1 + chooseC2_2 +
+                                                        chooseC3_3) * n
+                                                    let idx4_4_mul_n = (chooseC0_1 + chooseC1_2 +
+                                                        chooseC2_3 + chooseC3_4) * n
+                                                    let sum_c0_c1_c2_c3_5 = chooseC0_1 + chooseC1_2 +
+                                                        chooseC2_3 + chooseC3_4
                                                     for c4 in (c3 + 1) ..< 52 {
                                                         let score = isWild
                                                             ? FastHandEvaluator.deucesWildCode(c0, c1, c2, c3, c4)
@@ -117,60 +142,61 @@ struct HandOutcomeArrays {
                                                         let chooseC4_4 = choosePtr[c4 * Self.chooseTableStride + 4]
                                                         let chooseC4_5 = choosePtr[c4 * Self.chooseTableStride + 5]
 
-                                                        let index5 = chooseC0_1 + chooseC1_2 + chooseC2_3 + chooseC3_4 + chooseC4_5
+                                                        let index5 = sum_c0_c1_c2_c3_5 + chooseC4_5
                                                         scorePtr[index5] = UInt8(score)
                                                         c0Ptr[score] += 1
 
+                                                        let chooseC4_4_mul_n = chooseC4_4 * n
+
                                                         // countsForFourHeld (exclude exactly one card)
                                                         // Exclude c0: c1, c2, c3, c4
-                                                        let idx4_0 = chooseC1_1 + chooseC2_2 + chooseC3_3 + chooseC4_4
-                                                        c4Ptr[idx4_0 * n + score] += 1
+                                                        c4Ptr[triple_1_2_3 + chooseC4_4_mul_n + score] += 1
 
                                                         // Exclude c1: c0, c2, c3, c4
-                                                        let idx4_1 = chooseC0_1 + chooseC2_2 + chooseC3_3 + chooseC4_4
-                                                        c4Ptr[idx4_1 * n + score] += 1
+                                                        c4Ptr[triple_0_2_3 + chooseC4_4_mul_n + score] += 1
 
                                                         // Exclude c2: c0, c1, c3, c4
-                                                        let idx4_2 = chooseC0_1 + chooseC1_2 + chooseC3_3 + chooseC4_4
-                                                        c4Ptr[idx4_2 * n + score] += 1
+                                                        c4Ptr[triple_0_1_3 + chooseC4_4_mul_n + score] += 1
 
                                                         // Exclude c3: c0, c1, c2, c4
-                                                        let idx4_3 = chooseC0_1 + chooseC1_2 + chooseC2_3 + chooseC4_4
-                                                        c4Ptr[idx4_3 * n + score] += 1
+                                                        c4Ptr[triple_0_1_2 + chooseC4_4_mul_n + score] += 1
 
                                                         // Exclude c4: c0, c1, c2, c3
-                                                        let idx4_4 = chooseC0_1 + chooseC1_2 + chooseC2_3 + chooseC3_4
-                                                        c4Ptr[idx4_4 * n + score] += 1
+                                                        c4Ptr[idx4_4_mul_n + score] += 1
+
+                                                        let chooseC4_2_mul_n = chooseC4_2 * n
 
                                                         // countsForTwoHeld (all 10 pairs)
-                                                        c2Ptr[(chooseC0_1 + chooseC1_2) * n + score] += 1
-                                                        c2Ptr[(chooseC0_1 + chooseC2_2) * n + score] += 1
-                                                        c2Ptr[(chooseC0_1 + chooseC3_2) * n + score] += 1
-                                                        c2Ptr[(chooseC0_1 + chooseC4_2) * n + score] += 1
-                                                        c2Ptr[(chooseC1_1 + chooseC2_2) * n + score] += 1
-                                                        c2Ptr[(chooseC1_1 + chooseC3_2) * n + score] += 1
-                                                        c2Ptr[(chooseC1_1 + chooseC4_2) * n + score] += 1
-                                                        c2Ptr[(chooseC2_1 + chooseC3_2) * n + score] += 1
-                                                        c2Ptr[(chooseC2_1 + chooseC4_2) * n + score] += 1
-                                                        c2Ptr[(chooseC3_1 + chooseC4_2) * n + score] += 1
+                                                        c2Ptr[pair_0_1 + score] += 1
+                                                        c2Ptr[pair_0_2 + score] += 1
+                                                        c2Ptr[pair_0_3 + score] += 1
+                                                        c2Ptr[c0_n_mul + chooseC4_2_mul_n + score] += 1
+                                                        c2Ptr[pair_1_2 + score] += 1
+                                                        c2Ptr[pair_1_3 + score] += 1
+                                                        c2Ptr[c1_n_mul + chooseC4_2_mul_n + score] += 1
+                                                        c2Ptr[pair_2_3 + score] += 1
+                                                        c2Ptr[c2_n_mul + chooseC4_2_mul_n + score] += 1
+                                                        c2Ptr[c3_n_mul + chooseC4_2_mul_n + score] += 1
+
+                                                        let chooseC4_3_mul_n = chooseC4_3 * n
 
                                                         // countsForThreeHeld (all 10 triples)
-                                                        c3Ptr[(chooseC0_1 + chooseC1_2 + chooseC2_3) * n + score] += 1
-                                                        c3Ptr[(chooseC0_1 + chooseC1_2 + chooseC3_3) * n + score] += 1
-                                                        c3Ptr[(chooseC0_1 + chooseC1_2 + chooseC4_3) * n + score] += 1
-                                                        c3Ptr[(chooseC0_1 + chooseC2_2 + chooseC3_3) * n + score] += 1
-                                                        c3Ptr[(chooseC0_1 + chooseC2_2 + chooseC4_3) * n + score] += 1
-                                                        c3Ptr[(chooseC0_1 + chooseC3_2 + chooseC4_3) * n + score] += 1
-                                                        c3Ptr[(chooseC1_1 + chooseC2_2 + chooseC3_3) * n + score] += 1
-                                                        c3Ptr[(chooseC1_1 + chooseC2_2 + chooseC4_3) * n + score] += 1
-                                                        c3Ptr[(chooseC1_1 + chooseC3_2 + chooseC4_3) * n + score] += 1
-                                                        c3Ptr[(chooseC2_1 + chooseC3_2 + chooseC4_3) * n + score] += 1
+                                                        c3Ptr[triple_0_1_2 + score] += 1
+                                                        c3Ptr[triple_0_1_3 + score] += 1
+                                                        c3Ptr[pair_0_1 + chooseC4_3_mul_n + score] += 1
+                                                        c3Ptr[triple_0_2_3 + score] += 1
+                                                        c3Ptr[pair_0_2 + chooseC4_3_mul_n + score] += 1
+                                                        c3Ptr[pair_0_3 + chooseC4_3_mul_n + score] += 1
+                                                        c3Ptr[triple_1_2_3 + score] += 1
+                                                        c3Ptr[pair_1_2 + chooseC4_3_mul_n + score] += 1
+                                                        c3Ptr[pair_1_3 + chooseC4_3_mul_n + score] += 1
+                                                        c3Ptr[pair_2_3 + chooseC4_3_mul_n + score] += 1
 
                                                         // countsForOneHeld
-                                                        c1Ptr[c0 * n + score] += 1
-                                                        c1Ptr[c1 * n + score] += 1
-                                                        c1Ptr[c2 * n + score] += 1
-                                                        c1Ptr[c3 * n + score] += 1
+                                                        c1Ptr[c0_mul_n + score] += 1
+                                                        c1Ptr[c1_mul_n + score] += 1
+                                                        c1Ptr[c2_mul_n + score] += 1
+                                                        c1Ptr[c3_mul_n + score] += 1
                                                         c1Ptr[c4 * n + score] += 1
                                                     }
                                                 }
