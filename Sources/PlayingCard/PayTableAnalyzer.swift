@@ -105,7 +105,7 @@ public enum PayTableAnalyzer {
         return totalEV / Double(handCount)
     }
 
-    // swiftlint:disable large_tuple function_parameter_count
+    // swiftlint:disable large_tuple function_parameter_count function_body_length
     /// Evaluates all 32 possible hold subsets of a dealt hand and returns the highest
     /// expected value: the return-per-unit-bet a perfect-strategy player would get by
     /// holding whichever subset maximizes EV.
@@ -128,12 +128,22 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        // Precalculate card pointers to bypass card multiplication & offset lookup in the 32-mask loop
+        let p0 = chooseTablePtr + cards.0 * 6
+        let p1 = chooseTablePtr + cards.1 * 6
+        let p2 = chooseTablePtr + cards.2 * 6
+        let p3 = chooseTablePtr + cards.3 * 6
+        let p4 = chooseTablePtr + cards.4 * 6
+
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                p0: p0,
+                p1: p1,
+                p2: p2,
+                p3: p3,
+                p4: p4,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -143,19 +153,96 @@ public enum PayTableAnalyzer {
             )
         }
 
-        // Fast Möbius Transform (FMT) in-place:
-        for step in 0 ..< 5 {
-            let stepSize = 1 << step
-            var baseIdx = 0
-            while baseIdx < 32 {
-                for offset in 0 ..< stepSize {
-                    let lowMask = baseIdx + offset
-                    let highMask = lowMask + stepSize
-                    payoutOfSubset[lowMask] -= payoutOfSubset[highMask]
-                }
-                baseIdx += stepSize * 2
-            }
-        }
+        // Fast Möbius Transform (FMT) in-place, fully unrolled for maximum pipeline efficiency:
+        // Step 0: stepSize = 1
+        payoutOfSubset[0] -= payoutOfSubset[1]
+        payoutOfSubset[2] -= payoutOfSubset[3]
+        payoutOfSubset[4] -= payoutOfSubset[5]
+        payoutOfSubset[6] -= payoutOfSubset[7]
+        payoutOfSubset[8] -= payoutOfSubset[9]
+        payoutOfSubset[10] -= payoutOfSubset[11]
+        payoutOfSubset[12] -= payoutOfSubset[13]
+        payoutOfSubset[14] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[17]
+        payoutOfSubset[18] -= payoutOfSubset[19]
+        payoutOfSubset[20] -= payoutOfSubset[21]
+        payoutOfSubset[22] -= payoutOfSubset[23]
+        payoutOfSubset[24] -= payoutOfSubset[25]
+        payoutOfSubset[26] -= payoutOfSubset[27]
+        payoutOfSubset[28] -= payoutOfSubset[29]
+        payoutOfSubset[30] -= payoutOfSubset[31]
+
+        // Step 1: stepSize = 2
+        payoutOfSubset[0] -= payoutOfSubset[2]
+        payoutOfSubset[1] -= payoutOfSubset[3]
+        payoutOfSubset[4] -= payoutOfSubset[6]
+        payoutOfSubset[5] -= payoutOfSubset[7]
+        payoutOfSubset[8] -= payoutOfSubset[10]
+        payoutOfSubset[9] -= payoutOfSubset[11]
+        payoutOfSubset[12] -= payoutOfSubset[14]
+        payoutOfSubset[13] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[18]
+        payoutOfSubset[17] -= payoutOfSubset[19]
+        payoutOfSubset[20] -= payoutOfSubset[22]
+        payoutOfSubset[21] -= payoutOfSubset[23]
+        payoutOfSubset[24] -= payoutOfSubset[26]
+        payoutOfSubset[25] -= payoutOfSubset[27]
+        payoutOfSubset[28] -= payoutOfSubset[30]
+        payoutOfSubset[29] -= payoutOfSubset[31]
+
+        // Step 2: stepSize = 4
+        payoutOfSubset[0] -= payoutOfSubset[4]
+        payoutOfSubset[1] -= payoutOfSubset[5]
+        payoutOfSubset[2] -= payoutOfSubset[6]
+        payoutOfSubset[3] -= payoutOfSubset[7]
+        payoutOfSubset[8] -= payoutOfSubset[12]
+        payoutOfSubset[9] -= payoutOfSubset[13]
+        payoutOfSubset[10] -= payoutOfSubset[14]
+        payoutOfSubset[11] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[20]
+        payoutOfSubset[17] -= payoutOfSubset[21]
+        payoutOfSubset[18] -= payoutOfSubset[22]
+        payoutOfSubset[19] -= payoutOfSubset[23]
+        payoutOfSubset[24] -= payoutOfSubset[28]
+        payoutOfSubset[25] -= payoutOfSubset[29]
+        payoutOfSubset[26] -= payoutOfSubset[30]
+        payoutOfSubset[27] -= payoutOfSubset[31]
+
+        // Step 3: stepSize = 8
+        payoutOfSubset[0] -= payoutOfSubset[8]
+        payoutOfSubset[1] -= payoutOfSubset[9]
+        payoutOfSubset[2] -= payoutOfSubset[10]
+        payoutOfSubset[3] -= payoutOfSubset[11]
+        payoutOfSubset[4] -= payoutOfSubset[12]
+        payoutOfSubset[5] -= payoutOfSubset[13]
+        payoutOfSubset[6] -= payoutOfSubset[14]
+        payoutOfSubset[7] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[24]
+        payoutOfSubset[17] -= payoutOfSubset[25]
+        payoutOfSubset[18] -= payoutOfSubset[26]
+        payoutOfSubset[19] -= payoutOfSubset[27]
+        payoutOfSubset[20] -= payoutOfSubset[28]
+        payoutOfSubset[21] -= payoutOfSubset[29]
+        payoutOfSubset[22] -= payoutOfSubset[30]
+        payoutOfSubset[23] -= payoutOfSubset[31]
+
+        // Step 4: stepSize = 16
+        payoutOfSubset[0] -= payoutOfSubset[16]
+        payoutOfSubset[1] -= payoutOfSubset[17]
+        payoutOfSubset[2] -= payoutOfSubset[18]
+        payoutOfSubset[3] -= payoutOfSubset[19]
+        payoutOfSubset[4] -= payoutOfSubset[20]
+        payoutOfSubset[5] -= payoutOfSubset[21]
+        payoutOfSubset[6] -= payoutOfSubset[22]
+        payoutOfSubset[7] -= payoutOfSubset[23]
+        payoutOfSubset[8] -= payoutOfSubset[24]
+        payoutOfSubset[9] -= payoutOfSubset[25]
+        payoutOfSubset[10] -= payoutOfSubset[26]
+        payoutOfSubset[11] -= payoutOfSubset[27]
+        payoutOfSubset[12] -= payoutOfSubset[28]
+        payoutOfSubset[13] -= payoutOfSubset[29]
+        payoutOfSubset[14] -= payoutOfSubset[30]
+        payoutOfSubset[15] -= payoutOfSubset[31]
 
         var best = 0.0
         for holdMask in 0 ..< 32 {

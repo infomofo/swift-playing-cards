@@ -15,6 +15,7 @@
 /// path uses it yet. It exists to support `PayTableAnalyzer`'s exact whole-pay-table RTP
 /// computation, and as a spike for a possible future `OptimalPlay` fast path once
 /// benchmarked against the existing direct-enumeration approach.
+// swiftlint:disable type_body_length
 struct HandOutcomeArrays {
     /// Stride of the flattened choose table, matching `CombinatorialIndex`'s
     /// `maxK + 1` layout.
@@ -417,6 +418,51 @@ struct HandOutcomeArrays {
         }
         if mask & 0b10000 != 0 {
             position += 1; index += chooseTablePtr[cards.4 * Self.chooseTableStride + position]
+        }
+
+        switch position {
+        case 5: return multipliers[Int(scoreForFiveCardHandPtr[index])]
+        case 4: return dotProduct(countsForFourHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 3: return dotProduct(countsForThreeHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 2: return dotProduct(countsForTwoHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 1: return dotProduct(countsForOneHeldPtr, rowIndex: index, multipliers: multipliers)
+        default: return dotProduct(countsForNoneHeldPtr, rowIndex: 0, multipliers: multipliers)
+        }
+    }
+
+    /// High-performance overload of payout that uses precalculated card pointers to bypass card multiplication & offset lookup.
+    @inline(__always)
+    func payout(
+        forSubsetMask mask: Int,
+        p0: UnsafePointer<Int>,
+        p1: UnsafePointer<Int>,
+        p2: UnsafePointer<Int>,
+        p3: UnsafePointer<Int>,
+        p4: UnsafePointer<Int>,
+        multipliers: UnsafePointer<Double>,
+        scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
+        countsForFourHeldPtr: UnsafePointer<Int32>,
+        countsForThreeHeldPtr: UnsafePointer<Int32>,
+        countsForTwoHeldPtr: UnsafePointer<Int32>,
+        countsForOneHeldPtr: UnsafePointer<Int32>,
+        countsForNoneHeldPtr: UnsafePointer<Int32>,
+    ) -> Double {
+        var index = 0
+        var position = 0
+        if mask & 0b00001 != 0 {
+            position += 1; index += p0[position]
+        }
+        if mask & 0b00010 != 0 {
+            position += 1; index += p1[position]
+        }
+        if mask & 0b00100 != 0 {
+            position += 1; index += p2[position]
+        }
+        if mask & 0b01000 != 0 {
+            position += 1; index += p3[position]
+        }
+        if mask & 0b10000 != 0 {
+            position += 1; index += p4[position]
         }
 
         switch position {
