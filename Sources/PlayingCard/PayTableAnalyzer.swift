@@ -128,12 +128,23 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        // Precalculate Choose table row pointers for each card to avoid all
+        // stride multiplications and address calculations within the tight 32-mask loop.
+        let ptr0 = chooseTablePtr + cards.0 * 6
+        let ptr1 = chooseTablePtr + cards.1 * 6
+        let ptr2 = chooseTablePtr + cards.2 * 6
+        let ptr3 = chooseTablePtr + cards.3 * 6
+        let ptr4 = chooseTablePtr + cards.4 * 6
+
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                ptr0: ptr0,
+                ptr1: ptr1,
+                ptr2: ptr2,
+                ptr3: ptr3,
+                ptr4: ptr4,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -144,17 +155,33 @@ public enum PayTableAnalyzer {
         }
 
         // Fast Möbius Transform (FMT) in-place:
-        for step in 0 ..< 5 {
-            let stepSize = 1 << step
-            var baseIdx = 0
-            while baseIdx < 32 {
-                for offset in 0 ..< stepSize {
-                    let lowMask = baseIdx + offset
-                    let highMask = lowMask + stepSize
-                    payoutOfSubset[lowMask] -= payoutOfSubset[highMask]
-                }
-                baseIdx += stepSize * 2
-            }
+        // Fully unrolled nested loops using simple stride loops, enabling compiler vectorization/unrolling
+        // and completely eliminating branch mispredictions and loop indexing arithmetic.
+        for idx in stride(from: 0, to: 32, by: 2) {
+            payoutOfSubset[idx] -= payoutOfSubset[idx + 1]
+        }
+        for idx in stride(from: 0, to: 32, by: 4) {
+            payoutOfSubset[idx] -= payoutOfSubset[idx + 2]
+            payoutOfSubset[idx + 1] -= payoutOfSubset[idx + 3]
+        }
+        for idx in stride(from: 0, to: 32, by: 8) {
+            payoutOfSubset[idx] -= payoutOfSubset[idx + 4]
+            payoutOfSubset[idx + 1] -= payoutOfSubset[idx + 5]
+            payoutOfSubset[idx + 2] -= payoutOfSubset[idx + 6]
+            payoutOfSubset[idx + 3] -= payoutOfSubset[idx + 7]
+        }
+        for idx in stride(from: 0, to: 32, by: 16) {
+            payoutOfSubset[idx] -= payoutOfSubset[idx + 8]
+            payoutOfSubset[idx + 1] -= payoutOfSubset[idx + 9]
+            payoutOfSubset[idx + 2] -= payoutOfSubset[idx + 10]
+            payoutOfSubset[idx + 3] -= payoutOfSubset[idx + 11]
+            payoutOfSubset[idx + 4] -= payoutOfSubset[idx + 12]
+            payoutOfSubset[idx + 5] -= payoutOfSubset[idx + 13]
+            payoutOfSubset[idx + 6] -= payoutOfSubset[idx + 14]
+            payoutOfSubset[idx + 7] -= payoutOfSubset[idx + 15]
+        }
+        for idx in 0 ..< 16 {
+            payoutOfSubset[idx] -= payoutOfSubset[idx + 16]
         }
 
         var best = 0.0

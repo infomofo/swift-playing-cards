@@ -247,24 +247,18 @@ struct HandOutcomeArrays {
     /// Returns the `resultCount`-wide count row for a specific sorted set of held
     /// cards, dispatching to whichever precomputed array matches its size.
     private func rowCounts(forSortedCards combined: [Int]) -> [Int] {
+        let index = combined.count == 0 ? 0 : CombinatorialIndex.index(sortedCards: combined)
         switch combined.count {
         case 5:
             var row = [Int](repeating: 0, count: Self.resultCount)
-            let index = CombinatorialIndex.index(sortedCards: combined)
             row[Int(scoreForFiveCardHand[index])] = 1
             return row
-        case 4:
-            return extractRow(countsForFourHeld, index: CombinatorialIndex.index(sortedCards: combined))
-        case 3:
-            return extractRow(countsForThreeHeld, index: CombinatorialIndex.index(sortedCards: combined))
-        case 2:
-            return extractRow(countsForTwoHeld, index: CombinatorialIndex.index(sortedCards: combined))
-        case 1:
-            return extractRow(countsForOneHeld, index: CombinatorialIndex.index(sortedCards: combined))
-        case 0:
-            return countsForNoneHeld.map(Int.init)
-        default:
-            preconditionFailure("combined held+subset count must be 0–5, got \(combined.count)")
+        case 4: return extractRow(countsForFourHeld, index: index)
+        case 3: return extractRow(countsForThreeHeld, index: index)
+        case 2: return extractRow(countsForTwoHeld, index: index)
+        case 1: return extractRow(countsForOneHeld, index: index)
+        case 0: return countsForNoneHeld.map(Int.init)
+        default: preconditionFailure("combined held+subset count must be 0–5, got \(combined.count)")
         }
     }
 
@@ -417,6 +411,52 @@ struct HandOutcomeArrays {
         }
         if mask & 0b10000 != 0 {
             position += 1; index += chooseTablePtr[cards.4 * Self.chooseTableStride + position]
+        }
+
+        switch position {
+        case 5: return multipliers[Int(scoreForFiveCardHandPtr[index])]
+        case 4: return dotProduct(countsForFourHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 3: return dotProduct(countsForThreeHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 2: return dotProduct(countsForTwoHeldPtr, rowIndex: index, multipliers: multipliers)
+        case 1: return dotProduct(countsForOneHeldPtr, rowIndex: index, multipliers: multipliers)
+        default: return dotProduct(countsForNoneHeldPtr, rowIndex: 0, multipliers: multipliers)
+        }
+    }
+
+    /// High-performance overload of payout using precomputed pointers for each card in the choose table.
+    /// This completely avoids stride multiplications and offset pointer calculations inside the hot mask loop.
+    @inline(__always)
+    func payout(
+        forSubsetMask mask: Int,
+        ptr0: UnsafePointer<Int>,
+        ptr1: UnsafePointer<Int>,
+        ptr2: UnsafePointer<Int>,
+        ptr3: UnsafePointer<Int>,
+        ptr4: UnsafePointer<Int>,
+        multipliers: UnsafePointer<Double>,
+        scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
+        countsForFourHeldPtr: UnsafePointer<Int32>,
+        countsForThreeHeldPtr: UnsafePointer<Int32>,
+        countsForTwoHeldPtr: UnsafePointer<Int32>,
+        countsForOneHeldPtr: UnsafePointer<Int32>,
+        countsForNoneHeldPtr: UnsafePointer<Int32>,
+    ) -> Double {
+        var index = 0
+        var position = 0
+        if mask & 0b00001 != 0 {
+            position += 1; index += ptr0[position]
+        }
+        if mask & 0b00010 != 0 {
+            position += 1; index += ptr1[position]
+        }
+        if mask & 0b00100 != 0 {
+            position += 1; index += ptr2[position]
+        }
+        if mask & 0b01000 != 0 {
+            position += 1; index += ptr3[position]
+        }
+        if mask & 0b10000 != 0 {
+            position += 1; index += ptr4[position]
         }
 
         switch position {
