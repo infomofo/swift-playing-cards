@@ -128,12 +128,23 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        // Precompute row base pointers of the flattened binomial coefficient table
+        // once per hand to avoid expensive stride multiplications inside the 32-mask loop.
+        let r0 = chooseTablePtr + cards.0 * 6
+        let r1 = chooseTablePtr + cards.1 * 6
+        let r2 = chooseTablePtr + cards.2 * 6
+        let r3 = chooseTablePtr + cards.3 * 6
+        let r4 = chooseTablePtr + cards.4 * 6
+
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                r0: r0,
+                r1: r1,
+                r2: r2,
+                r3: r3,
+                r4: r4,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
