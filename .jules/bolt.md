@@ -61,3 +61,7 @@
 ## 2026-08-01 - Safe Hybrid Loop Unrolling
 **Learning:** Manually unrolling loops in performance-critical paths eliminates significant loop control, index calculation, and branch prediction overhead. However, hardcoding loop boundaries directly can introduce major maintainability and safety risks if data shapes change in the future. Implementing a hybrid approach, checking dynamically if the count matches the expected unrolled boundary size, running the fast path if true, and falling back to a clean dynamic loop otherwise, preserves maximum optimization while keeping the code flexible.
 **Action:** Always use a hybrid safe-path/fallback check when manually unrolling loops with non-constant bounds.
+
+## 2026-08-09 - Precomputing Row Pointers in Combinatorial Loops
+**Learning:** Performing stride multiplications and pointer offset additions (such as `cards.i * stride + position`) inside a highly frequent 32-mask loop within a 2,598,960-hand enumeration path incurs a large instruction overhead. Precomputing the row pointers (`chooseTablePtr + cards.i * stride`) once per hand (outside the 32-mask loop) completely eliminates the stride multiplications and address calculations inside the hot loop, yielding significant execution speedups.
+**Action:** Precalculate static base address offsets/row pointers outside highly frequent loops, passing them down as pre-offset raw pointers instead of calculating offsets dynamically inside the loops.
