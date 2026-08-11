@@ -74,12 +74,19 @@ public enum PayTableAnalyzer {
                                     for c2 in (c1 + 1) ..< 52 {
                                         for c3 in (c2 + 1) ..< 52 {
                                             for c4 in (c3 + 1) ..< 52 {
-                                                let cards = (c0, c1, c2, c3, c4)
+                                                let row0 = choosePtr + c0 * 6
+                                                let row1 = choosePtr + c1 * 6
+                                                let row2 = choosePtr + c2 * 6
+                                                let row3 = choosePtr + c3 * 6
+                                                let row4 = choosePtr + c4 * 6
                                                 totalEV += bestHoldEV(
-                                                    cards: cards,
+                                                    row0: row0,
+                                                    row1: row1,
+                                                    row2: row2,
+                                                    row3: row3,
+                                                    row4: row4,
                                                     arrays: arrays,
                                                     multipliers: multipliersPtr,
-                                                    chooseTablePtr: choosePtr,
                                                     scoreForFiveCardHandPtr: scorePtr,
                                                     countsForFourHeldPtr: counts4Ptr,
                                                     countsForThreeHeldPtr: counts3Ptr,
@@ -115,10 +122,13 @@ public enum PayTableAnalyzer {
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
     private static func bestHoldEV(
-        cards: (Int, Int, Int, Int, Int),
+        row0: UnsafePointer<Int>,
+        row1: UnsafePointer<Int>,
+        row2: UnsafePointer<Int>,
+        row3: UnsafePointer<Int>,
+        row4: UnsafePointer<Int>,
         arrays: HandOutcomeArrays,
         multipliers: UnsafePointer<Double>,
-        chooseTablePtr: UnsafePointer<Int>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
         countsForFourHeldPtr: UnsafePointer<Int32>,
         countsForThreeHeldPtr: UnsafePointer<Int32>,
@@ -131,9 +141,12 @@ public enum PayTableAnalyzer {
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                row0: row0,
+                row1: row1,
+                row2: row2,
+                row3: row3,
+                row4: row4,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
