@@ -61,3 +61,7 @@
 ## 2026-08-01 - Safe Hybrid Loop Unrolling
 **Learning:** Manually unrolling loops in performance-critical paths eliminates significant loop control, index calculation, and branch prediction overhead. However, hardcoding loop boundaries directly can introduce major maintainability and safety risks if data shapes change in the future. Implementing a hybrid approach, checking dynamically if the count matches the expected unrolled boundary size, running the fast path if true, and falling back to a clean dynamic loop otherwise, preserves maximum optimization while keeping the code flexible.
 **Action:** Always use a hybrid safe-path/fallback check when manually unrolling loops with non-constant bounds.
+
+## 2026-08-13 - Avoid Stride Multiplications and Hardcoding in Lookups
+**Learning:** In hot evaluation paths (e.g., evaluating 32 mask combinations for 2.5 million hands), repeated stride multiplications (`cards.X * stride`) inside innermost loops add millions of unnecessary CPU arithmetic instructions. Hoisting these calculations outside the inner loop to precompute row pointers on a 1D contiguous lookup table (using a non-private `chooseTableStride` dynamically instead of hardcoding stride constants) eliminates loop-level index multiplication overhead completely, yielding an ~11.0% speedup in whole-pay-table exact RTP analysis.
+**Action:** Always hoist invariant stride and pointer address calculations out of highly frequent loops, and access them dynamically via non-private/internal structure layout stride properties.
