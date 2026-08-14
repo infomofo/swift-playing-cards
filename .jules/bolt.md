@@ -61,3 +61,7 @@
 ## 2026-08-01 - Safe Hybrid Loop Unrolling
 **Learning:** Manually unrolling loops in performance-critical paths eliminates significant loop control, index calculation, and branch prediction overhead. However, hardcoding loop boundaries directly can introduce major maintainability and safety risks if data shapes change in the future. Implementing a hybrid approach, checking dynamically if the count matches the expected unrolled boundary size, running the fast path if true, and falling back to a clean dynamic loop otherwise, preserves maximum optimization while keeping the code flexible.
 **Action:** Always use a hybrid safe-path/fallback check when manually unrolling loops with non-constant bounds.
+
+## 2026-08-14 - Precomputed Offset Pointers in Multi-Dimensional Arrays
+**Learning:** In highly frequent evaluation loops, repeatedly calculating indices for nested/flat multi-dimensional array structures (such as `chooseTable[card * stride + position]`) inside inner loops introduces redundant multiplications and offset additions. Precomputing row pointers (e.g. `p0 = chooseTablePtr + card0 * stride`) once per outer loop iteration and passing them to the inner functions entirely avoids these index calculations, improving memory lookup latency and compiler optimization.
+**Action:** Precalculate row pointers once per loop and pass them down as raw `UnsafePointer` variables to inner routines to bypass all inner loop offset math.
