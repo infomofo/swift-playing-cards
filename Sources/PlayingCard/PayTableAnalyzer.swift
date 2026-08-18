@@ -105,7 +105,7 @@ public enum PayTableAnalyzer {
         return totalEV / Double(handCount)
     }
 
-    // swiftlint:disable large_tuple function_parameter_count
+    // swiftlint:disable large_tuple function_parameter_count identifier_name
     /// Evaluates all 32 possible hold subsets of a dealt hand and returns the highest
     /// expected value: the return-per-unit-bet a perfect-strategy player would get by
     /// holding whichever subset maximizes EV.
@@ -128,12 +128,22 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        let stride = HandOutcomeArrays.chooseTableStride
+        let r0 = chooseTablePtr + cards.0 * stride
+        let r1 = chooseTablePtr + cards.1 * stride
+        let r2 = chooseTablePtr + cards.2 * stride
+        let r3 = chooseTablePtr + cards.3 * stride
+        let r4 = chooseTablePtr + cards.4 * stride
+
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                r0: r0,
+                r1: r1,
+                r2: r2,
+                r3: r3,
+                r4: r4,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -143,18 +153,49 @@ public enum PayTableAnalyzer {
             )
         }
 
-        // Fast Möbius Transform (FMT) in-place:
-        for step in 0 ..< 5 {
-            let stepSize = 1 << step
-            var baseIdx = 0
-            while baseIdx < 32 {
-                for offset in 0 ..< stepSize {
-                    let lowMask = baseIdx + offset
-                    let highMask = lowMask + stepSize
-                    payoutOfSubset[lowMask] -= payoutOfSubset[highMask]
-                }
-                baseIdx += stepSize * 2
-            }
+        // Fast Möbius Transform (FMT) unrolled across all 5 dimensions (80 subtractions)
+        // Step 0: stepSize = 1
+        var b = 0
+        while b < 32 {
+            payoutOfSubset[b] -= payoutOfSubset[b + 1]
+            b += 2
+        }
+
+        // Step 1: stepSize = 2
+        b = 0
+        while b < 32 {
+            payoutOfSubset[b] -= payoutOfSubset[b + 2]
+            payoutOfSubset[b + 1] -= payoutOfSubset[b + 3]
+            b += 4
+        }
+
+        // Step 2: stepSize = 4
+        b = 0
+        while b < 32 {
+            payoutOfSubset[b] -= payoutOfSubset[b + 4]
+            payoutOfSubset[b + 1] -= payoutOfSubset[b + 5]
+            payoutOfSubset[b + 2] -= payoutOfSubset[b + 6]
+            payoutOfSubset[b + 3] -= payoutOfSubset[b + 7]
+            b += 8
+        }
+
+        // Step 3: stepSize = 8
+        b = 0
+        while b < 32 {
+            payoutOfSubset[b] -= payoutOfSubset[b + 8]
+            payoutOfSubset[b + 1] -= payoutOfSubset[b + 9]
+            payoutOfSubset[b + 2] -= payoutOfSubset[b + 10]
+            payoutOfSubset[b + 3] -= payoutOfSubset[b + 11]
+            payoutOfSubset[b + 4] -= payoutOfSubset[b + 12]
+            payoutOfSubset[b + 5] -= payoutOfSubset[b + 13]
+            payoutOfSubset[b + 6] -= payoutOfSubset[b + 14]
+            payoutOfSubset[b + 7] -= payoutOfSubset[b + 15]
+            b += 16
+        }
+
+        // Step 4: stepSize = 16
+        for offset in 0 ..< 16 {
+            payoutOfSubset[offset] -= payoutOfSubset[offset + 16]
         }
 
         var best = 0.0
