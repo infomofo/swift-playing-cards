@@ -69,17 +69,24 @@ public enum PayTableAnalyzer {
                     CombinatorialIndex.withChooseTablePointer { choosePtr in
                         arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
                             // swiftlint:disable identifier_name
+                            // ⚡ Bolt Optimization: Precompute card row pointers in the choose table at
+                            // each outer card loop level (c0...c4), eliminating tens of millions of
+                            // stride multiplications per RTP evaluation pass.
+                            let stride = HandOutcomeArrays.chooseTableStride
                             for c0 in 0 ..< 52 {
+                                let r0Ptr = choosePtr + c0 * stride
                                 for c1 in (c0 + 1) ..< 52 {
+                                    let r1Ptr = choosePtr + c1 * stride
                                     for c2 in (c1 + 1) ..< 52 {
+                                        let r2Ptr = choosePtr + c2 * stride
                                         for c3 in (c2 + 1) ..< 52 {
+                                            let r3Ptr = choosePtr + c3 * stride
                                             for c4 in (c3 + 1) ..< 52 {
-                                                let cards = (c0, c1, c2, c3, c4)
+                                                let r4Ptr = choosePtr + c4 * stride
                                                 totalEV += bestHoldEV(
-                                                    cards: cards,
+                                                    rowPointers: (r0Ptr, r1Ptr, r2Ptr, r3Ptr, r4Ptr),
                                                     arrays: arrays,
                                                     multipliers: multipliersPtr,
-                                                    chooseTablePtr: choosePtr,
                                                     scoreForFiveCardHandPtr: scorePtr,
                                                     countsForFourHeldPtr: counts4Ptr,
                                                     countsForThreeHeldPtr: counts3Ptr,
@@ -105,6 +112,7 @@ public enum PayTableAnalyzer {
         return totalEV / Double(handCount)
     }
 
+    // swiftformat:disable trailingCommas
     // swiftlint:disable large_tuple function_parameter_count
     /// Evaluates all 32 possible hold subsets of a dealt hand and returns the highest
     /// expected value: the return-per-unit-bet a perfect-strategy player would get by
@@ -115,10 +123,11 @@ public enum PayTableAnalyzer {
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
     private static func bestHoldEV(
-        cards: (Int, Int, Int, Int, Int),
+        rowPointers: (
+            UnsafePointer<Int>, UnsafePointer<Int>, UnsafePointer<Int>, UnsafePointer<Int>, UnsafePointer<Int>
+        ),
         arrays: HandOutcomeArrays,
         multipliers: UnsafePointer<Double>,
-        chooseTablePtr: UnsafePointer<Int>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
         countsForFourHeldPtr: UnsafePointer<Int32>,
         countsForThreeHeldPtr: UnsafePointer<Int32>,
@@ -131,9 +140,8 @@ public enum PayTableAnalyzer {
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                rowPointers: rowPointers,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
