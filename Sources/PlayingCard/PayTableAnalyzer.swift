@@ -16,18 +16,10 @@
 /// `PayTableAnalyzerTests` cross-checks its output against the published return
 /// percentages for this library's existing pay tables.
 public enum PayTableAnalyzer {
-    /// Precomputed reciprocals of completion counts for hold sizes 0-5 to avoid expensive divisions.
-    /// Derived from `CombinatorialIndex.choose` so the values stay tied to the shared
-    /// combinatorics table instead of repeating raw coefficients.
-    /// holdMask.nonzeroBitCount maps to 0...5:
-    /// - 0: 1 / choose(47, 5) = 1 / 1533939
-    /// - 1: 1 / choose(47, 4) = 1 / 178365
-    /// - 2: 1 / choose(47, 3) = 1 / 16215
-    /// - 3: 1 / choose(47, 2) = 1 / 1081
-    /// - 4: 1 / choose(47, 1) = 1 / 47
-    /// - 5: 1 / choose(47, 0) = 1 / 1
-    private static let reciprocalCompletions: [Double] = (0 ... 5).map {
-        1.0 / Double(CombinatorialIndex.choose(47, 5 - $0))
+    /// Precomputed reciprocals of completion counts for all 32 holdMask values (0...31).
+    /// Indexed directly by `holdMask` so `holdMask.nonzeroBitCount` instructions are avoided.
+    private static let reciprocalCompletions: [Double] = (0 ... 31).map { mask in
+        1.0 / Double(CombinatorialIndex.choose(47, 5 - mask.nonzeroBitCount))
     }
 
     /// The overall return to player for `payTable` under exact optimal play, as a
@@ -105,7 +97,7 @@ public enum PayTableAnalyzer {
         return totalEV / Double(handCount)
     }
 
-    // swiftlint:disable large_tuple function_parameter_count
+    // swiftlint:disable large_tuple function_parameter_count function_body_length identifier_name
     /// Evaluates all 32 possible hold subsets of a dealt hand and returns the highest
     /// expected value: the return-per-unit-bet a perfect-strategy player would get by
     /// holding whichever subset maximizes EV.
@@ -128,12 +120,22 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        let stride = HandOutcomeArrays.chooseTableStride
+        let r0 = chooseTablePtr + cards.0 * stride
+        let r1 = chooseTablePtr + cards.1 * stride
+        let r2 = chooseTablePtr + cards.2 * stride
+        let r3 = chooseTablePtr + cards.3 * stride
+        let r4 = chooseTablePtr + cards.4 * stride
+
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                r0: r0,
+                r1: r1,
+                r2: r2,
+                r3: r3,
+                r4: r4,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -143,27 +145,104 @@ public enum PayTableAnalyzer {
             )
         }
 
-        // Fast Möbius Transform (FMT) in-place:
-        for step in 0 ..< 5 {
-            let stepSize = 1 << step
-            var baseIdx = 0
-            while baseIdx < 32 {
-                for offset in 0 ..< stepSize {
-                    let lowMask = baseIdx + offset
-                    let highMask = lowMask + stepSize
-                    payoutOfSubset[lowMask] -= payoutOfSubset[highMask]
-                }
-                baseIdx += stepSize * 2
-            }
-        }
+        // Fast Möbius Transform (FMT) in-place: 5 steps unrolled for maximum pipeline efficiency.
+        // Step 0 (stepSize = 1):
+        payoutOfSubset[0] -= payoutOfSubset[1]
+        payoutOfSubset[2] -= payoutOfSubset[3]
+        payoutOfSubset[4] -= payoutOfSubset[5]
+        payoutOfSubset[6] -= payoutOfSubset[7]
+        payoutOfSubset[8] -= payoutOfSubset[9]
+        payoutOfSubset[10] -= payoutOfSubset[11]
+        payoutOfSubset[12] -= payoutOfSubset[13]
+        payoutOfSubset[14] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[17]
+        payoutOfSubset[18] -= payoutOfSubset[19]
+        payoutOfSubset[20] -= payoutOfSubset[21]
+        payoutOfSubset[22] -= payoutOfSubset[23]
+        payoutOfSubset[24] -= payoutOfSubset[25]
+        payoutOfSubset[26] -= payoutOfSubset[27]
+        payoutOfSubset[28] -= payoutOfSubset[29]
+        payoutOfSubset[30] -= payoutOfSubset[31]
+
+        // Step 1 (stepSize = 2):
+        payoutOfSubset[0] -= payoutOfSubset[2]
+        payoutOfSubset[1] -= payoutOfSubset[3]
+        payoutOfSubset[4] -= payoutOfSubset[6]
+        payoutOfSubset[5] -= payoutOfSubset[7]
+        payoutOfSubset[8] -= payoutOfSubset[10]
+        payoutOfSubset[9] -= payoutOfSubset[11]
+        payoutOfSubset[12] -= payoutOfSubset[14]
+        payoutOfSubset[13] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[18]
+        payoutOfSubset[17] -= payoutOfSubset[19]
+        payoutOfSubset[20] -= payoutOfSubset[22]
+        payoutOfSubset[21] -= payoutOfSubset[23]
+        payoutOfSubset[24] -= payoutOfSubset[26]
+        payoutOfSubset[25] -= payoutOfSubset[27]
+        payoutOfSubset[28] -= payoutOfSubset[30]
+        payoutOfSubset[29] -= payoutOfSubset[31]
+
+        // Step 2 (stepSize = 4):
+        payoutOfSubset[0] -= payoutOfSubset[4]
+        payoutOfSubset[1] -= payoutOfSubset[5]
+        payoutOfSubset[2] -= payoutOfSubset[6]
+        payoutOfSubset[3] -= payoutOfSubset[7]
+        payoutOfSubset[8] -= payoutOfSubset[12]
+        payoutOfSubset[9] -= payoutOfSubset[13]
+        payoutOfSubset[10] -= payoutOfSubset[14]
+        payoutOfSubset[11] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[20]
+        payoutOfSubset[17] -= payoutOfSubset[21]
+        payoutOfSubset[18] -= payoutOfSubset[22]
+        payoutOfSubset[19] -= payoutOfSubset[23]
+        payoutOfSubset[24] -= payoutOfSubset[28]
+        payoutOfSubset[25] -= payoutOfSubset[29]
+        payoutOfSubset[26] -= payoutOfSubset[30]
+        payoutOfSubset[27] -= payoutOfSubset[31]
+
+        // Step 3 (stepSize = 8):
+        payoutOfSubset[0] -= payoutOfSubset[8]
+        payoutOfSubset[1] -= payoutOfSubset[9]
+        payoutOfSubset[2] -= payoutOfSubset[10]
+        payoutOfSubset[3] -= payoutOfSubset[11]
+        payoutOfSubset[4] -= payoutOfSubset[12]
+        payoutOfSubset[5] -= payoutOfSubset[13]
+        payoutOfSubset[6] -= payoutOfSubset[14]
+        payoutOfSubset[7] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[24]
+        payoutOfSubset[17] -= payoutOfSubset[25]
+        payoutOfSubset[18] -= payoutOfSubset[26]
+        payoutOfSubset[19] -= payoutOfSubset[27]
+        payoutOfSubset[20] -= payoutOfSubset[28]
+        payoutOfSubset[21] -= payoutOfSubset[29]
+        payoutOfSubset[22] -= payoutOfSubset[30]
+        payoutOfSubset[23] -= payoutOfSubset[31]
+
+        // Step 4 (stepSize = 16):
+        payoutOfSubset[0] -= payoutOfSubset[16]
+        payoutOfSubset[1] -= payoutOfSubset[17]
+        payoutOfSubset[2] -= payoutOfSubset[18]
+        payoutOfSubset[3] -= payoutOfSubset[19]
+        payoutOfSubset[4] -= payoutOfSubset[20]
+        payoutOfSubset[5] -= payoutOfSubset[21]
+        payoutOfSubset[6] -= payoutOfSubset[22]
+        payoutOfSubset[7] -= payoutOfSubset[23]
+        payoutOfSubset[8] -= payoutOfSubset[24]
+        payoutOfSubset[9] -= payoutOfSubset[25]
+        payoutOfSubset[10] -= payoutOfSubset[26]
+        payoutOfSubset[11] -= payoutOfSubset[27]
+        payoutOfSubset[12] -= payoutOfSubset[28]
+        payoutOfSubset[13] -= payoutOfSubset[29]
+        payoutOfSubset[14] -= payoutOfSubset[30]
+        payoutOfSubset[15] -= payoutOfSubset[31]
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
+            let completionsRecip = reciprocalPtr[holdMask]
             best = max(best, payoutOfSubset[holdMask] * completionsRecip)
         }
         return best
     }
 
-    // swiftlint:enable large_tuple
+    // swiftlint:enable large_tuple function_parameter_count function_body_length identifier_name
 }
