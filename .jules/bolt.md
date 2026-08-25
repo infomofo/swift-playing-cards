@@ -61,3 +61,7 @@
 ## 2026-08-01 - Safe Hybrid Loop Unrolling
 **Learning:** Manually unrolling loops in performance-critical paths eliminates significant loop control, index calculation, and branch prediction overhead. However, hardcoding loop boundaries directly can introduce major maintainability and safety risks if data shapes change in the future. Implementing a hybrid approach, checking dynamically if the count matches the expected unrolled boundary size, running the fast path if true, and falling back to a clean dynamic loop otherwise, preserves maximum optimization while keeping the code flexible.
 **Action:** Always use a hybrid safe-path/fallback check when manually unrolling loops with non-constant bounds.
+
+## 2026-08-25 - Direct Mask Indexing and Hoisted Row Pointers in Video Poker EV Loops
+**Learning:** In multi-million iteration EV evaluation loops, accessing completion reciprocals via `holdMask.nonzeroBitCount` executes popcount instructions and 2-stage array lookups 83+ million times per RTP pass. Expanding the reciprocal array to 32 elements indexed directly by `holdMask` eliminates popcount CPU instructions. Additionally, precomputing and hoisting card row pointers (`chooseTablePtr + card * stride`) once per 5-card hand outside the 32-mask loop completely eliminates 200+ million stride multiplications and pointer address additions.
+**Action:** When evaluating bitmask subsets over fixed hand sizes, index precomputed coefficient tables directly by mask value and hoist card row pointers above the mask loop.

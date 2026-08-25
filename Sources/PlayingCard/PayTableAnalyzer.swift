@@ -16,18 +16,11 @@
 /// `PayTableAnalyzerTests` cross-checks its output against the published return
 /// percentages for this library's existing pay tables.
 public enum PayTableAnalyzer {
-    /// Precomputed reciprocals of completion counts for hold sizes 0-5 to avoid expensive divisions.
-    /// Derived from `CombinatorialIndex.choose` so the values stay tied to the shared
-    /// combinatorics table instead of repeating raw coefficients.
-    /// holdMask.nonzeroBitCount maps to 0...5:
-    /// - 0: 1 / choose(47, 5) = 1 / 1533939
-    /// - 1: 1 / choose(47, 4) = 1 / 178365
-    /// - 2: 1 / choose(47, 3) = 1 / 16215
-    /// - 3: 1 / choose(47, 2) = 1 / 1081
-    /// - 4: 1 / choose(47, 1) = 1 / 47
-    /// - 5: 1 / choose(47, 0) = 1 / 1
-    private static let reciprocalCompletions: [Double] = (0 ... 5).map {
-        1.0 / Double(CombinatorialIndex.choose(47, 5 - $0))
+    /// Precomputed reciprocals of completion counts for all 32 hold masks (0...31).
+    /// Direct indexing by holdMask eliminates popcount instructions (holdMask.nonzeroBitCount)
+    /// and indirect lookups in hot EV evaluation loops.
+    private static let reciprocalForMask: [Double] = (0 ..< 32).map { holdMask in
+        1.0 / Double(CombinatorialIndex.choose(47, 5 - holdMask.nonzeroBitCount))
     }
 
     /// The overall return to player for `payTable` under exact optimal play, as a
@@ -60,7 +53,7 @@ public enum PayTableAnalyzer {
         // measured roughly two orders of magnitude slower.
         var payoutOfSubset = [Double](repeating: 0, count: 32)
 
-        reciprocalCompletions.withUnsafeBufferPointer { reciprocalBuf in
+        reciprocalForMask.withUnsafeBufferPointer { reciprocalBuf in
             let reciprocalPtr = reciprocalBuf.baseAddress!
             multipliers.withUnsafeBufferPointer { multipliersBuf in
                 let multipliersPtr = multipliersBuf.baseAddress!
@@ -128,12 +121,20 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        let stride = HandOutcomeArrays.chooseTableStride
+        let cardRowPtrs = (
+            chooseTablePtr + cards.0 * stride,
+            chooseTablePtr + cards.1 * stride,
+            chooseTablePtr + cards.2 * stride,
+            chooseTablePtr + cards.3 * stride,
+            chooseTablePtr + cards.4 * stride,
+        )
+
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                cardRowPtrs: cardRowPtrs,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -159,8 +160,7 @@ public enum PayTableAnalyzer {
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
-            best = max(best, payoutOfSubset[holdMask] * completionsRecip)
+            best = max(best, payoutOfSubset[holdMask] * reciprocalPtr[holdMask])
         }
         return best
     }
