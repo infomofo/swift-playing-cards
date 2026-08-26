@@ -16,18 +16,11 @@
 /// `PayTableAnalyzerTests` cross-checks its output against the published return
 /// percentages for this library's existing pay tables.
 public enum PayTableAnalyzer {
-    /// Precomputed reciprocals of completion counts for hold sizes 0-5 to avoid expensive divisions.
-    /// Derived from `CombinatorialIndex.choose` so the values stay tied to the shared
-    /// combinatorics table instead of repeating raw coefficients.
-    /// holdMask.nonzeroBitCount maps to 0...5:
-    /// - 0: 1 / choose(47, 5) = 1 / 1533939
-    /// - 1: 1 / choose(47, 4) = 1 / 178365
-    /// - 2: 1 / choose(47, 3) = 1 / 16215
-    /// - 3: 1 / choose(47, 2) = 1 / 1081
-    /// - 4: 1 / choose(47, 1) = 1 / 47
-    /// - 5: 1 / choose(47, 0) = 1 / 1
-    private static let reciprocalCompletions: [Double] = (0 ... 5).map {
-        1.0 / Double(CombinatorialIndex.choose(47, 5 - $0))
+    /// ⚡ Bolt Optimization: Precompute 32 reciprocals indexed directly by holdMask (0...31).
+    /// Direct indexing avoids calling `nonzeroBitCount` population count instructions and indirect
+    /// array lookups on every mask inside the hot evaluation loop (83+ million calls).
+    private static let reciprocalCompletions: [Double] = (0 ..< 32).map { holdMask in
+        1.0 / Double(CombinatorialIndex.choose(47, 5 - holdMask.nonzeroBitCount))
     }
 
     /// The overall return to player for `payTable` under exact optimal play, as a
@@ -159,7 +152,7 @@ public enum PayTableAnalyzer {
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
+            let completionsRecip = reciprocalPtr[holdMask]
             best = max(best, payoutOfSubset[holdMask] * completionsRecip)
         }
         return best
