@@ -128,12 +128,19 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        let stride = HandOutcomeArrays.chooseTableStride
+        let cardRows = (
+            chooseTablePtr + cards.0 * stride,
+            chooseTablePtr + cards.1 * stride,
+            chooseTablePtr + cards.2 * stride,
+            chooseTablePtr + cards.3 * stride,
+            chooseTablePtr + cards.4 * stride,
+        )
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                cardRows: cardRows,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
