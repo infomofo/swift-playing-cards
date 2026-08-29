@@ -18,7 +18,7 @@
 struct HandOutcomeArrays {
     /// Stride of the flattened choose table, matching `CombinatorialIndex`'s
     /// `maxK + 1` layout.
-    private static let chooseTableStride = 6
+    static let chooseTableStride = 6
 
     /// Number of distinct `HandResult` cases. Every count row has this many columns,
     /// indexed by `HandResult.rawValue`.
@@ -386,13 +386,17 @@ struct HandOutcomeArrays {
     // swiftlint:enable identifier_name
 
     // swiftlint:disable large_tuple cyclomatic_complexity function_parameter_count
-    /// High-performance overload of payout that uses UnsafePointers to avoid array bounds checking.
+    /// High-performance overload of payout that uses UnsafePointers to avoid array bounds checking
+    /// and precomputed card row pointers to avoid stride multiplications.
     @inline(__always)
     func payout(
         forSubsetMask mask: Int,
-        cards: (Int, Int, Int, Int, Int),
+        cardRow0: UnsafePointer<Int>,
+        cardRow1: UnsafePointer<Int>,
+        cardRow2: UnsafePointer<Int>,
+        cardRow3: UnsafePointer<Int>,
+        cardRow4: UnsafePointer<Int>,
         multipliers: UnsafePointer<Double>,
-        chooseTablePtr: UnsafePointer<Int>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
         countsForFourHeldPtr: UnsafePointer<Int32>,
         countsForThreeHeldPtr: UnsafePointer<Int32>,
@@ -401,22 +405,24 @@ struct HandOutcomeArrays {
         countsForNoneHeldPtr: UnsafePointer<Int32>
     ) -> Double {
         // swiftformat:enable trailingCommas
+        // ⚡ Bolt Optimization: Use precomputed card row pointers (cardRow0...cardRow4) to completely
+        // eliminate stride multiplication and address calculations inside this hot 32-mask loop.
         var index = 0
         var position = 0
         if mask & 0b00001 != 0 {
-            position += 1; index += chooseTablePtr[cards.0 * Self.chooseTableStride + position]
+            position += 1; index += cardRow0[position]
         }
         if mask & 0b00010 != 0 {
-            position += 1; index += chooseTablePtr[cards.1 * Self.chooseTableStride + position]
+            position += 1; index += cardRow1[position]
         }
         if mask & 0b00100 != 0 {
-            position += 1; index += chooseTablePtr[cards.2 * Self.chooseTableStride + position]
+            position += 1; index += cardRow2[position]
         }
         if mask & 0b01000 != 0 {
-            position += 1; index += chooseTablePtr[cards.3 * Self.chooseTableStride + position]
+            position += 1; index += cardRow3[position]
         }
         if mask & 0b10000 != 0 {
-            position += 1; index += chooseTablePtr[cards.4 * Self.chooseTableStride + position]
+            position += 1; index += cardRow4[position]
         }
 
         switch position {
