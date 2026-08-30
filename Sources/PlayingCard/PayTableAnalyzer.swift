@@ -16,18 +16,12 @@
 /// `PayTableAnalyzerTests` cross-checks its output against the published return
 /// percentages for this library's existing pay tables.
 public enum PayTableAnalyzer {
-    /// Precomputed reciprocals of completion counts for hold sizes 0-5 to avoid expensive divisions.
-    /// Derived from `CombinatorialIndex.choose` so the values stay tied to the shared
-    /// combinatorics table instead of repeating raw coefficients.
-    /// holdMask.nonzeroBitCount maps to 0...5:
-    /// - 0: 1 / choose(47, 5) = 1 / 1533939
-    /// - 1: 1 / choose(47, 4) = 1 / 178365
-    /// - 2: 1 / choose(47, 3) = 1 / 16215
-    /// - 3: 1 / choose(47, 2) = 1 / 1081
-    /// - 4: 1 / choose(47, 1) = 1 / 47
-    /// - 5: 1 / choose(47, 0) = 1 / 1
-    private static let reciprocalCompletions: [Double] = (0 ... 5).map {
-        1.0 / Double(CombinatorialIndex.choose(47, 5 - $0))
+    /// ⚡ Bolt Optimization: Precompute a 32-element array of completion reciprocals
+    /// indexed directly by holdMask (0...31).
+    /// This avoids calling `nonzeroBitCount` population count instructions and indirect double-array
+    /// lookups inside the hot 32-mask EV evaluation loop (called 2,598,960 times = ~83 million iterations).
+    private static let reciprocalsForHoldMask: [Double] = (0 ... 31).map { mask in
+        1.0 / Double(CombinatorialIndex.choose(47, 5 - mask.nonzeroBitCount))
     }
 
     /// The overall return to player for `payTable` under exact optimal play, as a
@@ -60,7 +54,7 @@ public enum PayTableAnalyzer {
         // measured roughly two orders of magnitude slower.
         var payoutOfSubset = [Double](repeating: 0, count: 32)
 
-        reciprocalCompletions.withUnsafeBufferPointer { reciprocalBuf in
+        reciprocalsForHoldMask.withUnsafeBufferPointer { reciprocalBuf in
             let reciprocalPtr = reciprocalBuf.baseAddress!
             multipliers.withUnsafeBufferPointer { multipliersBuf in
                 let multipliersPtr = multipliersBuf.baseAddress!
@@ -68,18 +62,23 @@ public enum PayTableAnalyzer {
                     let payoutPtr = payoutBuf.baseAddress!
                     CombinatorialIndex.withChooseTablePointer { choosePtr in
                         arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
+                            let stride = HandOutcomeArrays.chooseTableStride
                             // swiftlint:disable identifier_name
                             for c0 in 0 ..< 52 {
+                                let c0Ptr = choosePtr + c0 * stride
                                 for c1 in (c0 + 1) ..< 52 {
+                                    let c1Ptr = choosePtr + c1 * stride
                                     for c2 in (c1 + 1) ..< 52 {
+                                        let c2Ptr = choosePtr + c2 * stride
                                         for c3 in (c2 + 1) ..< 52 {
+                                            let c3Ptr = choosePtr + c3 * stride
                                             for c4 in (c3 + 1) ..< 52 {
-                                                let cards = (c0, c1, c2, c3, c4)
+                                                let c4Ptr = choosePtr + c4 * stride
+                                                let cardPtrs = (c0Ptr, c1Ptr, c2Ptr, c3Ptr, c4Ptr)
                                                 totalEV += bestHoldEV(
-                                                    cards: cards,
+                                                    cardPtrs: cardPtrs,
                                                     arrays: arrays,
                                                     multipliers: multipliersPtr,
-                                                    chooseTablePtr: choosePtr,
                                                     scoreForFiveCardHandPtr: scorePtr,
                                                     countsForFourHeldPtr: counts4Ptr,
                                                     countsForThreeHeldPtr: counts3Ptr,
@@ -115,10 +114,9 @@ public enum PayTableAnalyzer {
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
     private static func bestHoldEV(
-        cards: (Int, Int, Int, Int, Int),
+        cardPtrs: (UnsafePointer<Int>, UnsafePointer<Int>, UnsafePointer<Int>, UnsafePointer<Int>, UnsafePointer<Int>),
         arrays: HandOutcomeArrays,
         multipliers: UnsafePointer<Double>,
-        chooseTablePtr: UnsafePointer<Int>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
         countsForFourHeldPtr: UnsafePointer<Int32>,
         countsForThreeHeldPtr: UnsafePointer<Int32>,
@@ -131,9 +129,8 @@ public enum PayTableAnalyzer {
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                cardPtrs: cardPtrs,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -159,8 +156,8 @@ public enum PayTableAnalyzer {
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
-            best = max(best, payoutOfSubset[holdMask] * completionsRecip)
+            // ⚡ Bolt Optimization: Use precomputed reciprocal directly indexed by holdMask (0...31).
+            best = max(best, payoutOfSubset[holdMask] * reciprocalPtr[holdMask])
         }
         return best
     }
