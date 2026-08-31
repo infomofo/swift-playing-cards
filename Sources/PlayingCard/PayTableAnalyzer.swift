@@ -119,13 +119,14 @@ public enum PayTableAnalyzer {
     /// of the 5 dealt cards, computed in-place with a single fixed-size scratch buffer.
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
+    // swiftformat:disable trailingCommas
     private static func bestHoldEV(
         cardRows: (
             UnsafePointer<Int>,
             UnsafePointer<Int>,
             UnsafePointer<Int>,
             UnsafePointer<Int>,
-            UnsafePointer<Int>,
+            UnsafePointer<Int>
         ),
         arrays: HandOutcomeArrays,
         multipliers: UnsafePointer<Double>,
@@ -136,8 +137,9 @@ public enum PayTableAnalyzer {
         countsForOneHeldPtr: UnsafePointer<Int32>,
         countsForNoneHeldPtr: UnsafePointer<Int32>,
         payoutOfSubset: UnsafeMutablePointer<Double>,
-        reciprocalPtr: UnsafePointer<Double>,
+        reciprocalPtr: UnsafePointer<Double>
     ) -> Double {
+        // swiftformat:enable trailingCommas
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
