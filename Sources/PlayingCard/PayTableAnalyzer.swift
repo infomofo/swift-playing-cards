@@ -69,17 +69,25 @@ public enum PayTableAnalyzer {
                     CombinatorialIndex.withChooseTablePointer { choosePtr in
                         arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
                             // swiftlint:disable identifier_name
+                            let stride = HandOutcomeArrays.chooseTableStride
                             for c0 in 0 ..< 52 {
+                                let card0Ptr = choosePtr + c0 * stride
                                 for c1 in (c0 + 1) ..< 52 {
+                                    let card1Ptr = choosePtr + c1 * stride
                                     for c2 in (c1 + 1) ..< 52 {
+                                        let card2Ptr = choosePtr + c2 * stride
                                         for c3 in (c2 + 1) ..< 52 {
+                                            let card3Ptr = choosePtr + c3 * stride
                                             for c4 in (c3 + 1) ..< 52 {
-                                                let cards = (c0, c1, c2, c3, c4)
+                                                let card4Ptr = choosePtr + c4 * stride
                                                 totalEV += bestHoldEV(
-                                                    cards: cards,
+                                                    card0Ptr: card0Ptr,
+                                                    card1Ptr: card1Ptr,
+                                                    card2Ptr: card2Ptr,
+                                                    card3Ptr: card3Ptr,
+                                                    card4Ptr: card4Ptr,
                                                     arrays: arrays,
                                                     multipliers: multipliersPtr,
-                                                    chooseTablePtr: choosePtr,
                                                     scoreForFiveCardHandPtr: scorePtr,
                                                     countsForFourHeldPtr: counts4Ptr,
                                                     countsForThreeHeldPtr: counts3Ptr,
@@ -115,10 +123,13 @@ public enum PayTableAnalyzer {
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
     private static func bestHoldEV(
-        cards: (Int, Int, Int, Int, Int),
+        card0Ptr: UnsafePointer<Int>,
+        card1Ptr: UnsafePointer<Int>,
+        card2Ptr: UnsafePointer<Int>,
+        card3Ptr: UnsafePointer<Int>,
+        card4Ptr: UnsafePointer<Int>,
         arrays: HandOutcomeArrays,
         multipliers: UnsafePointer<Double>,
-        chooseTablePtr: UnsafePointer<Int>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
         countsForFourHeldPtr: UnsafePointer<Int32>,
         countsForThreeHeldPtr: UnsafePointer<Int32>,
@@ -131,9 +142,12 @@ public enum PayTableAnalyzer {
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                card0Ptr: card0Ptr,
+                card1Ptr: card1Ptr,
+                card2Ptr: card2Ptr,
+                card3Ptr: card3Ptr,
+                card4Ptr: card4Ptr,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
