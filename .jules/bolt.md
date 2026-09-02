@@ -61,3 +61,7 @@
 ## 2026-08-01 - Safe Hybrid Loop Unrolling
 **Learning:** Manually unrolling loops in performance-critical paths eliminates significant loop control, index calculation, and branch prediction overhead. However, hardcoding loop boundaries directly can introduce major maintainability and safety risks if data shapes change in the future. Implementing a hybrid approach, checking dynamically if the count matches the expected unrolled boundary size, running the fast path if true, and falling back to a clean dynamic loop otherwise, preserves maximum optimization while keeping the code flexible.
 **Action:** Always use a hybrid safe-path/fallback check when manually unrolling loops with non-constant bounds.
+
+## 2026-09-02 - Stack Tuple Parameter Passing vs Array Subscripting in Hot Loops
+**Learning:** In Swift, passing fixed-size collection parameters as arrays (`[Int]`) to inner loop functions forces array subscript bounds checking on every element access. Packing card codes into a fixed 5-element stack tuple (`(Int, Int, Int, Int, Int)`) once per hand and passing the tuple down eliminates all array bounds-checking overhead across all 32 hold mask evaluations in `OptimalPlay.swift`.
+**Action:** When evaluating fixed-size element sets (like 5-card hands) across frequent inner loop calls, pack elements into stack-allocated tuples to eliminate array subscript bounds checks.

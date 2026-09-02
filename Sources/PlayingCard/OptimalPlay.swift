@@ -130,6 +130,11 @@ public struct OptimalPlay {
             }
         }
 
+        // ⚡ Bolt Optimization: Pack card codes into a 5-element stack tuple once per hand.
+        // Passing a tuple instead of an Array to fastEV/fastEVWild avoids 160 array subscripting
+        // bounds checks across the 32 hold combination evaluations.
+        let cardTuple = (handCodes[0], handCodes[1], handCodes[2], handCodes[3], handCodes[4])
+
         // Evaluate all 32 hold combinations concurrently across available cores.
         let evByMask: [(mask: Int, ev: Double)] = await withTaskGroup(
             of: (mask: Int, ev: Double).self,
@@ -137,8 +142,8 @@ public struct OptimalPlay {
             for mask in 0 ..< 32 {
                 group.addTask {
                     let ev = isWild
-                        ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
-                        : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
+                        ? fastEVWild(cards: cardTuple, mask: mask, remaining: remaining)
+                        : fastEV(cards: cardTuple, mask: mask, remaining: remaining)
                     return (mask: mask, ev: ev)
                 }
             }
@@ -170,8 +175,8 @@ public struct OptimalPlay {
                 mask |= (1 << idx)
             }
             return isWild
-                ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
-                : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
+                ? fastEVWild(cards: cardTuple, mask: mask, remaining: remaining)
+                : fastEV(cards: cardTuple, mask: mask, remaining: remaining)
         }
 
         return OptimalPlayResult(
@@ -216,21 +221,22 @@ public struct OptimalPlay {
         for idx in holding {
             mask |= (1 << idx)
         }
+        let cardTuple = (handCodes[0], handCodes[1], handCodes[2], handCodes[3], handCodes[4])
         return isWild
-            ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
-            : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
+            ? fastEVWild(cards: cardTuple, mask: mask, remaining: remaining)
+            : fastEV(cards: cardTuple, mask: mask, remaining: remaining)
     }
 
     // MARK: - Fast Inner Loop
 
-    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length
+    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length large_tuple
 
     /// Computes expected payout by iterating all C(remaining.count, drawCount) completions.
     ///
     /// All arithmetic operates on plain integers; no `PlayingCard` objects are accessed
     /// during the combination loop.
-    private func fastEV(handCodes: [Int], mask: Int, remaining: [Int]) -> Double {
-        let c0 = handCodes[0], c1 = handCodes[1], c2 = handCodes[2], c3 = handCodes[3], c4 = handCodes[4]
+    private func fastEV(cards: (Int, Int, Int, Int, Int), mask: Int, remaining: [Int]) -> Double {
+        let (c0, c1, c2, c3, c4) = cards
         return multiplierTable.withUnsafeBufferPointer { multsBuf in
             let mults = multsBuf.baseAddress!
             return remaining.withUnsafeBufferPointer { remBuf in
@@ -370,8 +376,8 @@ public struct OptimalPlay {
 
     /// `fastEV` variant for Deuces Wild. Dispatches hand evaluation through
     /// `FastHandEvaluator.deucesWildCode` which treats rank_index 0 (the 2) as a wildcard.
-    private func fastEVWild(handCodes: [Int], mask: Int, remaining: [Int]) -> Double {
-        let c0 = handCodes[0], c1 = handCodes[1], c2 = handCodes[2], c3 = handCodes[3], c4 = handCodes[4]
+    private func fastEVWild(cards: (Int, Int, Int, Int, Int), mask: Int, remaining: [Int]) -> Double {
+        let (c0, c1, c2, c3, c4) = cards
         return multiplierTable.withUnsafeBufferPointer { multsBuf in
             let mults = multsBuf.baseAddress!
             return remaining.withUnsafeBufferPointer { remBuf in
@@ -507,5 +513,5 @@ public struct OptimalPlay {
         }
     }
 
-    // swiftlint:enable identifier_name cyclomatic_complexity function_body_length
+    // swiftlint:enable identifier_name cyclomatic_complexity function_body_length large_tuple
 }
