@@ -109,6 +109,7 @@ public enum PayTableAnalyzer {
         return totalEV / Double(handCount)
     }
 
+    // swiftformat:disable trailingCommas
     // swiftlint:disable large_tuple function_parameter_count
     /// Evaluates all 32 possible hold subsets of a dealt hand and returns the highest
     /// expected value: the return-per-unit-bet a perfect-strategy player would get by
@@ -125,7 +126,7 @@ public enum PayTableAnalyzer {
             UnsafePointer<Int>,
             UnsafePointer<Int>,
             UnsafePointer<Int>,
-            UnsafePointer<Int>,
+            UnsafePointer<Int>
         ),
         arrays: HandOutcomeArrays,
         multipliers: UnsafePointer<Double>,
@@ -174,5 +175,6 @@ public enum PayTableAnalyzer {
         return best
     }
 
-    // swiftlint:enable large_tuple
+    // swiftlint:enable large_tuple function_parameter_count
+    // swiftformat:enable trailingCommas
 }
