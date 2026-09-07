@@ -36,3 +36,5 @@ jobs:
 
       - name: Install repo tools and git hooks
         run: mise install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
