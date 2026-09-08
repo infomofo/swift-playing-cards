@@ -290,6 +290,7 @@ struct HandOutcomeArrays {
     /// implementation built on `outcomeCounts` directly measured at roughly two orders
     /// of magnitude slower, entirely from Array allocation/ARC overhead, not from the
     /// combinatorial-index arithmetic itself.
+    @inline(__always)
     func payout(forSubsetMask mask: Int, cards: (Int, Int, Int, Int, Int), multipliers: [Double]) -> Double {
         var index = 0
         var position = 0
@@ -387,16 +388,18 @@ struct HandOutcomeArrays {
 
     // swiftlint:disable large_tuple cyclomatic_complexity function_parameter_count
     /// High-performance overload of payout that uses UnsafePointers to avoid array bounds checking.
+    typealias CardRowPointers = (
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>
+    )
+
     @inline(__always)
     func payout(
         forSubsetMask mask: Int,
-        cardRows: (
-            UnsafePointer<Int>,
-            UnsafePointer<Int>,
-            UnsafePointer<Int>,
-            UnsafePointer<Int>,
-            UnsafePointer<Int>
-        ),
+        cardRows: CardRowPointers,
         multipliers: UnsafePointer<Double>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
         countsForFourHeldPtr: UnsafePointer<Int32>,

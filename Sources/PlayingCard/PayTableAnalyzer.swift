@@ -125,15 +125,17 @@ public enum PayTableAnalyzer {
     /// of the 5 dealt cards, computed in-place with a single fixed-size scratch buffer.
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
+    private typealias CardRowPointers = (
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+    )
+
     @inline(__always)
     private static func bestHoldEV(
-        cardRows: (
-            UnsafePointer<Int>,
-            UnsafePointer<Int>,
-            UnsafePointer<Int>,
-            UnsafePointer<Int>,
-            UnsafePointer<Int>,
-        ),
+        cardRows: CardRowPointers,
         arrays: HandOutcomeArrays,
         multipliers: UnsafePointer<Double>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
