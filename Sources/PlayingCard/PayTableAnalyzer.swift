@@ -30,6 +30,12 @@ public enum PayTableAnalyzer {
         1.0 / Double(CombinatorialIndex.choose(47, 5 - $0))
     }
 
+    /// Precomputed completion reciprocals indexed directly by subset hold mask (0...31).
+    /// Bypasses `.nonzeroBitCount` calls in the inner EV loop.
+    private static let reciprocalByMask: [Double] = (0 ... 31).map { mask in
+        reciprocalCompletions[mask.nonzeroBitCount]
+    }
+
     /// The overall return to player for `payTable` under exact optimal play, as a
     /// fraction of the amount bet (for example `0.995439` for 99.5439%).
     ///
@@ -60,7 +66,7 @@ public enum PayTableAnalyzer {
         // measured roughly two orders of magnitude slower.
         var payoutOfSubset = [Double](repeating: 0, count: 32)
 
-        reciprocalCompletions.withUnsafeBufferPointer { reciprocalBuf in
+        reciprocalByMask.withUnsafeBufferPointer { reciprocalBuf in
             let reciprocalPtr = reciprocalBuf.baseAddress!
             multipliers.withUnsafeBufferPointer { multipliersBuf in
                 let multipliersPtr = multipliersBuf.baseAddress!
@@ -69,17 +75,22 @@ public enum PayTableAnalyzer {
                     CombinatorialIndex.withChooseTablePointer { choosePtr in
                         arrays.withUnsafePointers { scorePtr, counts4Ptr, counts3Ptr, counts2Ptr, counts1Ptr, counts0Ptr in
                             // swiftlint:disable identifier_name
+                            let stride = HandOutcomeArrays.chooseTableStride
                             for c0 in 0 ..< 52 {
+                                let c0Row = choosePtr + c0 * stride
                                 for c1 in (c0 + 1) ..< 52 {
+                                    let c1Row = choosePtr + c1 * stride
                                     for c2 in (c1 + 1) ..< 52 {
+                                        let c2Row = choosePtr + c2 * stride
                                         for c3 in (c2 + 1) ..< 52 {
+                                            let c3Row = choosePtr + c3 * stride
                                             for c4 in (c3 + 1) ..< 52 {
-                                                let cards = (c0, c1, c2, c3, c4)
+                                                let c4Row = choosePtr + c4 * stride
+                                                let cardRows = (c0Row, c1Row, c2Row, c3Row, c4Row)
                                                 totalEV += bestHoldEV(
-                                                    cards: cards,
+                                                    cardRows: cardRows,
                                                     arrays: arrays,
                                                     multipliers: multipliersPtr,
-                                                    chooseTablePtr: choosePtr,
                                                     scoreForFiveCardHandPtr: scorePtr,
                                                     countsForFourHeldPtr: counts4Ptr,
                                                     countsForThreeHeldPtr: counts3Ptr,
@@ -87,7 +98,7 @@ public enum PayTableAnalyzer {
                                                     countsForOneHeldPtr: counts1Ptr,
                                                     countsForNoneHeldPtr: counts0Ptr,
                                                     payoutOfSubset: payoutPtr,
-                                                    reciprocalPtr: reciprocalPtr,
+                                                    reciprocalByMaskPtr: reciprocalPtr,
                                                 )
                                                 handCount += 1
                                             }
@@ -114,11 +125,19 @@ public enum PayTableAnalyzer {
     /// of the 5 dealt cards, computed in-place with a single fixed-size scratch buffer.
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
+    private typealias CardRowPointers = (
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+        UnsafePointer<Int>,
+    )
+
+    @inline(__always)
     private static func bestHoldEV(
-        cards: (Int, Int, Int, Int, Int),
+        cardRows: CardRowPointers,
         arrays: HandOutcomeArrays,
         multipliers: UnsafePointer<Double>,
-        chooseTablePtr: UnsafePointer<Int>,
         scoreForFiveCardHandPtr: UnsafePointer<UInt8>,
         countsForFourHeldPtr: UnsafePointer<Int32>,
         countsForThreeHeldPtr: UnsafePointer<Int32>,
@@ -126,14 +145,13 @@ public enum PayTableAnalyzer {
         countsForOneHeldPtr: UnsafePointer<Int32>,
         countsForNoneHeldPtr: UnsafePointer<Int32>,
         payoutOfSubset: UnsafeMutablePointer<Double>,
-        reciprocalPtr: UnsafePointer<Double>,
+        reciprocalByMaskPtr: UnsafePointer<Double>,
     ) -> Double {
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                cardRows: cardRows,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -159,8 +177,7 @@ public enum PayTableAnalyzer {
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
-            best = max(best, payoutOfSubset[holdMask] * completionsRecip)
+            best = max(best, payoutOfSubset[holdMask] * reciprocalByMaskPtr[holdMask])
         }
         return best
     }
