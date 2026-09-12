@@ -1,3 +1,7 @@
+## 2026-09-12 - Hoisting Card Row Pointers and Pre-indexing Hold Mask Reciprocals
+**Learning:** In Video Poker RTP evaluation (`PayTableAnalyzer`), calculating card row pointer offsets (`cards.N * chooseTableStride`) inside the hot 32-subset loop executes over 400 million multiplications and pointer arithmetic instructions per run. Hoisting card row pointer calculations (`choosePtr + cN * stride`) to outer card loop levels and pre-indexing completion reciprocals directly by 5-bit hold masks (`0..<32`) eliminates redundant arithmetic and popcount instructions across millions of loop iterations.
+**Action:** Always hoist invariant row/table base pointers out of inner mask loops and index precomputed arrays directly by bitmask values in combinatorial hot paths.
+
 ## 2026-08-02 - Fast Möbius Transform for Subset-Sum (Möbius) EV Calculations
 **Learning:** In Video Poker EV evaluations, replacing the $O(3^N)$ naive inclusion-exclusion loop (which visits 243 pairs) with an in-place $O(N 2^N)$ Fast Möbius Transform (FMT) requiring only 80 subtraction operations on the payout array eliminates the need for an extra scratch buffer (`numeratorForHold`). This reduces cache footprint, completely avoids redundant memory writes, and delivers a massive ~27.72% overall speedup in return-to-player analysis.
 **Action:** Whenever performing inclusion-exclusion or subset-sum operations over small bitmasks, prefer in-place Fast Möbius Transforms to achieve $O(N 2^N)$ complexity and optimal memory layouts.
