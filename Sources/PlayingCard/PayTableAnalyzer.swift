@@ -16,18 +16,10 @@
 /// `PayTableAnalyzerTests` cross-checks its output against the published return
 /// percentages for this library's existing pay tables.
 public enum PayTableAnalyzer {
-    /// Precomputed reciprocals of completion counts for hold sizes 0-5 to avoid expensive divisions.
-    /// Derived from `CombinatorialIndex.choose` so the values stay tied to the shared
-    /// combinatorics table instead of repeating raw coefficients.
-    /// holdMask.nonzeroBitCount maps to 0...5:
-    /// - 0: 1 / choose(47, 5) = 1 / 1533939
-    /// - 1: 1 / choose(47, 4) = 1 / 178365
-    /// - 2: 1 / choose(47, 3) = 1 / 16215
-    /// - 3: 1 / choose(47, 2) = 1 / 1081
-    /// - 4: 1 / choose(47, 1) = 1 / 47
-    /// - 5: 1 / choose(47, 0) = 1 / 1
-    private static let reciprocalCompletions: [Double] = (0 ... 5).map {
-        1.0 / Double(CombinatorialIndex.choose(47, 5 - $0))
+    /// Precomputed reciprocals of completion counts for all 32 hold masks (0...31) to avoid
+    /// `nonzeroBitCount` population count instructions and indirect array indexing in hot loops.
+    private static let reciprocalCompletionsForMask: [Double] = (0 ..< 32).map { holdMask in
+        1.0 / Double(CombinatorialIndex.choose(47, 5 - holdMask.nonzeroBitCount))
     }
 
     /// The overall return to player for `payTable` under exact optimal play, as a
@@ -60,7 +52,7 @@ public enum PayTableAnalyzer {
         // measured roughly two orders of magnitude slower.
         var payoutOfSubset = [Double](repeating: 0, count: 32)
 
-        reciprocalCompletions.withUnsafeBufferPointer { reciprocalBuf in
+        reciprocalCompletionsForMask.withUnsafeBufferPointer { reciprocalBuf in
             let reciprocalPtr = reciprocalBuf.baseAddress!
             multipliers.withUnsafeBufferPointer { multipliersBuf in
                 let multipliersPtr = multipliersBuf.baseAddress!
@@ -114,6 +106,7 @@ public enum PayTableAnalyzer {
     /// of the 5 dealt cards, computed in-place with a single fixed-size scratch buffer.
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
+    @inline(__always)
     private static func bestHoldEV(
         cards: (Int, Int, Int, Int, Int),
         arrays: HandOutcomeArrays,
@@ -128,12 +121,22 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        let stride = HandOutcomeArrays.chooseTableStride
+        let r0 = chooseTablePtr + cards.0 * stride
+        let r1 = chooseTablePtr + cards.1 * stride
+        let r2 = chooseTablePtr + cards.2 * stride
+        let r3 = chooseTablePtr + cards.3 * stride
+        let r4 = chooseTablePtr + cards.4 * stride
+
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                cardRow0: r0,
+                cardRow1: r1,
+                cardRow2: r2,
+                cardRow3: r3,
+                cardRow4: r4,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -159,7 +162,7 @@ public enum PayTableAnalyzer {
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
+            let completionsRecip = reciprocalPtr[holdMask]
             best = max(best, payoutOfSubset[holdMask] * completionsRecip)
         }
         return best
