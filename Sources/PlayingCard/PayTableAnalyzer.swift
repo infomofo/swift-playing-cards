@@ -16,18 +16,11 @@
 /// `PayTableAnalyzerTests` cross-checks its output against the published return
 /// percentages for this library's existing pay tables.
 public enum PayTableAnalyzer {
-    /// Precomputed reciprocals of completion counts for hold sizes 0-5 to avoid expensive divisions.
-    /// Derived from `CombinatorialIndex.choose` so the values stay tied to the shared
-    /// combinatorics table instead of repeating raw coefficients.
-    /// holdMask.nonzeroBitCount maps to 0...5:
-    /// - 0: 1 / choose(47, 5) = 1 / 1533939
-    /// - 1: 1 / choose(47, 4) = 1 / 178365
-    /// - 2: 1 / choose(47, 3) = 1 / 16215
-    /// - 3: 1 / choose(47, 2) = 1 / 1081
-    /// - 4: 1 / choose(47, 1) = 1 / 47
-    /// - 5: 1 / choose(47, 0) = 1 / 1
-    private static let reciprocalCompletions: [Double] = (0 ... 5).map {
-        1.0 / Double(CombinatorialIndex.choose(47, 5 - $0))
+    /// Precomputed reciprocals of completion counts for all 32 hold masks (0...31).
+    /// Indexed directly by `holdMask` to eliminate `nonzeroBitCount` popcount instructions
+    /// and indirect double-array lookups in the hot 32-mask evaluation loop.
+    private static let reciprocalCompletions: [Double] = (0 ..< 32).map { holdMask in
+        1.0 / Double(CombinatorialIndex.choose(47, 5 - holdMask.nonzeroBitCount))
     }
 
     /// The overall return to player for `payTable` under exact optimal play, as a
@@ -114,6 +107,7 @@ public enum PayTableAnalyzer {
     /// of the 5 dealt cards, computed in-place with a single fixed-size scratch buffer.
     /// This reduces complexity from O(3^N) (243 loops) to O(N 2^N) (80 subtractions),
     /// completely bypassing the second scratch buffer and redundant writes.
+    @inline(__always)
     private static func bestHoldEV(
         cards: (Int, Int, Int, Int, Int),
         arrays: HandOutcomeArrays,
@@ -128,12 +122,20 @@ public enum PayTableAnalyzer {
         payoutOfSubset: UnsafeMutablePointer<Double>,
         reciprocalPtr: UnsafePointer<Double>,
     ) -> Double {
+        let stride = HandOutcomeArrays.chooseTableStride
+        let cardRows = (
+            chooseTablePtr + cards.0 * stride,
+            chooseTablePtr + cards.1 * stride,
+            chooseTablePtr + cards.2 * stride,
+            chooseTablePtr + cards.3 * stride,
+            chooseTablePtr + cards.4 * stride,
+        )
+
         for mask in 0 ..< 32 {
             payoutOfSubset[mask] = arrays.payout(
                 forSubsetMask: mask,
-                cards: cards,
+                cardRows: cardRows,
                 multipliers: multipliers,
-                chooseTablePtr: chooseTablePtr,
                 scoreForFiveCardHandPtr: scoreForFiveCardHandPtr,
                 countsForFourHeldPtr: countsForFourHeldPtr,
                 countsForThreeHeldPtr: countsForThreeHeldPtr,
@@ -143,24 +145,49 @@ public enum PayTableAnalyzer {
             )
         }
 
-        // Fast Möbius Transform (FMT) in-place:
-        for step in 0 ..< 5 {
-            let stepSize = 1 << step
-            var baseIdx = 0
-            while baseIdx < 32 {
-                for offset in 0 ..< stepSize {
-                    let lowMask = baseIdx + offset
-                    let highMask = lowMask + stepSize
-                    payoutOfSubset[lowMask] -= payoutOfSubset[highMask]
-                }
-                baseIdx += stepSize * 2
-            }
+        // Fast Möbius Transform (FMT) in-place (unrolled for 32 elements):
+        // Step 0: stepSize 1
+        payoutOfSubset[0] -= payoutOfSubset[1]; payoutOfSubset[2] -= payoutOfSubset[3]
+        payoutOfSubset[4] -= payoutOfSubset[5]; payoutOfSubset[6] -= payoutOfSubset[7]
+        payoutOfSubset[8] -= payoutOfSubset[9]; payoutOfSubset[10] -= payoutOfSubset[11]
+        payoutOfSubset[12] -= payoutOfSubset[13]; payoutOfSubset[14] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[17]; payoutOfSubset[18] -= payoutOfSubset[19]
+        payoutOfSubset[20] -= payoutOfSubset[21]; payoutOfSubset[22] -= payoutOfSubset[23]
+        payoutOfSubset[24] -= payoutOfSubset[25]; payoutOfSubset[26] -= payoutOfSubset[27]
+        payoutOfSubset[28] -= payoutOfSubset[29]; payoutOfSubset[30] -= payoutOfSubset[31]
+
+        // Step 1: stepSize 2
+        payoutOfSubset[0] -= payoutOfSubset[2]; payoutOfSubset[1] -= payoutOfSubset[3]
+        payoutOfSubset[4] -= payoutOfSubset[6]; payoutOfSubset[5] -= payoutOfSubset[7]
+        payoutOfSubset[8] -= payoutOfSubset[10]; payoutOfSubset[9] -= payoutOfSubset[11]
+        payoutOfSubset[12] -= payoutOfSubset[14]; payoutOfSubset[13] -= payoutOfSubset[15]
+        payoutOfSubset[16] -= payoutOfSubset[18]; payoutOfSubset[17] -= payoutOfSubset[19]
+        payoutOfSubset[20] -= payoutOfSubset[22]; payoutOfSubset[21] -= payoutOfSubset[23]
+        payoutOfSubset[24] -= payoutOfSubset[26]; payoutOfSubset[25] -= payoutOfSubset[27]
+        payoutOfSubset[28] -= payoutOfSubset[30]; payoutOfSubset[29] -= payoutOfSubset[31]
+
+        // Step 2: stepSize 4
+        for idx in 0 ..< 4 {
+            payoutOfSubset[idx] -= payoutOfSubset[idx + 4]
+            payoutOfSubset[idx + 8] -= payoutOfSubset[idx + 12]
+            payoutOfSubset[idx + 16] -= payoutOfSubset[idx + 20]
+            payoutOfSubset[idx + 24] -= payoutOfSubset[idx + 28]
+        }
+
+        // Step 3: stepSize 8
+        for idx in 0 ..< 8 {
+            payoutOfSubset[idx] -= payoutOfSubset[idx + 8]
+            payoutOfSubset[idx + 16] -= payoutOfSubset[idx + 24]
+        }
+
+        // Step 4: stepSize 16
+        for idx in 0 ..< 16 {
+            payoutOfSubset[idx] -= payoutOfSubset[idx + 16]
         }
 
         var best = 0.0
         for holdMask in 0 ..< 32 {
-            let completionsRecip = reciprocalPtr[holdMask.nonzeroBitCount]
-            best = max(best, payoutOfSubset[holdMask] * completionsRecip)
+            best = max(best, payoutOfSubset[holdMask] * reciprocalPtr[holdMask])
         }
         return best
     }
