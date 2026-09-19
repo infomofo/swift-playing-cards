@@ -258,8 +258,8 @@ public struct HoldClassifier {
                 return .fourOfAKind
             case .threeOfAKind:
                 return .threeOfAKind
-            case let .twoPair(pairRanks):
-                return pairRanks.max()! >= 11 ? .highPair : .lowPair
+            case .twoPair:
+                return .twoPair
             case let .onePair(rank):
                 return rank >= 11 ? .highPair : .lowPair
             case .noMatch:

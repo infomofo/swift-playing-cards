@@ -596,22 +596,31 @@ struct HoldClassifierPriorityTests {
         #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .threeOfAKind)
     }
 
-    /// Two-pair 4-card hold: J-J-3-3 must deterministically return .highPair.
-    @Test func `four card hold two pair high wins`() {
+    /// Two-pair 4-card hold: J-J-3-3 is still two pair, not just the high pair.
+    @Test func `four card hold two pair with high pair`() {
         let hand = [
             card(.jack, .spades), card(.jack, .hearts), card(.three, .clubs),
             card(.three, .diamonds), card(.two, .spades),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .highPair)
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .twoPair)
     }
 
-    /// Two-pair 4-card hold with both low pairs returns .lowPair.
+    /// Two-pair 4-card hold with both low pairs is still two pair.
     @Test func `four card hold two pair both low`() {
         let hand = [
             card(.five, .spades), card(.five, .hearts), card(.three, .clubs),
             card(.three, .diamonds), card(.two, .spades),
         ]
-        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .lowPair)
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .twoPair)
+    }
+
+    /// Regression: holding 2-2-J-J should not be labeled as only the high pair.
+    @Test func `four card hold mixed low and high pairs is two pair`() {
+        let hand = [
+            card(.two, .hearts), card(.two, .spades), card(.jack, .clubs),
+            card(.jack, .spades), card(.six, .diamonds),
+        ]
+        #expect(classify(hand: hand, holding: [0, 1, 2, 3]) == .twoPair)
     }
 
     // MARK: - classifyFour zero-high-cards fix (Thread 4)
