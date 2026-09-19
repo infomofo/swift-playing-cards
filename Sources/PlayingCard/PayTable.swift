@@ -106,69 +106,30 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
     public static func evaluate(cards: [PlayingCard], wildcardRank: Rank? = nil) -> HandResult {
         guard cards.count == 5 else { return .noWin }
 
-        guard let wildcardRank else {
-            return evaluateJacksOrBetter(cards: cards)
+        if wildcardRank == nil {
+            let c0 = cardCode(cards[0]), c1 = cardCode(cards[1]), c2 = cardCode(cards[2]), c3 = cardCode(cards[3]), c4 = cardCode(cards[4])
+            return HandResult(rawValue: FastHandEvaluator.standardCode(c0, c1, c2, c3, c4)) ?? .noWin
+        } else if wildcardRank == .two {
+            let c0 = cardCode(cards[0]), c1 = cardCode(cards[1]), c2 = cardCode(cards[2]), c3 = cardCode(cards[3]), c4 = cardCode(cards[4])
+            return HandResult(rawValue: FastHandEvaluator.deucesWildCode(c0, c1, c2, c3, c4)) ?? .noWin
+        } else if let wildcardRank {
+            return evaluateWithWilds(cards: cards, wildcardRank: wildcardRank)
         }
-        return evaluateWithWilds(cards: cards, wildcardRank: wildcardRank)
+        return .noWin
     }
 
-    // MARK: - Private evaluation helpers
-
-    private static func evaluateJacksOrBetter(cards: [PlayingCard]) -> HandResult {
-        switch Hand(cards: cards).evaluate() {
-        case .royalFlush: return .royalFlush
-        case .straightFlush: return .straightFlush
-        case .fourOfAKind: return .fourOfAKind
-        case .fullHouse: return .fullHouse
-        case .flush: return .flush
-        case .straight: return .straight
-        case .threeOfAKind: return .threeOfAKind
-        case .twoPair: return .twoPair
-        case .pair:
-            // Zero-allocation search for the pair rank. Since we know the hand contains
-            // exactly one pair, we can find the pair rank using simple loops over the cards.
-            var pairRank: Rank?
-            let cardCount = cards.count
-            for index1 in 0 ..< cardCount - 1 {
-                let rank1 = cards[index1].rank
-                for index2 in (index1 + 1) ..< cardCount {
-                    if rank1 == cards[index2].rank {
-                        pairRank = rank1
-                        break
-                    }
-                }
-                if pairRank != nil {
-                    break
-                }
-            }
-            if let pairRank, pairRank >= .jack {
-                return .jacksOrBetter
-            }
-            return .noWin
-        case .highCard:
-            return .noWin
-        }
-    }
-
-    /// Evaluates a 5-card hand where cards of `wildcardRank` are wild.
-    ///
+    /// Evaluates a 5-card hand where cards of arbitrary `wildcardRank` are wild.
     // swiftlint:disable identifier_name cyclomatic_complexity
-    /// Returns the highest-paying hand achievable by substituting wildcards optimally.
-    /// Hand priority (high to low): naturalRoyalFlush > fourDeuces > wildRoyalFlush >
-    /// fiveOfAKind > straightFlush > fourOfAKind > fullHouse > flush > straight >
-    /// threeOfAKind > noWin.
     private static func evaluateWithWilds(cards: [PlayingCard], wildcardRank: Rank) -> HandResult {
         let wilds = cards.filter { $0.rank == wildcardRank }
         let naturals = cards.filter { $0.rank != wildcardRank }
         let k = wilds.count
         let n = naturals.count
 
-        // Four wilds: second-highest hand in Deuces Wild.
         if k == 4 {
             return .fourDeuces
         }
 
-        // No wilds: standard evaluation with DW remapping.
         if k == 0 {
             switch Hand(cards: cards).evaluate() {
             case .royalFlush: return .naturalRoyalFlush
@@ -182,12 +143,9 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
             }
         }
 
-        // k = 1, 2, or 3. n = 4, 3, or 2 respectively.
         let natRanks = naturals.map(\.rank)
         let natSuits = naturals.map(\.suit)
 
-        // Wild Royal Flush: all naturals are in {T,J,Q,K,A} of the same suit, distinct ranks.
-        // With k wilds filling the remaining royal positions.
         if n > 0 {
             let allRoyal = natRanks.allSatisfy { $0.rawValue >= 10 }
             if allRoyal {
@@ -199,14 +157,12 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
             }
         }
 
-        // Five of a Kind: most-common natural rank + k wildcards ≥ 5.
         let rankFreqs = Dictionary(grouping: natRanks, by: { $0 }).mapValues(\.count)
         let maxFreq = rankFreqs.values.max() ?? 0
         if maxFreq + k >= 5 {
             return .fiveOfAKind
         }
 
-        // Straight Flush: all naturals same suit, distinct ranks that fit in a 5-card window.
         if n > 0 {
             let sfSuit = natSuits[0]
             let allSameSuit = natSuits.dropFirst().allSatisfy { $0 == sfSuit }
@@ -221,17 +177,14 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
             }
         }
 
-        // Four of a Kind: most-common natural rank + k wildcards ≥ 4.
         if maxFreq + k >= 4 {
             return .fourOfAKind
         }
 
-        // Full House: naturals split into at most 2 distinct ranks, wilds fill the gaps.
         if canFormFullHouse(natRanks: natRanks, wildcardCount: k) {
             return .fullHouse
         }
 
-        // Flush: all naturals same suit (SF already failed, so ranks aren't consecutive).
         if n > 0 {
             let flushSuit = natSuits[0]
             if natSuits.dropFirst().allSatisfy({ $0 == flushSuit }) {
@@ -239,7 +192,6 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
             }
         }
 
-        // Straight: distinct natural ranks fit in a 5-card window (suits ignored).
         if n > 0 {
             let allDistinct = Set(natRanks).count == n
             if allDistinct {
@@ -250,7 +202,6 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
             }
         }
 
-        // Three of a Kind: most-common natural rank + k wildcards ≥ 3.
         if maxFreq + k >= 3 {
             return .threeOfAKind
         }
@@ -258,25 +209,15 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
         return .noWin
     }
 
-    /// Returns true if `sortedRawValues` (natural card ranks) fit inside a 5-card straight
-    /// window when `k` wildcards fill the remaining slots. Handles the wheel (A-2-3-4-5) where
-    /// the 2 is the wildcard rank.
-    ///
-    /// - Parameters:
-    ///   - sortedRawValues: Ascending-sorted raw rank values of the natural cards.
-    ///   - wildcardRank: The wild rank (used to detect wheel-draw edge cases).
     private static func canFormStraightWindow(sortedRawValues: [Int], wildcardRank: Rank) -> Bool {
         guard !sortedRawValues.isEmpty else { return true }
         let span = sortedRawValues.last! - sortedRawValues.first!
-        // Standard window: span ≤ 4 covers any 5-card straight (non-wheel).
         if span <= 4 {
             return true
         }
-        // Wheel: A + subset of {3,4,5} (2 is wild, so naturals can't contribute the 2 slot).
-        if sortedRawValues.last == 14 { // ace present
+        if sortedRawValues.last == 14 {
             let nonAce = sortedRawValues.dropLast()
             let wildcardRV = wildcardRank.rawValue
-            // Non-ace ranks must all be in [3, 5] excluding the wildcard rank.
             if nonAce.allSatisfy({ $0 >= 3 && $0 <= 5 && $0 != wildcardRV }) {
                 return true
             }
@@ -284,10 +225,6 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
         return false
     }
 
-    /// Returns true if the natural cards can be arranged as a full house (3+2) when
-    /// `wilds` wildcards fill the remaining slots, given that all naturals must participate.
-    ///
-    /// Requires at most 2 distinct natural ranks (a third rank can't fit into 3+2).
     private static func canFormFullHouse(natRanks: [Rank], wildcardCount: Int) -> Bool {
         let rankFreqs = Dictionary(grouping: natRanks, by: { $0 }).mapValues(\.count)
         guard rankFreqs.count <= 2 else { return false }
@@ -296,13 +233,24 @@ public enum HandResult: Int, CaseIterable, Comparable, CustomStringConvertible {
         let f1 = freqs.first ?? 0
         let f2 = freqs.count > 1 ? freqs[1] : 0
 
-        // Option A: rank1 → trips, rank2 → pair.
         let wildsA = max(0, 3 - f1) + max(0, 2 - f2)
-        // Option B: rank1 → pair, rank2 → trips.
         let wildsB = max(0, 2 - f1) + max(0, 3 - f2)
         return min(wildsA, wildsB) <= wildcardCount
     }
+
     // swiftlint:enable identifier_name cyclomatic_complexity
+
+    @inline(__always)
+    private static func cardCode(_ card: PlayingCard) -> Int {
+        let rankIndex = card.rank.rawValue - 2
+        let suitIndex = switch card.suit {
+        case .spades: 0
+        case .hearts: 1
+        case .diamonds: 2
+        case .clubs: 3
+        }
+        return (rankIndex << 2) | suitIndex
+    }
 }
 
 /// A video poker pay table mapping hand results to coin multipliers.
