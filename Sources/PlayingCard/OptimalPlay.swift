@@ -291,6 +291,9 @@ public struct OptimalPlay {
                     drawCount += 1
                 }
 
+                // ⚡ Bolt Optimization: Replace runtime divisions with literal multiplication by precomputed reciprocals.
+                // Since the hand size is exactly 5 unique cards, remaining is always exactly 52 - 5 = 47.
+                // Divisors are fixed combinatorics: 47, 1081, 16215, 178365, and 1533939.
                 switch drawCount {
                 case 0:
                     return Double(mults[FastHandEvaluator.standardCode(h0, h1, h2, h3, h4)])
@@ -299,7 +302,7 @@ public struct OptimalPlay {
                     for i in 0 ..< count {
                         total += mults[FastHandEvaluator.standardCode(h0, h1, h2, h3, rem[i])]
                     }
-                    return Double(total) / Double(count)
+                    return Double(total) * (1.0 / 47.0)
 
                 case 2:
                     for i in 0 ..< count - 1 {
@@ -308,8 +311,7 @@ public struct OptimalPlay {
                             total += mults[FastHandEvaluator.standardCode(h0, h1, h2, card0, rem[j])]
                         }
                     }
-                    let comboCount = (count * (count - 1)) / 2
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 1081.0)
 
                 case 3:
                     for i in 0 ..< count - 2 {
@@ -321,8 +323,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2)) / 6
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 16215.0)
 
                 case 4:
                     for i in 0 ..< count - 3 {
@@ -337,8 +338,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 178_365.0)
 
                 case 5:
                     for i in 0 ..< count - 4 {
@@ -356,8 +356,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 1_533_939.0)
 
                 default:
                     preconditionFailure("drawCount must be 0–5, got \(drawCount)")
@@ -432,6 +431,9 @@ public struct OptimalPlay {
                     drawCount += 1
                 }
 
+                // ⚡ Bolt Optimization: Replace runtime divisions with literal multiplication by precomputed reciprocals.
+                // Since the hand size is exactly 5 unique cards, remaining is always exactly 52 - 5 = 47.
+                // Divisors are fixed combinatorics: 47, 1081, 16215, 178365, and 1533939.
                 switch drawCount {
                 case 0:
                     return Double(mults[FastHandEvaluator.deucesWildCode(h0, h1, h2, h3, h4)])
@@ -440,7 +442,7 @@ public struct OptimalPlay {
                     for i in 0 ..< count {
                         total += mults[FastHandEvaluator.deucesWildCode(h0, h1, h2, h3, rem[i])]
                     }
-                    return Double(total) / Double(count)
+                    return Double(total) * (1.0 / 47.0)
 
                 case 2:
                     for i in 0 ..< count - 1 {
@@ -449,8 +451,7 @@ public struct OptimalPlay {
                             total += mults[FastHandEvaluator.deucesWildCode(h0, h1, h2, card0, rem[j])]
                         }
                     }
-                    let comboCount = (count * (count - 1)) / 2
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 1081.0)
 
                 case 3:
                     for i in 0 ..< count - 2 {
@@ -462,8 +463,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2)) / 6
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 16215.0)
 
                 case 4:
                     for i in 0 ..< count - 3 {
@@ -478,8 +478,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 178_365.0)
 
                 case 5:
                     for i in 0 ..< count - 4 {
@@ -497,8 +496,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 1_533_939.0)
 
                 default:
                     preconditionFailure("drawCount must be 0–5, got \(drawCount)")
