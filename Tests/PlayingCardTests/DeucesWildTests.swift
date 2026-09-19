@@ -190,6 +190,22 @@ final class DeucesWildTests: XCTestCase {
         XCTAssertEqual(eval(cards), .threeOfAKind)
     }
 
+    func testCustomWildcardRankUsesWildEvaluation() {
+        let cards = [
+            card(.king, .spades), card(.king, .hearts), card(.king, .diamonds),
+            card(.three, .clubs), card(.seven, .spades),
+        ]
+        XCTAssertEqual(HandResult.evaluate(cards: cards, wildcardRank: .three), .fourOfAKind)
+    }
+
+    func testCustomWildcardRankDoesNotUseDeucesWildEvaluator() {
+        let cards = [
+            card(.ace, .spades), card(.king, .spades), card(.queen, .spades),
+            card(.jack, .spades), card(.three, .hearts),
+        ]
+        XCTAssertEqual(HandResult.evaluate(cards: cards, wildcardRank: .three), .wildRoyalFlush)
+    }
+
     func testPairIsNoWinInDW() {
         // A pair without a deuce doesn't pay in Deuces Wild.
         let cards = [
