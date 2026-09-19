@@ -1,3 +1,7 @@
+## 2026-08-07 - Constant Reciprocal Multiplications for Precomputed Completion Counts
+**Learning:** In Video Poker expected value (EV) evaluation loops (such as those in `OptimalPlay.swift`'s `fastEV` and `fastEVWild`), performing runtime integer arithmetic and floating-point divisions is highly computationally expensive. Since the dealt hand is always exactly 5 cards and the remaining deck size is always exactly 47, the completion counts for draw sizes 0-5 are completely static: $1$, $47$, $1,081$, $16,215$, $178,365$, and $1,533,939$. Replacing dynamic divisions with direct multiplications by literal precomputed reciprocals avoids multiple integer operations and floating-point division instructions entirely.
+**Action:** When working with fixed game state structures (like standard 5-card hands drawn from a 52-card deck), substitute division by combinatorial completion counts with direct multiplication by precomputed literal reciprocals.
+
 ## 2026-08-02 - Fast Möbius Transform for Subset-Sum (Möbius) EV Calculations
 **Learning:** In Video Poker EV evaluations, replacing the $O(3^N)$ naive inclusion-exclusion loop (which visits 243 pairs) with an in-place $O(N 2^N)$ Fast Möbius Transform (FMT) requiring only 80 subtraction operations on the payout array eliminates the need for an extra scratch buffer (`numeratorForHold`). This reduces cache footprint, completely avoids redundant memory writes, and delivers a massive ~27.72% overall speedup in return-to-player analysis.
 **Action:** Whenever performing inclusion-exclusion or subset-sum operations over small bitmasks, prefer in-place Fast Möbius Transforms to achieve $O(N 2^N)$ complexity and optimal memory layouts.
@@ -61,3 +65,7 @@
 ## 2026-08-01 - Safe Hybrid Loop Unrolling
 **Learning:** Manually unrolling loops in performance-critical paths eliminates significant loop control, index calculation, and branch prediction overhead. However, hardcoding loop boundaries directly can introduce major maintainability and safety risks if data shapes change in the future. Implementing a hybrid approach, checking dynamically if the count matches the expected unrolled boundary size, running the fast path if true, and falling back to a clean dynamic loop otherwise, preserves maximum optimization while keeping the code flexible.
 **Action:** Always use a hybrid safe-path/fallback check when manually unrolling loops with non-constant bounds.
+
+## 2026-09-02 - Stack Tuple Parameter Passing vs Array Subscripting in Hot Loops
+**Learning:** In Swift, passing fixed-size collection parameters as arrays (`[Int]`) to inner loop functions forces array subscript bounds checking on every element access. Packing card codes into a fixed 5-element stack tuple (`(Int, Int, Int, Int, Int)`) once per hand and passing the tuple down eliminates all array bounds-checking overhead across all 32 hold mask evaluations in `OptimalPlay.swift`.
+**Action:** When evaluating fixed-size element sets (like 5-card hands) across frequent inner loop calls, pack elements into stack-allocated tuples to eliminate array subscript bounds checks.

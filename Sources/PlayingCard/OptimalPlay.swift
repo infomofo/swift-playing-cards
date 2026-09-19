@@ -130,6 +130,11 @@ public struct OptimalPlay {
             }
         }
 
+        // ⚡ Bolt Optimization: Pack card codes into a 5-element stack tuple once per hand.
+        // Passing a tuple instead of an Array to fastEV/fastEVWild avoids 160 array subscripting
+        // bounds checks across the 32 hold combination evaluations.
+        let cardTuple = (handCodes[0], handCodes[1], handCodes[2], handCodes[3], handCodes[4])
+
         // Evaluate all 32 hold combinations concurrently across available cores.
         let evByMask: [(mask: Int, ev: Double)] = await withTaskGroup(
             of: (mask: Int, ev: Double).self,
@@ -137,8 +142,8 @@ public struct OptimalPlay {
             for mask in 0 ..< 32 {
                 group.addTask {
                     let ev = isWild
-                        ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
-                        : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
+                        ? fastEVWild(cards: cardTuple, mask: mask, remaining: remaining)
+                        : fastEV(cards: cardTuple, mask: mask, remaining: remaining)
                     return (mask: mask, ev: ev)
                 }
             }
@@ -170,8 +175,8 @@ public struct OptimalPlay {
                 mask |= (1 << idx)
             }
             return isWild
-                ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
-                : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
+                ? fastEVWild(cards: cardTuple, mask: mask, remaining: remaining)
+                : fastEV(cards: cardTuple, mask: mask, remaining: remaining)
         }
 
         return OptimalPlayResult(
@@ -216,21 +221,22 @@ public struct OptimalPlay {
         for idx in holding {
             mask |= (1 << idx)
         }
+        let cardTuple = (handCodes[0], handCodes[1], handCodes[2], handCodes[3], handCodes[4])
         return isWild
-            ? fastEVWild(handCodes: handCodes, mask: mask, remaining: remaining)
-            : fastEV(handCodes: handCodes, mask: mask, remaining: remaining)
+            ? fastEVWild(cards: cardTuple, mask: mask, remaining: remaining)
+            : fastEV(cards: cardTuple, mask: mask, remaining: remaining)
     }
 
     // MARK: - Fast Inner Loop
 
-    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length
+    // swiftlint:disable identifier_name cyclomatic_complexity function_body_length large_tuple
 
     /// Computes expected payout by iterating all C(remaining.count, drawCount) completions.
     ///
     /// All arithmetic operates on plain integers; no `PlayingCard` objects are accessed
     /// during the combination loop.
-    private func fastEV(handCodes: [Int], mask: Int, remaining: [Int]) -> Double {
-        let c0 = handCodes[0], c1 = handCodes[1], c2 = handCodes[2], c3 = handCodes[3], c4 = handCodes[4]
+    private func fastEV(cards: (Int, Int, Int, Int, Int), mask: Int, remaining: [Int]) -> Double {
+        let (c0, c1, c2, c3, c4) = cards
         return multiplierTable.withUnsafeBufferPointer { multsBuf in
             let mults = multsBuf.baseAddress!
             return remaining.withUnsafeBufferPointer { remBuf in
@@ -291,6 +297,9 @@ public struct OptimalPlay {
                     drawCount += 1
                 }
 
+                // ⚡ Bolt Optimization: Replace runtime divisions with literal multiplication by precomputed reciprocals.
+                // Since the hand size is exactly 5 unique cards, remaining is always exactly 52 - 5 = 47.
+                // Divisors are fixed combinatorics: 47, 1081, 16215, 178365, and 1533939.
                 switch drawCount {
                 case 0:
                     return Double(mults[FastHandEvaluator.standardCode(h0, h1, h2, h3, h4)])
@@ -299,7 +308,7 @@ public struct OptimalPlay {
                     for i in 0 ..< count {
                         total += mults[FastHandEvaluator.standardCode(h0, h1, h2, h3, rem[i])]
                     }
-                    return Double(total) / Double(count)
+                    return Double(total) * (1.0 / 47.0)
 
                 case 2:
                     for i in 0 ..< count - 1 {
@@ -308,8 +317,7 @@ public struct OptimalPlay {
                             total += mults[FastHandEvaluator.standardCode(h0, h1, h2, card0, rem[j])]
                         }
                     }
-                    let comboCount = (count * (count - 1)) / 2
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 1081.0)
 
                 case 3:
                     for i in 0 ..< count - 2 {
@@ -321,8 +329,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2)) / 6
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 16215.0)
 
                 case 4:
                     for i in 0 ..< count - 3 {
@@ -337,8 +344,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 178_365.0)
 
                 case 5:
                     for i in 0 ..< count - 4 {
@@ -356,8 +362,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 1_533_939.0)
 
                 default:
                     preconditionFailure("drawCount must be 0–5, got \(drawCount)")
@@ -370,8 +375,8 @@ public struct OptimalPlay {
 
     /// `fastEV` variant for Deuces Wild. Dispatches hand evaluation through
     /// `FastHandEvaluator.deucesWildCode` which treats rank_index 0 (the 2) as a wildcard.
-    private func fastEVWild(handCodes: [Int], mask: Int, remaining: [Int]) -> Double {
-        let c0 = handCodes[0], c1 = handCodes[1], c2 = handCodes[2], c3 = handCodes[3], c4 = handCodes[4]
+    private func fastEVWild(cards: (Int, Int, Int, Int, Int), mask: Int, remaining: [Int]) -> Double {
+        let (c0, c1, c2, c3, c4) = cards
         return multiplierTable.withUnsafeBufferPointer { multsBuf in
             let mults = multsBuf.baseAddress!
             return remaining.withUnsafeBufferPointer { remBuf in
@@ -432,6 +437,9 @@ public struct OptimalPlay {
                     drawCount += 1
                 }
 
+                // ⚡ Bolt Optimization: Replace runtime divisions with literal multiplication by precomputed reciprocals.
+                // Since the hand size is exactly 5 unique cards, remaining is always exactly 52 - 5 = 47.
+                // Divisors are fixed combinatorics: 47, 1081, 16215, 178365, and 1533939.
                 switch drawCount {
                 case 0:
                     return Double(mults[FastHandEvaluator.deucesWildCode(h0, h1, h2, h3, h4)])
@@ -440,7 +448,7 @@ public struct OptimalPlay {
                     for i in 0 ..< count {
                         total += mults[FastHandEvaluator.deucesWildCode(h0, h1, h2, h3, rem[i])]
                     }
-                    return Double(total) / Double(count)
+                    return Double(total) * (1.0 / 47.0)
 
                 case 2:
                     for i in 0 ..< count - 1 {
@@ -449,8 +457,7 @@ public struct OptimalPlay {
                             total += mults[FastHandEvaluator.deucesWildCode(h0, h1, h2, card0, rem[j])]
                         }
                     }
-                    let comboCount = (count * (count - 1)) / 2
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 1081.0)
 
                 case 3:
                     for i in 0 ..< count - 2 {
@@ -462,8 +469,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2)) / 6
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 16215.0)
 
                 case 4:
                     for i in 0 ..< count - 3 {
@@ -478,8 +484,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3)) / 24
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 178_365.0)
 
                 case 5:
                     for i in 0 ..< count - 4 {
@@ -497,8 +502,7 @@ public struct OptimalPlay {
                             }
                         }
                     }
-                    let comboCount = (count * (count - 1) * (count - 2) * (count - 3) * (count - 4)) / 120
-                    return Double(total) / Double(comboCount)
+                    return Double(total) * (1.0 / 1_533_939.0)
 
                 default:
                     preconditionFailure("drawCount must be 0–5, got \(drawCount)")
@@ -507,5 +511,5 @@ public struct OptimalPlay {
         }
     }
 
-    // swiftlint:enable identifier_name cyclomatic_complexity function_body_length
+    // swiftlint:enable identifier_name cyclomatic_complexity function_body_length large_tuple
 }
